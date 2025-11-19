@@ -4,9 +4,9 @@ services:
     postgres:
         image: postgres:15
         environment:
-            POSTGRES_DB: ${DB_NAME:-myapp}
-            POSTGRES_USER: ${DB_USER:-developer}
-            POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+            POSTGRES_DB: monitoraggio_db
+            POSTGRES_USER: developer
+            POSTGRES_PASSWORD: password
         ports:
             - "5432:5432"
         volumes:
@@ -26,6 +26,19 @@ services:
             - "8080:80"
         depends_on:
             - postgres
+
+    fastapi-app:
+        build: .
+        ports:
+            - "8000:8000"
+        environment:
+            - DATABASE_URL=${DATABASE_URL}
+        env_file:
+            - .env
+        depends_on:
+            - postgres
+        volumes:
+            - .:/app
 
 volumes:
     postgres_data:
