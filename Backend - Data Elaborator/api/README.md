@@ -25,17 +25,18 @@ Returns:
 #### Parameters
 | Name | In | Description | Required |
 |------|----|-------------|----------|
-| skip | query |  | Optional |
-| limit | query |  | Optional |
+| skip | query | skip first 'skip' records | Optional |
+| limit | query | show a maximum of 'limit' records | Optional |
 
 ##### Response (200)
 | Field | Type | Description |
 |-------|------|-------------|
+| List | List | List of all zones | 
 
 ##### Response (422)
 | Field | Type | Description |
 |-------|------|-------------|
-| detail | array |  |
+| detail | array | Error Message |
 
 ---
 
@@ -57,22 +58,23 @@ Returns:
 #### Parameters
 | Name | In | Description | Required |
 |------|----|-------------|----------|
+| city |  query  | Connect city to the zone | Required |
 
 ##### Request Body
 | Field | Type | Description | Required |
 |-------|------|-------------|----------|
-| city | string |  | Required |
+| city | string | City connected to the zone | Required |
 
 ##### Response (201)
 | Field | Type | Description |
 |-------|------|-------------|
-| city | string |  |
-| id | integer |  |
+| city | string | City connected to the record |
+| id | integer | Zone ID |
 
 ##### Response (422)
 | Field | Type | Description |
 |-------|------|-------------|
-| detail | array |  |
+| detail | array | Error message |
 
 ---
 
@@ -94,18 +96,18 @@ Returns
 #### Parameters
 | Name | In | Description | Required |
 |------|----|-------------|----------|
-| zone_id | path |  | Required |
+| zone_id | path | Id of the zone to find | Required |
 
 ##### Response (200)
 | Field | Type | Description |
 |-------|------|-------------|
-| city | string |  |
-| id | integer |  |
+| city | string | City connected to the zone |
+| id | integer | Zone ID |
 
 ##### Response (422)
 | Field | Type | Description |
 |-------|------|-------------|
-| detail | array |  |
+| detail | array | Error message |
 
 ---
 
@@ -128,23 +130,23 @@ Returns:
 #### Parameters
 | Name | In | Description | Required |
 |------|----|-------------|----------|
-| zone_id | path |  | Required |
+| zone_id | path | Id of the zone to find | Required |
 
 ##### Request Body
 | Field | Type | Description | Required |
 |-------|------|-------------|----------|
-| city | N/A |  | Optional |
+| city | N/A | New city to connect to the zone | Optional |
 
 ##### Response (200)
 | Field | Type | Description |
 |-------|------|-------------|
-| city | string |  |
-| id | integer |  |
+| city | string | City connected the zone |
+| id | integer | Id of the zone |
 
 ##### Response (422)
 | Field | Type | Description |
 |-------|------|-------------|
-| detail | array |  |
+| detail | array | Error message |
 
 ---
 
@@ -166,16 +168,17 @@ Returns:
 #### Parameters
 | Name | In | Description | Required |
 |------|----|-------------|----------|
-| zone_id | path |  | Required |
+| zone_id | path | Id of the zone to delete | Required |
 
 ##### Response (200)
 | Field | Type | Description |
 |-------|------|-------------|
+| message | string | Succesfulness message |
 
 ##### Response (422)
 | Field | Type | Description |
 |-------|------|-------------|
-| detail | array |  |
+| detail | array | Error message |
 
 ---
 
@@ -197,19 +200,20 @@ Returns:
 #### Parameters
 | Name | In | Description | Required |
 |------|----|-------------|----------|
-| skip | query |  | Optional |
-| limit | query |  | Optional |
-| active | query |  | Optional |
-| zone_id | query |  | Optional |
+| skip | query | Skip first 'skip' records | Optional |
+| limit | query | Show a maximum of 'limit' records | Optional |
+| active | query | Get only active misurators | Optional |
+| zone_id | query | Get misurators of a specific zone | Optional |
 
 ##### Response (200)
 | Field | Type | Description |
 |-------|------|-------------|
+| List  | List | List of all misurators (based on filters) |
 
 ##### Response (422)
 | Field | Type | Description |
 |-------|------|-------------|
-| detail | array |  |
+| detail | array | Error message |
 
 ---
 
@@ -232,24 +236,26 @@ Returns:
 #### Parameters
 | Name | In | Description | Required |
 |------|----|-------------|----------|
+| active | query | Whether the misurator is active or not | Required |
+| zone_id | query | Id of the connected zone | Required |
 
 ##### Request Body
 | Field | Type | Description | Required |
 |-------|------|-------------|----------|
-| active | boolean |  | Required |
-| zone_id | integer |  | Required |
+| active | boolean | Whether the misurator is active or not  | Required |
+| zone_id | integer | Id of the connected zone | Required |
 
 ##### Response (201)
 | Field | Type | Description |
 |-------|------|-------------|
-| active | boolean |  |
-| zone_id | integer |  |
-| id | integer |  |
+| active | boolean | Whether the misurator is active or not |
+| zone_id | integer | Id of the connected zone |
+| id | integer | Id of the record |
 
 ##### Response (422)
 | Field | Type | Description |
 |-------|------|-------------|
-| detail | array |  |
+| detail | array | Error message |
 
 ---
 
@@ -271,19 +277,19 @@ Returns:
 #### Parameters
 | Name | In | Description | Required |
 |------|----|-------------|----------|
-| misurator_id | path |  | Required |
+| misurator_id | path | Id of the misurator to find | Required |
 
 ##### Response (200)
 | Field | Type | Description |
 |-------|------|-------------|
-| active | boolean |  |
-| zone_id | integer |  |
-| id | integer |  |
+| active | boolean | Whether the misurator is active or not |
+| zone_id | integer | Id of the connected zone |
+| id | integer | Id of the record  |
 
 ##### Response (422)
 | Field | Type | Description |
 |-------|------|-------------|
-| detail | array |  |
+| detail | array | Error message |
 
 ---
 
@@ -306,25 +312,25 @@ Returns:
 #### Parameters
 | Name | In | Description | Required |
 |------|----|-------------|----------|
-| misurator_id | path |  | Required |
+| misurator_id | path | Id of the misurator to update | Required |
 
 ##### Request Body
 | Field | Type | Description | Required |
 |-------|------|-------------|----------|
-| active | N/A |  | Optional |
-| zone_id | N/A |  | Optional |
+| active | boolean | Wether the misurator is active or not | Optional |
+| zone_id | string | Id of the connected zone | Optional |
 
 ##### Response (200)
 | Field | Type | Description |
 |-------|------|-------------|
-| active | boolean |  |
-| zone_id | integer |  |
-| id | integer |  |
+| active | boolean | Wether the misurator is active or not |
+| zone_id | integer | Id of the connected zone |
+| id | integer | Id of the record |
 
 ##### Response (422)
 | Field | Type | Description |
 |-------|------|-------------|
-| detail | array |  |
+| detail | array | Error message |
 
 ---
 
@@ -346,16 +352,17 @@ Returns:
 #### Parameters
 | Name | In | Description | Required |
 |------|----|-------------|----------|
-| misurator_id | path |  | Required |
+| misurator_id | path | Id of the misurator to activate | Required |
 
 ##### Response (200)
 | Field | Type | Description |
 |-------|------|-------------|
+| message | string | Succesfulness message |
 
 ##### Response (422)
 | Field | Type | Description |
 |-------|------|-------------|
-| detail | array |  |
+| detail | array | Error message |
 
 ---
 
@@ -377,16 +384,17 @@ Returns:
 #### Parameters
 | Name | In | Description | Required |
 |------|----|-------------|----------|
-| misurator_id | path |  | Required |
+| misurator_id | path | Id of the misurator to deactivate | Required |
 
 ##### Response (200)
 | Field | Type | Description |
 |-------|------|-------------|
+| message | string | Succesfulness message |
 
 ##### Response (422)
 | Field | Type | Description |
 |-------|------|-------------|
-| detail | array |  |
+| detail | array | Error message |
 
 ---
 
@@ -409,20 +417,21 @@ Returns:
 #### Parameters
 | Name | In | Description | Required |
 |------|----|-------------|----------|
-| skip | query |  | Optional |
-| limit | query |  | Optional |
-| misurator_id | query |  | Optional |
-| start_date | query |  | Optional |
-| end_date | query |  | Optional |
+| skip | query | Skip first 'skip' records | Optional |
+| limit | query | Show a maximum of 'limit' records | Optional |
+| misurator_id | query | Id of the connected misurator | Optional |
+| start_date | query | Starting date | Optional |
+| end_date | query | Final date | Optional |
 
 ##### Response (200)
 | Field | Type | Description |
 |-------|------|-------------|
+| List  | List | List of all misurators (based on filters) |
 
 ##### Response (422)
 | Field | Type | Description |
 |-------|------|-------------|
-| detail | array |  |
+| detail | array | Error message |
 
 ---
 
@@ -445,25 +454,27 @@ Returns:
 #### Parameters
 | Name | In | Description | Required |
 |------|----|-------------|----------|
+| value | query | Value of the misuration | Required |
+| misurator_id | query | Id of the connected misurator | Required |
 
 ##### Request Body
 | Field | Type | Description | Required |
 |-------|------|-------------|----------|
-| value | integer |  | Required |
-| misurator_id | integer |  | Required |
+| value | integer | Value of the misuration | Required |
+| misurator_id | integer | Id of the connected misurator | Required |
 
 ##### Response (201)
 | Field | Type | Description |
 |-------|------|-------------|
-| value | integer |  |
-| misurator_id | integer |  |
-| id | integer |  |
-| created_at | string |  |
+| value | integer | Value of the misuration |
+| misurator_id | integer | Id of the connected misurator |
+| id | integer | Id of the record |
+| created_at | string | Creation timestamp |
 
 ##### Response (422)
 | Field | Type | Description |
 |-------|------|-------------|
-| detail | array |  |
+| detail | array | Error message |
 
 ---
 
@@ -485,20 +496,20 @@ Returns:
 #### Parameters
 | Name | In | Description | Required |
 |------|----|-------------|----------|
-| misuration_id | path |  | Required |
+| misuration_id | path | Id of the record to find | Required |
 
 ##### Response (200)
 | Field | Type | Description |
 |-------|------|-------------|
-| value | integer |  |
-| misurator_id | integer |  |
-| id | integer |  |
-| created_at | string |  |
+| value | integer | Value of the misuration |
+| misurator_id | integer | Id of the misurator |
+| id | integer | Id of the record |
+| created_at | string | Creation timestamp |
 
 ##### Response (422)
 | Field | Type | Description |
 |-------|------|-------------|
-| detail | array |  |
+| detail | array | Error message |
 
 ---
 
@@ -520,16 +531,17 @@ Returns:
 #### Parameters
 | Name | In | Description | Required |
 |------|----|-------------|----------|
-| zone_id | path |  | Required |
+| zone_id | path | Id of the zone to find | Required |
 
 ##### Response (200)
 | Field | Type | Description |
 |-------|------|-------------|
+| List  | List | List of all misurators of the specified zone |
 
 ##### Response (422)
 | Field | Type | Description |
 |-------|------|-------------|
-| detail | array |  |
+| detail | array | Error message |
 
 ---
 
@@ -552,17 +564,18 @@ Returns:
 #### Parameters
 | Name | In | Description | Required |
 |------|----|-------------|----------|
-| misurator_id | path |  | Required |
-| hours | query | Last X hours | Optional |
+| misurator_id | path | Id of the misurator to find | Required |
+| hours | query | Maximum hours range to check | Optional |
 
 ##### Response (200)
 | Field | Type | Description |
 |-------|------|-------------|
+| List  | List | List of all misurations of a specific misurator in the last 'hours' hours |
 
 ##### Response (422)
 | Field | Type | Description |
 |-------|------|-------------|
-| detail | array |  |
+| detail | array | Error message |
 
 ---
 
@@ -575,9 +588,7 @@ Parameters:
 - N/A
 
 Returns:
-- total zones
-- total misurators
-- total active misurators
+- List of stats of all zones
 
 | Method | URL |
 |--------|-----|
@@ -587,9 +598,15 @@ Returns:
 | Name | In | Description | Required |
 |------|----|-------------|----------|
 
+
 ##### Response (200)
 | Field | Type | Description |
 |-------|------|-------------|
+| List  | List | List of all zones with these attributes: |
+| zone_id | integer | Id of the zone |
+| city | string | Connected city |
+| total_misurators | integer | count of all misurators |
+| active_misurators | integer | count of all active misurators |
 
 ---
 
@@ -616,17 +633,23 @@ Returns:
 #### Parameters
 | Name | In | Description | Required |
 |------|----|-------------|----------|
-| misurator_id | path |  | Required |
-| days | query | Ultimi N giorni | Optional |
+| misurator_id | path | Id of the misurator to find | Required |
+| days | query | Query last 'days' days | Optional |
 
 ##### Response (200)
 | Field | Type | Description |
 |-------|------|-------------|
+| misurator_id | integer | Id of the record |
+| total_misurations | integer | Count of all misurations |
+| avg_value | float | Average misurations value |
+| min_value | integer | Minimum misuration value |
+| max_value | integer | Maximum misuration value |
+| period_days | integer | Total days of misuration |
 
 ##### Response (422)
 | Field | Type | Description |
 |-------|------|-------------|
-| detail | array |  |
+| detail | array | Error message |
 
 ---
 
@@ -646,6 +669,13 @@ Returns:
 ##### Response (200)
 | Field | Type | Description |
 |-------|------|-------------|
+| message | string | App title |
+| version | string | App version |
+| endpoints | List | List of all endpoints of the app - below |
+| zones | string | Zones endpoint |
+| Misurators | string | Misurators endpoint |
+| Misurations | string | Misurations endpoint |
+| Stats | string | Statistics endpoint |
 
 ---
 
@@ -673,5 +703,8 @@ Returns:
 ##### Response (200)
 | Field | Type | Description |
 |-------|------|-------------|
+| status | string | Database status (healthy) |
+| database | string | Database status (connected) |
+| timestamp | DateTime | Check timestamp |
 
 ---
