@@ -84,11 +84,25 @@ class ZoneStats(BaseModel):
     avg_misuration_value: Optional[float] = None
     last_misuration: Optional[datetime] = None
 
+# Alerts schema
+class AlertResponse(BaseModel):
+    zone_id: int
+    is_earthquake_detected: bool
+    measurement_count: int
+    threshold: int
+    time_window_seconds: int
+    timestamp: datetime
+
+    class Config:
+        from_attributes = True
+
 # To eliminate circular importing errors
 Zone_Misurators.model_rebuild()
 Zone_Misurators_Misurations.model_rebuild()
 Misuration_Misurator.model_rebuild()
 Misuration_Misurator_Zone.model_rebuild()
 Misurator_Misurations.model_rebuild()
+
+
 
 

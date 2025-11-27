@@ -7,7 +7,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from fastapi import FastAPI, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, func
 from typing import List, Optional
 from datetime import datetime, timedelta
 from .database import get_db, engine
@@ -17,12 +17,73 @@ import schemas
 # Create tables if they don't exist
 models.Base.metadata.create_all(bind=engine)
 
+# Alert Configuration Constants
+ALERT_THRESHOLD = 10  # Numero minimo di misurazioni per attivare l'allarme
+ALERT_TIME_WINDOW_SECONDS = 5  # Finestra temporale in secondi per il conteggio
+
 # Define the app
 app = FastAPI(
     title="Earthquake Monitoring System",
     description="API to manage zones, misurators and alert_misurations",
     version="1.0.0"
 )
+
+### Alert Detection Endpoint ###
+
+@app.get("/alerts/{zone_id}", response_model=schemas.AlertResponse)
+def check_earthquake_alert(
+    zone_id: int, 
+    db: Session = Depends(get_db)
+):
+    """
+    Verifica se in una zona è in corso un'attività sismica
+    basata sul numero di misurazioni negli ultimi N secondi
+    
+    Parameters:
+    - zone_id: ID della zona da monitorare
+    
+    Returns:
+    - zone_id: ID della zona
+    - is_earthquake_detected: booleano indicante la rilevazione
+    - measurement_count: numero di misurazioni nel periodo
+    - threshold: la soglia configurata
+    - time_window_seconds: la finestra temporale utilizzata
+    - timestamp: data e ora della verifica
+    """
+    
+    # 1. Verifica che la zona esista
+    zone = db.query(models.Zone).filter(models.Zone.id == zone_id).first()
+    if zone is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Zona con ID {zone_id} non trovata"
+        )
+    
+    # 2. Calcola il timestamp di inizio della finestra temporale
+    time_threshold = datetime.utcnow() - timedelta(seconds=ALERT_TIME_WINDOW_SECONDS)
+    
+    # 3. Conta le misurazioni nella zona negli ultimi N secondi
+    # da tutti i misuratori attivi in quella zona
+    measurement_count = db.query(func.count(models.Misuration.id)).\
+        join(models.Misurator, models.Misurator.id == models.Misuration.misurator_id).\
+        filter(
+            models.Misurator.zone_id == zone_id,
+            models.Misuration.created_at >= time_threshold,
+            models.Misurator.active == True
+        ).scalar()
+    
+    # 4. Determina se c'è un terremoto in corso
+    is_earthquake_detected = measurement_count >= ALERT_THRESHOLD
+    
+    # 5. Prepara e restituisce la risposta
+    return schemas.AlertResponse(
+        zone_id=zone_id,
+        is_earthquake_detected=is_earthquake_detected,
+        measurement_count=measurement_count,
+        threshold=ALERT_THRESHOLD,
+        time_window_seconds=ALERT_TIME_WINDOW_SECONDS,
+        timestamp=datetime.utcnow()
+    )
 
 ### Zone endpoints ###
 
@@ -597,6 +658,7 @@ def read_root():
             "zones": "/zones/",
             "misurators": "/misurators/",
             "misurations": "/misurations/",
+            "alerts": "/alerts/{zone_id}",
             "stats": "/stats/zones"
         }
     }
