@@ -34,6 +34,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "eslint": "^8.57.1",
+    "eslint-config-expo": "^55.0.0",
     "react-test-renderer": "19.1.0",
     "typescript": "~5.9.2"
   },

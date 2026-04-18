@@ -45,24 +45,27 @@ ENROLLMENT_TOKEN = os.getenv("ENROLLMENT_TOKEN", "S3cret_Qu4k3_K3y")
 
 class ConnectionManager:
     """Manages active WebSocket connections for broadcasting alerts."""
+    
     def __init__(self):
         self.active_connections: List[WebSocket] = []
 
-    async def connect(self, websocket: WebSocket):
+    async def connect(self, websocket: WebSocket) -> None:
         await websocket.accept()
         self.active_connections.append(websocket)
-        # print(f"📱 Client Connected. Active: {len(self.active_connections)}")
 
-    def disconnect(self, websocket: WebSocket):
+    def disconnect(self, websocket: WebSocket) -> None:
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
 
-    async def broadcast(self, message: str):
+    async def broadcast(self, message: str) -> None:
+        """Pushes a message to all connected clients."""
         for connection in self.active_connections:
             try:
                 await connection.send_text(message)
-            except Exception:
-                pass
+            except Exception as e:
+                # FIX: Log the error instead of 'pass'
+                print(f"⚠️ Warning: Failed to broadcast to a client. Error: {e}")
+                self.disconnect(connection)
 
 ws_manager = ConnectionManager()
 
@@ -114,9 +117,11 @@ class ConnectionManager:
         for connection in self.active_connections:
             try:
                 await connection.send_text(message)
-            except Exception:
-                pass  # Client disconnected abruptly
-
+            except Exception as e:
+                # FIX: We log the error here instead of using 'pass'
+                print(f"⚠️ Client disconnected abruptly. Error: {e}")
+                self.disconnect(connection)
+                
 manager = ConnectionManager()
 
 async def redis_alert_listener() -> None:
@@ -147,7 +152,12 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             await websocket.receive_text()
-    except (WebSocketDisconnect, Exception):
+    except WebSocketDisconnect:
+        # Standard expected disconnection
+        manager.disconnect(websocket)
+    except Exception as e:
+        # FIX: Log unexpected disconnects
+        print(f"⚠️ Unexpected WebSocket error: {e}")
         manager.disconnect(websocket)
 
 # ==========================================

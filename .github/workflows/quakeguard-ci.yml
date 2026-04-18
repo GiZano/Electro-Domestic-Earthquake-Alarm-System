@@ -7,27 +7,47 @@ on:
     branches: [ "main" ]
 
 jobs:
-  system-stress-test:
+  backend-ci:
+    name: Backend Test & Security
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Retrieve the repository content
     - name: Checkout Source Code
       uses: actions/checkout@v3
 
-    # 2. Configure the Python runtime environment
     - name: Setup Python Environment
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
 
-    # 3. Install required Python packages for the test suite
-    - name: Install Test Dependencies
+    # TASK #40: Python Dependency Caching
+    - name: Cache Pip Dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('backend-data-elaborator/api/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install Python Dependencies & Security Tools
       run: |
         python -m pip install --upgrade pip
-        pip install aiohttp ecdsa redis sqlalchemy psycopg2-binary geoalchemy2
+        pip install bandit safety aiohttp ecdsa redis sqlalchemy psycopg2-binary geoalchemy2
+        # Install exact requirements to test against vulnerabilities
+        if [ -f backend-data-elaborator/api/requirements.txt ]; then pip install -r backend-data-elaborator/api/requirements.txt; fi
 
-    # 4. Orchestrate the Docker container stack
+    # TASK #41: Backend Security Auditing
+    - name: Run Bandit (Static Security Linter)
+      run: |
+        # Analyze the src directory for insecure code patterns
+        bandit -r backend-data-elaborator/api/src
+
+    - name: Run Safety (Dependency Vulnerability Scanner)
+      run: |
+        # Check requirements for known CVEs
+        if [ -f backend-data-elaborator/api/requirements.txt ]; then safety check -r backend-data-elaborator/api/requirements.txt; fi
+
+    # Existing Infrastructure Setup
     - name: Initialize Docker Infrastructure
       env:
         POSTGRES_DB: monitoraggio_db
@@ -35,38 +55,66 @@ jobs:
         POSTGRES_PASSWORD: development_pass
         API_PORT: 8000
       run: |
-        # Navigate to the API directory containing the docker-compose configuration
         cd backend-data-elaborator/api
-
-        # Build and start services in detached mode with environment injection
         docker compose up -d --build
-        
-        # Block execution until the PostgreSQL health check passes
         echo "Waiting for database readiness..."
         timeout 30s bash -c 'until docker compose exec -T postgres pg_isready -U developer; do sleep 2; done'
-        
-        # Output running containers for verification
         docker compose ps
 
-    # 5. Execute the Stress Test Suite
+    # Existing Stress Test
     - name: Execute Critical Stress Test
       env:
         API_URL: "http://localhost:8000"
         NUM_SENSORS: 150
         CONCURRENCY_LIMIT: 50
       run: |
-        # Navigate to the working directory
         cd backend-data-elaborator/api
-        
-        # Set PYTHONPATH to the current directory to resolve 'src' and 'tests' modules
         export PYTHONPATH=$PYTHONPATH:.
-        
-        # Execute the stress test module (targeting tests/stress_test.py)
         python -m tests.stress_test
 
-    # 6. Diagnostics (only runs if previous steps fail)
     - name: Retrieve System Logs on Failure
       if: failure()
       run: |
         cd backend-data-elaborator/api
         docker compose logs
+
+  frontend-ci:
+    name: Frontend Lint & Audit
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js Environment
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    # TASK #40: Javascript Dependency Caching
+    - name: Cache Node Modules
+      uses: actions/cache@v3
+      with:
+        path: frontend-mobile-app/node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('frontend-mobile-app/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
+    - name: Install JS Dependencies
+      run: |
+        cd frontend-mobile-app
+        npm install
+
+    # TASK #42: Frontend Security Audit
+    - name: NPM Security Audit
+      run: |
+        cd frontend-mobile-app
+        # Fails the pipeline if vulnerabilities high or critical are found
+        npm audit --audit-level=high
+
+    # TASK #42: Frontend Linting
+    - name: ESLint Code Quality Check
+      run: |
+        cd frontend-mobile-app
+        # Run eslint on all JS/TS files
+        npx eslint . --ext .js,.jsx,.ts,.tsx
