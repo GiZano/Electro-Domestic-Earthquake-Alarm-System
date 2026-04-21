@@ -16,6 +16,7 @@ from typing import List
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
@@ -48,6 +49,11 @@ def wait_for_db(retries: int = 10, delay: int = 3) -> None:
             print(f"⏳ Waiting for DB... ({i+1}/{retries})")
             time.sleep(delay)
     raise Exception("❌ DB Connection Failed after multiple retries.")
+
+def ping_db() -> None:
+    """Synchronous helper to ping the PostgreSQL database."""
+    with engine.connect() as connection:
+        connection.execute(text("SELECT 1"))
 
 wait_for_db()
 models.Base.metadata.create_all(bind=engine)
@@ -145,6 +151,58 @@ async def websocket_endpoint(websocket: WebSocket):
 # ==========================================
 # REST API ENDPOINTS
 # ==========================================
+
+# --- HEALTH CHECK ---
+@app.get("/health", tags=["Observability"])
+async def health_check():
+    """
+    Infrastructure Observability Endpoint.
+    Pings PostgreSQL and Redis concurrently to verify full system health.
+    """
+    health_status = {
+        "status": "ok",
+        "postgres": "connected",
+        "redis": "connected"
+    }
+    http_status_code = status.HTTP_200_OK
+    loop = asyncio.get_running_loop()
+
+    # 1. Define discrete async checks with error logging
+    async def check_postgres():
+        try:
+            await loop.run_in_executor(None, ping_db)
+            return True
+        except Exception as e:
+            print(f"❌ Health Check - Postgres Error: {e}", flush=True)
+            return False
+
+    async def check_redis():
+        try:
+            await redis_client.ping()
+            return True
+        except Exception as e:
+            print(f"❌ Health Check - Redis Error: {e}", flush=True)
+            return False
+
+    # 2. Execute checks concurrently
+    pg_ok, redis_ok = await asyncio.gather(check_postgres(), check_redis())
+
+    # 3. Evaluate results
+    if not pg_ok:
+        health_status["status"] = "error"
+        health_status["postgres"] = "disconnected"
+        http_status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+    if not redis_ok:
+        health_status["status"] = "error"
+        health_status["redis"] = "disconnected"
+        http_status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+    if http_status_code != status.HTTP_200_OK:
+        return JSONResponse(status_code=http_status_code, content=health_status)
+        
+    return health_status
+
 
 @app.post("/zones/", response_model=schemas.Zone, status_code=status.HTTP_201_CREATED, tags=["Registration"])
 def create_zone(zone: schemas.ZoneCreate, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
