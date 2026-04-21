@@ -1,5 +1,5 @@
 """
-QuakeGuard Critical Stress Test Suite v2.2
+QuakeGuard Critical Stress Test Suite v2.3
 ------------------------------------------------------------
 Features:
 - Client-side Semaphore Throttling
@@ -155,24 +155,29 @@ async def run_security_test(session, zone_id, sem) -> TestStats:
 async def verify_persistence_with_polling(session, sensors, sem) -> bool:
     print(f"\n🔍 Phase 3: E2E Verification (Polling Worker)...")
     
-    # Grab the first valid sensor that successfully registered to check its stats
-    test_sensor = sensors[0] 
+    # 1. Robust Selection: Find a sensor that successfully registered AND sent data
+    test_sensor = next((s for s in sensors if s.sensor_id > 0 and s.sent_count > 0), None)
+    
+    if not test_sensor:
+        print("   ❌ E2E Failed: No valid sensors found with sent data to verify.")
+        return False
+        
+    print(f"   👉 Tracking Sensor ID {test_sensor.sensor_id} (Expected readings: {test_sensor.sent_count})")
     
     for attempt in range(POLLING_RETRIES):
-        async with sem:
+        async with sem:  # Keeping inside the loop respects concurrency limits safely
             try:
-                # The session automatically attaches X-API-Key!
                 async with session.get(f"{API_URL}/sensors/{test_sensor.sensor_id}/statistics") as resp:
                     if resp.status == 200:
                         data = await resp.json()
                         readings = data.get("total_readings", 0)
                         
-                        # If readings show up, the Redis worker successfully put it in PostGIS
-                        if readings > 0:
-                            print(f"   ✅ DB Confirmed! Sensor {test_sensor.sensor_id} has {readings} persisted reading(s).")
+                        # 2. Strict Assertion: Ensure ALL sent data was persisted
+                        if readings >= test_sensor.sent_count:
+                            print(f"   ✅ DB Confirmed! All {test_sensor.sent_count} reading(s) securely persisted.")
                             return True
                         else:
-                            print(f"   ⏳ Worker processing... (Attempt {attempt+1}/{POLLING_RETRIES})")
+                            print(f"   ⏳ Worker processing... {readings}/{test_sensor.sent_count} (Attempt {attempt+1}/{POLLING_RETRIES})")
                     else:
                         print(f"   ⚠️ API Error: Expected 200, got {resp.status}")
                         return False
