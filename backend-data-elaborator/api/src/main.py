@@ -3,7 +3,7 @@ QuakeGuard Backend Service API
 -------------------------------
 Core API Gateway.
 Responsibilities:
-1. IoT Data Ingestion (ECDSA Validation).
+1. IoT Data Ingestion.
 2. Data Retrieval (REST).
 3. Real-Time Alert Distribution (Redis Pub/Sub -> WebSocket).
 """
@@ -11,70 +11,33 @@ Responsibilities:
 import json
 import asyncio
 import time
-import hashlib
-from datetime import datetime
+import os
 from typing import List
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc, text
+from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from redis import asyncio as aioredis
-
-# --- CRYPTOGRAPHY ---
-from ecdsa import VerifyingKey, NIST256p
-from ecdsa.util import sigdecode_der, sigdecode_string
 from geoalchemy2.elements import WKTElement
 
 # --- LOCAL MODULES ---
 from src.database import get_db, engine
 import src.models as models
 import src.schemas as schemas
+from src.security import verify_api_key, validate_iot_payload  # <--- IMPORTED SECURITY
 
 # --- CONFIGURATION ---
-MAX_TIMESTAMP_SKEW = 60
-REDIS_URL = "redis://redis:6379/0"
-
-# ⚠️ SECURITY: Shared Secret for Device Provisioning (Must match Firmware)
-ENROLLMENT_TOKEN = os.getenv("ENROLLMENT_TOKEN", "S3cret_Qu4k3_K3y")
-
-# ==========================================
-# WEBSOCKET CONNECTION MANAGER
-# ==========================================
-
-class ConnectionManager:
-    """Manages active WebSocket connections for broadcasting alerts."""
-    
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
-
-    async def connect(self, websocket: WebSocket) -> None:
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    def disconnect(self, websocket: WebSocket) -> None:
-        if websocket in self.active_connections:
-            self.active_connections.remove(websocket)
-
-    async def broadcast(self, message: str) -> None:
-        """Pushes a message to all connected clients."""
-        for connection in self.active_connections:
-            try:
-                await connection.send_text(message)
-            except Exception as e:
-                # FIX: Log the error instead of 'pass'
-                print(f"⚠️ Warning: Failed to broadcast to a client. Error: {e}")
-                self.disconnect(connection)
-
-ws_manager = ConnectionManager()
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+MOBILE_WS_TOKEN = os.getenv("MOBILE_WS_TOKEN", "SecretMobileAppToken2024")
 
 # ==========================================
 # INFRASTRUCTURE INITIALIZATION
 # ==========================================
 
 def wait_for_db(retries: int = 10, delay: int = 3) -> None:
-    """Blocks startup until the PostgreSQL database is ready."""
     print("Checking Database connection...")
     for i in range(retries):
         try:
@@ -87,45 +50,48 @@ def wait_for_db(retries: int = 10, delay: int = 3) -> None:
             time.sleep(delay)
     raise Exception("❌ DB Connection Failed after multiple retries.")
 
-# 1. Initialize Database
+def ping_db() -> None:
+    """Synchronous helper to ping the PostgreSQL database."""
+    with engine.connect() as connection:
+        connection.execute(text("SELECT 1"))
+
 wait_for_db()
 models.Base.metadata.create_all(bind=engine)
-
-# 2. Initialize Redis Client (Async)
-redis_client = aioredis.from_url("redis://redis:6379/0", decode_responses=True)
+redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
 
 # ==========================================
 # REAL-TIME NOTIFICATION SYSTEM (PUBSUB)
 # ==========================================
 
 class ConnectionManager:
-    """Manages active WebSocket connections for broadcasting alerts."""
-    
     def __init__(self):
         self.active_connections: List[WebSocket] = []
 
     async def connect(self, websocket: WebSocket) -> None:
         await websocket.accept()
         self.active_connections.append(websocket)
+        print(f"📱 Client Connected. Active: {len(self.active_connections)}")
 
     def disconnect(self, websocket: WebSocket) -> None:
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
+            print(f"📱 Client Disconnected. Active: {len(self.active_connections)}")
 
     async def broadcast(self, message: str) -> None:
-        """Pushes a message to all connected clients."""
+        dead_connections = []
         for connection in self.active_connections:
             try:
                 await connection.send_text(message)
             except Exception as e:
-                # FIX: We log the error here instead of using 'pass'
-                print(f"⚠️ Client disconnected abruptly. Error: {e}")
-                self.disconnect(connection)
+                print(f"⚠️ Failed to broadcast to a client: {e}")
+                dead_connections.append(connection)
                 
+        for dead in dead_connections:
+            self.disconnect(dead)
+
 manager = ConnectionManager()
 
 async def redis_alert_listener() -> None:
-    """Background Task: Subscribes to Redis 'quake_alerts' and broadcasts."""
     pubsub = redis_client.pubsub()
     await pubsub.subscribe("quake_alerts")
     print("🎧 Redis Pub/Sub Listener active on channel: 'quake_alerts'")
@@ -137,67 +103,109 @@ async def redis_alert_listener() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Manages the startup and shutdown lifecycle of the FastAPI app."""
     listener_task = asyncio.create_task(redis_alert_listener())
     yield
     listener_task.cancel()
 
-# 3. Initialize FastAPI
+# Initialize FastAPI
 app = FastAPI(title="QuakeGuard Backend", version="2.2.0", lifespan=lifespan)
+
+# ==========================================
+# MIDDLEWARE
+# ==========================================
+
+async def rate_limiter(request: Request):
+    """Fixed-window rate limiter using Redis."""
+    client_ip = request.client.host
+    current_second = int(time.time())
+    key = f"rate_limit:{client_ip}:{current_second}"
+    
+    request_count = await redis_client.incr(key)
+    if request_count == 1:
+        await redis_client.expire(key, 5) 
+        
+    if request_count > 50:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Rate limit exceeded. Too many requests from this IP."
+        )
+
+# ==========================================
+# WEBSOCKET ENDPOINT
+# ==========================================
 
 @app.websocket("/ws/alerts")
 async def websocket_endpoint(websocket: WebSocket):
-    """Clients connect here to receive real-time updates."""
+    token = websocket.query_params.get("token")
+    if token != MOBILE_WS_TOKEN:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+        
     await manager.connect(websocket)
     try:
         while True:
             await websocket.receive_text()
-    except WebSocketDisconnect:
-        # Standard expected disconnection
+    except (WebSocketDisconnect, Exception):
         manager.disconnect(websocket)
-    except Exception as e:
-        # FIX: Log unexpected disconnects
-        print(f"⚠️ Unexpected WebSocket error: {e}")
-        manager.disconnect(websocket)
-
-# ==========================================
-# UTILITY: CRYPTO VERIFICATION
-# ==========================================
-
-def verify_device_signature(public_key_hex: str, message: str, signature_hex: str) -> bool:
-    """
-    Verifies ECDSA signature (NIST256p + SHA256).
-    Supports DER (MbedTLS) and RAW formats.
-    """
-    if not public_key_hex or not signature_hex:
-        return False
-        
-    try:
-        key_bytes = bytes.fromhex(public_key_hex)
-        sig_bytes = bytes.fromhex(signature_hex)
-        message_bytes = message.encode('utf-8')
-
-        try:
-            vk = VerifyingKey.from_der(key_bytes)
-        except Exception:
-            vk = VerifyingKey.from_string(key_bytes, curve=NIST256p)
-        
-        try:
-            return vk.verify(sig_bytes, message_bytes, sigdecode=sigdecode_der, hashfunc=hashlib.sha256)
-        except Exception:
-            try:
-                return vk.verify(sig_bytes, message_bytes, sigdecode=sigdecode_string, hashfunc=hashlib.sha256)
-            except Exception:
-                return False
-    except Exception:
-        return False
 
 # ==========================================
 # REST API ENDPOINTS
 # ==========================================
 
+# --- HEALTH CHECK ---
+@app.get("/health", tags=["Observability"])
+async def health_check():
+    """
+    Infrastructure Observability Endpoint.
+    Pings PostgreSQL and Redis concurrently to verify full system health.
+    """
+    health_status = {
+        "status": "ok",
+        "postgres": "connected",
+        "redis": "connected"
+    }
+    http_status_code = status.HTTP_200_OK
+    loop = asyncio.get_running_loop()
+
+    # 1. Define discrete async checks with error logging
+    async def check_postgres():
+        try:
+            await loop.run_in_executor(None, ping_db)
+            return True
+        except Exception as e:
+            print(f"❌ Health Check - Postgres Error: {e}", flush=True)
+            return False
+
+    async def check_redis():
+        try:
+            await redis_client.ping()
+            return True
+        except Exception as e:
+            print(f"❌ Health Check - Redis Error: {e}", flush=True)
+            return False
+
+    # 2. Execute checks concurrently
+    pg_ok, redis_ok = await asyncio.gather(check_postgres(), check_redis())
+
+    # 3. Evaluate results
+    if not pg_ok:
+        health_status["status"] = "error"
+        health_status["postgres"] = "disconnected"
+        http_status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+    if not redis_ok:
+        health_status["status"] = "error"
+        health_status["redis"] = "disconnected"
+        http_status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+    if http_status_code != status.HTTP_200_OK:
+        return JSONResponse(status_code=http_status_code, content=health_status)
+        
+    return health_status
+
+
 @app.post("/zones/", response_model=schemas.Zone, status_code=status.HTTP_201_CREATED, tags=["Registration"])
-def create_zone(zone: schemas.ZoneCreate, db: Session = Depends(get_db)):
+def create_zone(zone: schemas.ZoneCreate, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
     existing = db.query(models.Zone).filter(models.Zone.city == zone.city).first()
     if existing:
         return existing 
@@ -209,11 +217,11 @@ def create_zone(zone: schemas.ZoneCreate, db: Session = Depends(get_db)):
     return db_zone
 
 @app.get("/zones/", response_model=List[schemas.Zone], tags=["Data Retrieval"])
-def get_zones(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def get_zones(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
     return db.query(models.Zone).offset(skip).limit(limit).all()
 
 @app.post("/misurators/", response_model=schemas.Misurator, status_code=status.HTTP_201_CREATED, tags=["Registration"])
-def create_misurator(misurator: schemas.MisuratorCreate, db: Session = Depends(get_db)):
+def create_misurator(misurator: schemas.MisuratorCreate, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
     existing = db.query(models.Misurator).filter(models.Misurator.public_key_hex == misurator.public_key_hex).first()
     if existing:
         return existing
@@ -237,60 +245,30 @@ def create_misurator(misurator: schemas.MisuratorCreate, db: Session = Depends(g
     return db_misurator
 
 @app.get("/misurators/", response_model=List[schemas.Misurator], tags=["Data Retrieval"])
-def get_misurators(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def get_misurators(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
     return db.query(models.Misurator).offset(skip).limit(limit).all()
 
-@app.post("/misurations/", status_code=status.HTTP_202_ACCEPTED, tags=["Ingestion"])
-async def create_misuration_async(misuration: schemas.MisurationCreate, db: Session = Depends(get_db)):
-    misurator = db.query(models.Misurator).filter(models.Misurator.id == misuration.misurator_id).first()
-    if not misurator or not misurator.active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sensor unauthorized")
-
-    # 1. Reconstruct Message
-    message = f"{misuration.value}:{int(misuration.device_timestamp)}"
+@app.post("/misurations/", status_code=status.HTTP_202_ACCEPTED, tags=["Ingestion"], dependencies=[Depends(rate_limiter)])
+async def create_misuration_async(
+    # 💡 MAGIC HAPPENS HERE: validate_iot_payload handles all cryptography, replay checks, and API Key checks!
+    valid_data: dict = Depends(validate_iot_payload)
+):
+    # Extract the validated objects returned from our security module
+    misuration = valid_data["misuration"]
+    misurator = valid_data["misurator"]
     
-    # 2. Verify Signature
-    loop = asyncio.get_running_loop()
-    is_valid = await loop.run_in_executor(None, verify_device_signature, misurator.public_key_hex, message, misuration.signature_hex)
-
-    if not is_valid:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid digital signature")
-
-    # 3. Check Replay Attack
-    if abs(time.time() - misuration.device_timestamp) > 60:
-         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Replay Attack Detected: Timestamp invalid")
-
-    # 4. Enqueue for Worker
+    # Enqueue for Worker
     payload = misuration.model_dump()
-    payload['zone_id'] = misurator.zone_id 
-    await redis_client.lpush("seismic_events", json.dumps(payload))
+    payload['zone_id'] = misurator.zone_id
     
+    # Offload to the Redis queue
+    await redis_client.lpush("seismic_events", json.dumps(payload))
     return {"status": "accepted"}
 
-@app.get("/zones/{zone_id}/alerts", response_model=List[schemas.AlertResponse], tags=["Data Retrieval"])
-def get_zone_alerts(zone_id: int, limit: int = 10, db: Session = Depends(get_db)):
-    return db.query(models.Alert).filter(models.Alert.zone_id == zone_id).order_by(desc(models.Alert.timestamp)).limit(limit).all()
-
-@app.get("/sensors/{misurator_id}/statistics", tags=["Analytics"])
-def get_sensor_statistics(misurator_id: int, db: Session = Depends(get_db)):
-    sensor = db.query(models.Misurator).filter(models.Misurator.id == misurator_id).first()
-    if not sensor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sensor not found")
-    
-    stats = db.query(
-        func.count(models.Misuration.id).label("count"),
-        func.avg(models.Misuration.value).label("average"),
-        func.max(models.Misuration.value).label("max_value"),
-        func.min(models.Misuration.value).label("min_value")
-    ).filter(models.Misuration.misurator_id == misurator_id).first()
-    
+@app.get("/sensors/{id}/statistics", tags=["Data Retrieval"])
+def get_sensor_statistics(id: int, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+    count = db.query(models.Misuration).filter(models.Misuration.misurator_id == id).count()
     return {
-        "misurator_id": misurator_id, "total_readings": stats.count,
-        "average_value": round(stats.average, 2) if stats.average else 0.0,
-        "max_recorded": stats.max_value, "min_recorded": stats.min_value,
-        "generated_at": datetime.utcnow().isoformat()
+        "sensor_id": id,
+        "total_readings": count
     }
-
-@app.get("/health", tags=["System"])
-async def health_check():
-    return {"status": "ok"}

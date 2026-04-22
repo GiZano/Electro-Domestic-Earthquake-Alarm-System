@@ -1,78 +1,71 @@
-"""
-QuakeGuard Background Worker
------------------------------
-Consumes seismic events from the Redis queue, persists data to PostgreSQL,
-and detects critical seismic thresholds to generate persistent Alerts.
-"""
-
+import os
 import json
-import redis
 import time
-from datetime import datetime
-from typing import Dict, Any
+from datetime import datetime, timezone
+import redis
+from sqlalchemy.orm import Session
+from src.database import SessionLocal, engine
+from src.models import Misuration
 
-from src.database import SessionLocal
-from src.models import Misuration, Alert
+# Redis Config
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+redis_sync = redis.from_url(REDIS_URL, decode_responses=True)
 
-# --- CONFIGURATION ---
-REDIS_HOST = 'redis'
-REDIS_PORT = 6379
-ALERT_THRESHOLD = 50       
-ALERT_WINDOW_SECONDS = 10  
-ALERT_COOLDOWN = 60        
-
-redis_sync = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0, decode_responses=True)
-
-def process_event(event: Dict[str, Any]) -> None:
-    """Processes a single seismic event from the queue."""
-    zone_id = event['zone_id']
+def process_event(event: dict, db: Session):
+    """Inserts a single sensor measurement into PostGIS and triggers alerts."""
     
-    with SessionLocal() as db:
-        # 1. Persist raw measurement
-        new_misuration = Misuration(
-            value=event['value'],
-            misurator_id=event['misurator_id']
-        )
-        db.add(new_misuration)
-        
-        # 2. Update real-time alert counter
-        zone_counter_key = f"zone:{zone_id}:alerts"
-        pipe = redis_sync.pipeline()
-        pipe.incr(zone_counter_key)
-        pipe.expire(zone_counter_key, ALERT_WINDOW_SECONDS) 
-        current_count = pipe.execute()[0]
+    # 1. Save to Database
+    new_entry = Misuration(
+        value=event.get("value"),
+        misurator_id=event.get("misurator_id")
+    )
+    db.add(new_entry)
+    db.commit()
 
-        # 3. Check Threshold & Generate Alert
-        if current_count >= ALERT_THRESHOLD:
-            cooldown_key = f"zone:{zone_id}:alarm_cooldown"
-            
-            if not redis_sync.exists(cooldown_key):
-                print(f"🚨 CRITICAL ALARM! Zone {zone_id} has {current_count} events!")
-                
-                new_alert = Alert(
-                    zone_id=zone_id,
-                    severity=float(current_count) / 10.0, 
-                    message=f"Seismic Swarm Detected: {current_count} sensors triggered.",
-                    timestamp=datetime.utcnow()
-                )
-                db.add(new_alert)
-                redis_sync.setex(cooldown_key, ALERT_COOLDOWN, "active")
+    # 2. 🚨 ALARM LOGIC: Check if threshold is breached
+    # The stress test sends random values between 100 and 999.
+    # Let's trigger a CRITICAL alert if a reading exceeds 850.
+    sensor_value = event.get("value", 0)
+    
+    if sensor_value > 850:
+        # Create the exact JSON schema the Mobile App is expecting
+        alert_payload = {
+            "type": "CRITICAL",
+            "zone_id": event.get("zone_id", 0),
+            "magnitude": round(sensor_value / 100, 1), # Faux magnitude calculation (e.g. 8.5)
+            "message": f"High seismic activity detected (Sensor {event.get('misurator_id')})!",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
         
-        db.commit()
+        # Publish to the channel that FastAPI is listening to
+        redis_sync.publish("quake_alerts", json.dumps(alert_payload))
+        print(f"🚨 ALERT PUBLISHED: Zone {event.get('zone_id')} - Mag {alert_payload['magnitude']}", flush=True)
 
-def run_worker() -> None:
-    """Continuous loop consuming messages."""
-    print(f"👷 Worker started. Threshold: {ALERT_THRESHOLD} events / {ALERT_WINDOW_SECONDS}s")
+def run_worker():
+    print("👷 Worker started. Listening for 'seismic_events'...")
+    db = SessionLocal()
     
     while True:
         try:
-            _, data = redis_sync.brpop("seismic_events")
-            event = json.loads(data)
-            process_event(event)
+            # Block until data is available in the queue
+            result = redis_sync.brpop("seismic_events", timeout=0)
+            if result:
+                _, data = result
+                event = json.loads(data)
+                
+                try:
+                    process_event(event, db)
+                    print(f"✅ Processed sensor {event.get('misurator_id')} -> {event.get('value')}", flush=True)
+                except Exception as e:
+                    print(f"❌ DB Error: {e}. Moving to DLQ.", flush=True)
+                    db.rollback()
+                    redis_sync.lpush("seismic_events_dlq", data)
+                    
         except Exception as e:
-            print(f"❌ Error processing event: {e}")
-            time.sleep(1)
+            print(f"❌ Redis Connection Error: {e}", flush=True)
+            time.sleep(2)
 
 if __name__ == "__main__":
-    time.sleep(5)  # Warm-up delay to let Postgres initialize
+    # Wait for DB to be ready
+    time.sleep(5) 
     run_worker()

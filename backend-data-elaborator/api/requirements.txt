@@ -9,3 +9,5 @@ shapely>=2.0.0
 ecdsa>=0.18.0
 redis>=5.0.0
 hiredis>=2.2.0
+websockets>=11.0.3
+aiohttp
