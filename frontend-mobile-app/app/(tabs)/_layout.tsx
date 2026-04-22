@@ -1,8 +1,13 @@
 import { Tabs } from "expo-router";
-import { Map, ShieldCheck } from "lucide-react-native";
+import { Map, ShieldCheck, Settings } from "lucide-react-native";
 import React from "react";
+// 💡 IMPORT THE INSETS HOOK
+import { useSafeAreaInsets } from "react-native-safe-area-context"; 
 
 export default function TabLayout() {
+  // 💡 GET SYSTEM DIMENSIONS
+  const insets = useSafeAreaInsets(); 
+
   return (
     <Tabs
       screenOptions={{
@@ -10,8 +15,9 @@ export default function TabLayout() {
         tabBarActiveTintColor: "#dc2626", // Red color for active state
         tabBarInactiveTintColor: "#6b7280", // Gray color for inactive state
         tabBarStyle: {
-          paddingBottom: 5,
-          height: 60,
+          // 💡 DYNAMICALLY ADD SYSTEM INSETS TO OUR BASE VALUES
+          paddingBottom: 5 + insets.bottom, 
+          height: 60 + insets.bottom,       
           borderTopWidth: 1,
           borderTopColor: "#e5e7eb",
         },
@@ -35,6 +41,14 @@ export default function TabLayout() {
         options={{
           title: "Sensors",
           tabBarIcon: ({ color }) => <Map size={28} color={color} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Settings",
+          tabBarIcon: ({ color }) => <Settings size={28} color={color} />,
         }}
       />
     </Tabs>
