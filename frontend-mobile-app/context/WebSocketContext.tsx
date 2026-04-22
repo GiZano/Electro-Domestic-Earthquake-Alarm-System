@@ -8,7 +8,8 @@ import React, {
   useCallback,
 } from "react";
 import { Vibration } from "react-native";
-import { API_BASE_URL } from "../constants/config";
+// 💡 IMPORT MOBILE_WS_TOKEN HERE
+import { API_BASE_URL, MOBILE_WS_TOKEN } from "../constants/config";
 
 // --- TYPES & INTERFACES ---
 export interface AlertMessage {
@@ -40,14 +41,15 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [lastAlert, setLastAlert] = useState<AlertMessage | null>(null);
   
   const ws = useRef<WebSocket | null>(null);
-  const reconnectTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);  const reconnectAttempts = useRef<number>(0);
+  const reconnectTimeout = useRef<ReturnType<typeof setTimeout> | null>(null); 
+  const reconnectAttempts = useRef<number>(0);
   
-
   const connect = useCallback(() => {
     // Prevent multiple simultaneous connections
     if (ws.current?.readyState === WebSocket.OPEN) return;
 
-    const wsUrl = API_BASE_URL.replace("http", "ws") + "/ws/alerts";
+    // 💡 USE THE IMPORTED TOKEN HERE
+    const wsUrl = `${API_BASE_URL.replace("http", "ws")}/ws/alerts?token=${MOBILE_WS_TOKEN}`;
     console.log(`🔌 Attempting WS Connection: ${wsUrl}`);
 
     ws.current = new WebSocket(wsUrl);

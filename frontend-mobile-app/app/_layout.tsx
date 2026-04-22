@@ -5,7 +5,14 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { WebSocketProvider } from "../context/WebSocketContext";
 
+// 1. Import TanStack Query essentials
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 SplashScreen.preventAutoHideAsync();
+
+// 2. Instantiate the QueryClient
+// This holds the global cache for all your network requests
+const queryClient = new QueryClient();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -25,11 +32,13 @@ export default function RootLayout() {
   if (!loaded) return null;
 
   return (
-    // ABBRACCIO L'APP COL PROVIDER
-    <WebSocketProvider>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
-    </WebSocketProvider>
+    // 3. Wrap the app with the QueryClientProvider
+    <QueryClientProvider client={queryClient}>
+      <WebSocketProvider>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        </Stack>
+      </WebSocketProvider>
+    </QueryClientProvider>
   );
 }
