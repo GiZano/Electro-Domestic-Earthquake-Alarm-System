@@ -77,8 +77,6 @@ class Misuration(BaseModel):
     id: int
     value: int
     misurator_id: int
-    device_timestamp: int
-    server_timestamp: datetime
-    signature_hex: str
+    recorded_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
