@@ -13,7 +13,12 @@ import src.models as models
 import src.schemas as schemas
 
 # --- CONFIGURATION ---
-IOT_API_KEY = os.getenv("IOT_API_KEY", "SuperSecretIoTKey2024")
+IOT_API_KEY = os.getenv("IOT_API_KEY")
+
+# Define the Security Scheme for Swagger UI
+api_key_scheme = APIKeyHeader(name="X-API-Key", auto_error=False)
+if not IOT_API_KEY:
+    raise RuntimeError("🚨 CRITICAL STARTUP ERROR: 'IOT_API_KEY' environment variable is not set!")
 
 # Define the Security Scheme for Swagger UI
 api_key_scheme = APIKeyHeader(name="X-API-Key", auto_error=False)

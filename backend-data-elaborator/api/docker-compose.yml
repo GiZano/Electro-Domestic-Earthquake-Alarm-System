@@ -34,6 +34,8 @@ services:
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - REDIS_URL=redis://redis:6379/0
+      - IOT_API_KEY=${IOT_API_KEY}
+      - MOBILE_WS_TOKEN=${MOBILE_WS_TOKEN}
     depends_on:
       postgres:
         condition: service_healthy

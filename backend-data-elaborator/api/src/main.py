@@ -27,11 +27,14 @@ from geoalchemy2.elements import WKTElement
 from src.database import get_db, engine
 import src.models as models
 import src.schemas as schemas
-from src.security import verify_api_key, validate_iot_payload  # <--- IMPORTED SECURITY
+from src.security import verify_api_key, validate_iot_payload
 
-# --- CONFIGURATION ---
+# --- SECURE CONFIGURATION ---
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
-MOBILE_WS_TOKEN = os.getenv("MOBILE_WS_TOKEN", "SecretMobileAppToken2024")
+
+MOBILE_WS_TOKEN = os.getenv("MOBILE_WS_TOKEN")
+if not MOBILE_WS_TOKEN:
+    raise RuntimeError("🚨 CRITICAL STARTUP ERROR: 'MOBILE_WS_TOKEN' environment variable is not set!")
 
 # ==========================================
 # INFRASTRUCTURE INITIALIZATION
