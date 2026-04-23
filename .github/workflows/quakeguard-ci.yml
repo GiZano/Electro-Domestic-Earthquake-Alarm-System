@@ -118,3 +118,45 @@ jobs:
         cd frontend-mobile-app
         # Run eslint on all JS/TS files
         npx eslint . --ext .js,.jsx,.ts,.tsx
+
+  # TASK #216: Add iot-ci job
+  iot-ci:
+    name: IoT Firmware Build Validation
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v3
+
+    # We use Python to install the official PlatformIO Core CLI
+    - name: Setup Python Environment
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Cache PlatformIO Packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.platformio
+        key: ${{ runner.os }}-pio
+        restore-keys: |
+          ${{ runner.os }}-pio
+
+    # TASK #217: Install PlatformIO Core
+    - name: Install PlatformIO CLI
+      run: |
+        python -m pip install --upgrade pip
+        pip install platformio
+
+    # TASK #219: Inject dummy ENROLLMENT_TOKEN and configs
+    - name: Inject CI Environment Variables
+      run: |
+        cd iot-data-harvester/esp32_code
+        cp esp32_config.env.example esp32_config.env
+
+    # TASK #220: Run pio run to validate compilation
+    - name: Validate Firmware Compilation
+      run: |
+        cd iot-data-harvester/esp32_code
+        # This compiles the firmware based on platformio.ini but does not upload it
+        pio run
