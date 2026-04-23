@@ -20,6 +20,8 @@ jobs:
     steps:
     - name: Checkout Source Code
       uses: actions/checkout@v3
+    - name: Validate Commit Messages
+      uses: wagoid/commitlint-github-action@v5
 
     - name: Setup Python Environment
       uses: actions/setup-python@v4
