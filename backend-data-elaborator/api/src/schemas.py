@@ -80,3 +80,12 @@ class Misuration(BaseModel):
     recorded_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+# ==========================================
+# DEVICE REGISTRATION SCHEMAS
+# ==========================================
+class DeviceRegisterRequest(BaseModel):
+    """Payload sent by the ESP32 during its first boot."""
+    public_key_hex: str = Field(..., description="The generated ECDSA public key")
+    mac_address: str = Field(..., max_length=17, description="The hardware MAC address (e.g., 00:1B:44:11:3A:B7)")
+    enrollment_token: str = Field(..., description="The hardcoded factory enrollment token")

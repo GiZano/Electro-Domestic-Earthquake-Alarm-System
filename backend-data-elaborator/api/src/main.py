@@ -36,6 +36,10 @@ MOBILE_WS_TOKEN = os.getenv("MOBILE_WS_TOKEN")
 if not MOBILE_WS_TOKEN:
     raise RuntimeError("🚨 CRITICAL STARTUP ERROR: 'MOBILE_WS_TOKEN' environment variable is not set!")
 
+ENROLLMENT_TOKEN = os.getenv("ENROLLMENT_TOKEN")
+if not ENROLLMENT_TOKEN:
+    raise RuntimeError("🚨 CRITICAL STARTUP ERROR: 'ENROLLMENT_TOKEN' environment variable is not set!")
+
 # ==========================================
 # INFRASTRUCTURE INITIALIZATION
 # ==========================================
@@ -246,6 +250,52 @@ def create_misurator(misurator: schemas.MisuratorCreate, db: Session = Depends(g
     db.commit()
     db.refresh(db_misurator)
     return db_misurator
+
+@app.post("/devices/register", status_code=status.HTTP_201_CREATED, tags=["Provisioning"])
+def register_device(payload: schemas.DeviceRegisterRequest, db: Session = Depends(get_db)):
+    """
+    Automated Device Handshake.
+    Validates the enrollment token, registers the MAC/Public Key, and returns the assigned ID.
+    """
+    # 1. Validate the hardware token against the secure environment variable
+    if payload.enrollment_token != ENROLLMENT_TOKEN:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid enrollment token")
+
+    # 2. Check if this exact device is already registered (reboot scenario)
+    existing = db.query(models.Misurator).filter(
+        (models.Misurator.mac_address == payload.mac_address) |
+        (models.Misurator.public_key_hex == payload.public_key_hex)
+    ).first()
+
+    if existing:
+        return {"sensor_id": existing.id}
+
+    # 3. Create a fallback Zone if none exist 
+    # TODO: This is a temporary pragmatic workaround for fresh databases.
+    # Supersede and remove this logic once the initial database seeding (Zone seeding) is implemented.
+    default_zone = db.query(models.Zone).first()
+    if not default_zone:
+        default_zone = models.Zone(city="Unassigned Provisioning Zone")
+        db.add(default_zone)
+        db.commit()
+        db.refresh(default_zone)
+
+    # 4. Save the new device
+    new_device = models.Misurator(
+        active=True,
+        zone_id=default_zone.id,
+        latitude=0.0,  # Default fallback until updated via app
+        longitude=0.0, # Default fallback until updated via app
+        public_key_hex=payload.public_key_hex,
+        mac_address=payload.mac_address
+    )
+    
+    db.add(new_device)
+    db.commit()
+    db.refresh(new_device)
+
+    # 5. Return the exact JSON structure the ESP32 is waiting for!
+    return {"sensor_id": new_device.id}
 
 @app.get("/misurators/", response_model=List[schemas.Misurator], tags=["Data Retrieval"])
 def get_misurators(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
