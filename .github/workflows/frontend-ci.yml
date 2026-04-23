@@ -19,17 +19,17 @@ jobs:
 
     steps:
     - name: Checkout Source Code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Validate Commit Messages
       uses: wagoid/commitlint-github-action@v5
 
     - name: Setup Node.js Environment
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: '18'
 
     - name: Cache Node Modules
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: frontend-mobile-app/node_modules
         key: ${{ runner.os }}-node-${{ hashFiles('frontend-mobile-app/package-lock.json') }}
