@@ -2,7 +2,7 @@
  * Project: QuakeGuard - Professional Seismic Node
  * Version: 3.3.0-PROV-REFACTORED
  * Target Hardware: ESP32-C3 SuperMini + ADXL345
- * Author: GiZano & Prof. Chill
+ * Author: GiZano
  *
  * CHANGELOG:
  * - Merged v3.2.0 Automated Device Handshake (Provisioning) with v3.0.0 FreeRTOS Refactoring.
@@ -25,6 +25,7 @@
 #include "mbedtls/ecdsa.h"
 #include "mbedtls/pk.h"
 #include "mbedtls/error.h"
+#include "RingBuffer.h"
 
 // --------------------------------------------------------------------------
 // HARDWARE & SERVER CONFIGURATION
@@ -34,7 +35,7 @@ constexpr int I2C_SCL_PIN = 8;
 constexpr int I2C_CLOCK_SPEED = 100000;
 
 #ifndef SERVER_HOST
-  #define SERVER_HOST "192.168.1.50"
+  #define SERVER_HOST "10.228.201.82"
 #endif
 #ifndef SERVER_PORT
   #define SERVER_PORT 8000
@@ -46,7 +47,15 @@ constexpr int I2C_CLOCK_SPEED = 100000;
   #define SERVER_REGISTER_PATH "/devices/register"
 #endif
 
-#define ENROLLMENT_TOKEN "S3cret_Qu4k3_K3y" 
+#ifndef ENROLLMENT_TOKEN
+  #ifndef __INTELLISENSE__ 
+    // 1. If the REAL compiler doesn't see the token, crash the build to protect us!
+    #error "🚨 CRITICAL BUILD ERROR: ENROLLMENT_TOKEN is missing! Add it to esp32_config.env"
+  #else 
+    // 2. If VSCode's UI is looking at the file, give it a fake token so it stops crying on line 168!
+    #define ENROLLMENT_TOKEN "vscode_dummy_token"
+  #endif
+#endif
 
 // Global Dynamic Sensor ID
 int globalSensorID = 0;
@@ -193,19 +202,18 @@ bool performProvisioning() {
 // TASK 1: SENSOR ACQUISITION
 // --------------------------------------------------------------------------
 void sensorTask(void *pvParameters) {
-    float lta = 0.0f, sta = 0.0f, prev_raw_mag = 9.81f, filtered_mag = 0.0f;
+    float prev_raw_mag = 9.81f, filtered_mag = 0.0f;
     sensors_event_t event;
 
-    Serial.println("[SENSOR] Task Active. Stabilizing...");
-    for(int i = 0; i < 20; i++) {
-        accel.getEvent(&event);
-        float mag = sqrt(pow(event.acceleration.x, 2) + pow(event.acceleration.y, 2) + pow(event.acceleration.z, 2));
-        lta = sta = mag;
-        vTaskDelay(pdMS_TO_TICKS(10));
-    }
+    // Instantiate our strict rolling window buffers!
+    // At 100Hz: STA = 1 second, LTA = 10 seconds
+    RingBuffer<100> staBuffer;
+    RingBuffer<1000> ltaBuffer;
 
+    Serial.println("[SENSOR] Task Active. Stabilizing and filling buffers...");
+    
     TickType_t xLastWakeTime = xTaskGetTickCount();
-    const TickType_t xFrequency = pdMS_TO_TICKS(10); 
+    const TickType_t xFrequency = pdMS_TO_TICKS(10); // Exactly 100Hz
 
     bool inAlarm = false;
     unsigned long alarmStart = 0;
@@ -215,17 +223,32 @@ void sensorTask(void *pvParameters) {
         accel.getEvent(&event);
         float raw_mag = sqrt(pow(event.acceleration.x, 2) + pow(event.acceleration.y, 2) + pow(event.acceleration.z, 2));
 
+        // High Pass Filter to remove gravity
         filtered_mag = HPF_ALPHA * (filtered_mag + raw_mag - prev_raw_mag);
         prev_raw_mag = raw_mag;
         float abs_signal = abs(filtered_mag);
 
         if (abs_signal < NOISE_FLOOR) abs_signal = 0.0f;
 
-        lta = (ALPHA_LTA * abs_signal) + ((1.0f - ALPHA_LTA) * lta);
-        sta = (ALPHA_STA * abs_signal) + ((1.0f - ALPHA_STA) * sta);
-        if (lta < 0.05f) lta = 0.05f; 
+        // Push the clean signal into our circular buffers
+        staBuffer.push(abs_signal);
+        ltaBuffer.push(abs_signal);
+
+        // Wait until the Long-Term window is fully populated before triggering alarms
+        if (!ltaBuffer.isFull()) {
+            continue; 
+        }
+
+        float sta = staBuffer.average();
+        float lta = ltaBuffer.average();
+        
+        // Prevent division by zero if LTA drops too low
+        if (lta < 0.01f) lta = 0.01f; 
 
         float ratio = sta / lta;
+
+        // DEBUG: Uncomment this line to view the rolling windows in the Serial Plotter!
+        // Serial.printf("Signal:%.3f,STA:%.3f,LTA:%.3f,Ratio:%.2f\n", abs_signal, sta, lta, ratio);
 
         if (ratio >= TRIGGER_RATIO && sta > NOISE_FLOOR && !inAlarm) {
             Serial.printf("[SENSOR] EARTHQUAKE! Ratio: %.2f (Mag: %.3f G)\n", ratio, sta);
@@ -348,7 +371,7 @@ void setup() {
     accel.setRange(ADXL345_RANGE_16_G);
 
     eventQueue = xQueueCreate(20, sizeof(SeismicEvent));
-    xTaskCreate(sensorTask, "SensorTask", 4096, NULL, 5, NULL);
+    xTaskCreate(sensorTask, "SensorTask", 8192, NULL, 5, NULL);
     xTaskCreate(networkTask, "NetworkTask", 8192, NULL, 1, NULL);
 
     Serial.println("[SYS] System Running.");

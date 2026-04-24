@@ -1,0 +1,52 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+    paths:
+      - 'frontend-mobile-app/**'
+      - '.github/workflows/frontend-ci.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'frontend-mobile-app/**'
+      - '.github/workflows/frontend-ci.yml'
+
+jobs:
+  frontend-ci:
+    name: Frontend Lint & Audit
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+    - name: Validate Commit Messages
+      uses: wagoid/commitlint-github-action@v5
+
+    - name: Setup Node.js Environment
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Cache Node Modules
+      uses: actions/cache@v4
+      with:
+        path: frontend-mobile-app/node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('frontend-mobile-app/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
+    - name: Install JS Dependencies
+      run: |
+        cd frontend-mobile-app
+        npm install
+
+    - name: NPM Security Audit
+      run: |
+        cd frontend-mobile-app
+        npm audit --audit-level=high
+
+    - name: ESLint Code Quality Check
+      run: |
+        cd frontend-mobile-app
+        npx eslint . --ext .js,.jsx,.ts,.tsx
