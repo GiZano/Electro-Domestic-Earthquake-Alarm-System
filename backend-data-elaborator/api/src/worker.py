@@ -66,6 +66,4 @@ def run_worker():
             time.sleep(2)
 
 if __name__ == "__main__":
-    # Wait for DB to be ready
-    time.sleep(5) 
     run_worker()
