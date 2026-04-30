@@ -4,6 +4,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { WebSocketProvider } from "../context/WebSocketContext";
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 // 1. Import TanStack Query essentials
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -34,11 +35,13 @@ export default function RootLayout() {
   return (
     // 3. Wrap the app with the QueryClientProvider
     <QueryClientProvider client={queryClient}>
-      <WebSocketProvider>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        </Stack>
-      </WebSocketProvider>
+      <SafeAreaProvider>
+        <WebSocketProvider>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          </Stack>
+        </WebSocketProvider>
+      </SafeAreaProvider>
     </QueryClientProvider>
   );
 }

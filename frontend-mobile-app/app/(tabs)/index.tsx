@@ -1,6 +1,7 @@
 import { ShieldAlert, ShieldCheck, Wifi, WifiOff } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -88,7 +89,7 @@ export default function MonitorScreen() {
   const textColor = isAlertActive ? "#991b1b" : "#166534";
 
   return (
-    <View style={[styles.container, { backgroundColor }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
       {/* Connection Status Indicator */}
       <View style={styles.connectionBadge}>
         {isConnected ? (
@@ -140,7 +141,7 @@ export default function MonitorScreen() {
           Network active. Monitoring sensors...
         </Text>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -153,7 +154,7 @@ const styles = StyleSheet.create({
   },
   connectionBadge: {
     position: "absolute",
-    top: 60, // Adjusted for SafeArea
+    top: 20, // Adjusted for SafeArea dynamically
     right: 20,
     flexDirection: "row",
     alignItems: "center",
