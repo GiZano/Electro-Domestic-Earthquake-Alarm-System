@@ -325,3 +325,11 @@ def get_sensor_statistics(id: int, db: Session = Depends(get_db), api_key: str =
         "sensor_id": id,
         "total_readings": count
     }
+
+@app.get("/misurations/", response_model=List[schemas.Misuration], tags=["Data Retrieval"])
+def get_misurations(skip: int = 0, limit: int = 50, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+    """
+    Fetch recent sensor readings. 
+    Used primarily by the frontend dashboard to render the live seismograph.
+    """
+    return db.query(models.Misuration).order_by(models.Misuration.recorded_at.desc()).offset(skip).limit(limit).all()

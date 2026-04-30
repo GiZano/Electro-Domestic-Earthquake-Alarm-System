@@ -11,7 +11,7 @@
     "scope-enum": [
       2,
       "always",
-      ["backend", "frontend", "iot", "ci", "deps", "core"]
+      ["backend", "frontend", "iot", "ci", "deps", "core", "style"]
     ]
   }
 }
