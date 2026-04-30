@@ -15,6 +15,7 @@ import { useWebSocket } from "../../context/WebSocketContext";
 import { useSensors, useRecentReadings } from "../../api/hooks/useDashboard";
 import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 import { ErrorBanner } from "../../components/ErrorBanner";
+import { AlertHistoryList } from "../../components/AlertHistoryList";
 
 export default function MonitorScreen() {
   const { isConnected, lastAlert } = useWebSocket();
@@ -153,6 +154,9 @@ export default function MonitorScreen() {
                 </View>
               )}
             </View>
+            
+            <AlertHistoryList />
+
           </>
         )}
       </View>

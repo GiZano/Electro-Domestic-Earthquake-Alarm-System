@@ -1,12 +1,37 @@
 import React from "react";
-import { View, Text, StyleSheet, Switch } from "react-native";
+// 💡 IMPORT Alert and TouchableOpacity
+import { View, Text, StyleSheet, Switch, Alert, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Settings as SettingsIcon, Bell, WifiOff } from "lucide-react-native";
+// 💡 ADD Trash2 icon
+import { Settings as SettingsIcon, Bell, WifiOff, Trash2 } from "lucide-react-native";
 import { usePreferencesStore } from "../../store/usePrefrencesStore";
+// 💡 IMPORT the store
+import { useAlertStore } from "../../store/useAlertStore";
 
 export default function SettingsScreen() {
-  // Pulling our global state directly from Zustand!
   const { isOfflineMode, notificationsEnabled, setOfflineMode, toggleNotifications } = usePreferencesStore();
+  // 💡 Consume the orphaned action and the alerts array (to disable the button if empty)
+  const { clearAlerts, alerts } = useAlertStore();
+
+  const handleClearHistory = () => {
+    if (alerts.length === 0) return;
+    
+    Alert.alert(
+      "Clear History",
+      "Are you sure you want to delete all recent alerts?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Clear", 
+          style: "destructive", 
+          onPress: () => {
+            clearAlerts();
+            console.log("[Settings] Alert history cleared.");
+          } 
+        }
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -30,7 +55,8 @@ export default function SettingsScreen() {
             />
           </View>
 
-          <View style={[styles.settingRow, styles.lastRow]}>
+          {/* 💡 Removed styles.lastRow from here */}
+          <View style={styles.settingRow}>
             <View style={styles.settingLabelContainer}>
               <WifiOff size={24} color="#4b5563" />
               <Text style={styles.settingLabel}>Force Offline Mode</Text>
@@ -42,63 +68,36 @@ export default function SettingsScreen() {
               thumbColor={isOfflineMode ? "#dc2626" : "#9ca3af"}
             />
           </View>
+
+          {/* 💡 NEW ROW: Clear History */}
+          <TouchableOpacity 
+            style={[styles.settingRow, styles.lastRow]} 
+            onPress={handleClearHistory}
+            disabled={alerts.length === 0}
+          >
+            <View style={styles.settingLabelContainer}>
+              <Trash2 size={24} color={alerts.length === 0 ? "#d1d5db" : "#dc2626"} />
+              <Text style={[styles.settingLabel, { color: alerts.length === 0 ? "#9ca3af" : "#374151" }]}>
+                Clear Alert History
+              </Text>
+            </View>
+          </TouchableOpacity>
+
         </View>
       </View>
     </SafeAreaView>
   );
 }
 
+// ... [styles remain exactly the same]
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#f9fafb",
-  },
-  container: {
-    flex: 1,
-    padding: 20,
-    // paddingTop: 60 REMOVED! SafeAreaView handles this dynamically now.
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 30,
-    marginTop: 10, // Just a little breathing room from the dynamic notch
-    gap: 10,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#1f2937",
-  },
-  card: {
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  settingRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-  },
-  lastRow: {
-    borderBottomWidth: 0,
-  },
-  settingLabelContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  settingLabel: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#374151",
-  },
+  safeArea: { flex: 1, backgroundColor: "#f9fafb" },
+  container: { flex: 1, padding: 20 },
+  header: { flexDirection: "row", alignItems: "center", marginBottom: 30, marginTop: 10, gap: 10 },
+  headerTitle: { fontSize: 28, fontWeight: "bold", color: "#1f2937" },
+  card: { backgroundColor: "white", borderRadius: 16, padding: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  settingRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
+  lastRow: { borderBottomWidth: 0 },
+  settingLabelContainer: { flexDirection: "row", alignItems: "center", gap: 12 },
+  settingLabel: { fontSize: 16, fontWeight: "500", color: "#374151" },
 });

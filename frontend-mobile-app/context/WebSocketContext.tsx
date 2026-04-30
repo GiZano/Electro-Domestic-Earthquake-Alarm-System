@@ -10,6 +10,7 @@ import React, {
 import { Vibration } from "react-native";
 // 💡 IMPORT MOBILE_WS_TOKEN HERE
 import { API_BASE_URL, MOBILE_WS_TOKEN } from "../constants/config";
+import { useAlertStore } from '../store/useAlertStore';
 
 // --- TYPES & INTERFACES ---
 export interface AlertMessage {
@@ -47,7 +48,6 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
   const connect = useCallback(() => {
     if (ws.current?.readyState === WebSocket.OPEN) return;
 
-    // 💡 USE THE IMPORTED TOKEN HERE
     const wsUrl = `${API_BASE_URL.replace("http", "ws")}/ws/alerts?token=${MOBILE_WS_TOKEN}`;
     console.log(`🔌 Attempting WS Connection: ${wsUrl}`);
 
@@ -65,6 +65,7 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
         console.log("⚡ ALERT RECEIVED:", message);
 
         setLastAlert(message);
+        useAlertStore.getState().addAlert(message); // Keep our Zustand history!
 
         if (message.type === "CRITICAL") {
           Vibration.vibrate(SOS_VIBRATION_PATTERN);
@@ -77,26 +78,24 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
     ws.current.onclose = () => {
       console.log("❌ WS Disconnected");
       setIsConnected(false);
-      scheduleReconnection();
+
+      // 💡 INLINED RECONNECTION LOGIC: Breaks the circular dependency!
+      const delay = Math.min(
+        1000 * Math.pow(2, reconnectAttempts.current),
+        MAX_RECONNECT_DELAY
+      );
+      
+      console.log(`⏳ Reconnecting in ${delay / 1000} seconds...`);
+      reconnectTimeout.current = setTimeout(() => {
+        reconnectAttempts.current += 1;
+        connect(); // Recursive call is perfectly safe and lint-compliant here
+      }, delay);
     };
 
     ws.current.onerror = (error: Event) => {
       console.error("⚠️ WS Error:", error);
     };
   }, []);
-
-  const scheduleReconnection = useCallback(() => {
-    const delay = Math.min(
-      1000 * Math.pow(2, reconnectAttempts.current),
-      MAX_RECONNECT_DELAY
-    );
-    
-    console.log(`⏳ Reconnecting in ${delay / 1000} seconds...`);
-    reconnectTimeout.current = setTimeout(() => {
-      reconnectAttempts.current += 1;
-      connect();
-    }, delay);
-  }, [connect]);
 
   useEffect(() => {
     connect();
