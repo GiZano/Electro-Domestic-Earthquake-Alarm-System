@@ -1,4 +1,4 @@
-import { Radio } from "lucide-react-native";
+import { Radio, ServerCrash } from "lucide-react-native";
 import React from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import MapView, { Callout, Marker, PROVIDER_DEFAULT } from "react-native-maps";
@@ -72,6 +72,7 @@ export default function MapScreen() {
             pinColor={sensor.active ? "green" : "red"}
           >
             <Callout tooltip={false}>
+              {/* Inject the lazy-loading details component */}
               <SensorCalloutDetails sensor={sensor} />
             </Callout>
           </Marker>
