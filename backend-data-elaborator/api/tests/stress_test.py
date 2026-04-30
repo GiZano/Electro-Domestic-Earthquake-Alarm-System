@@ -1,5 +1,5 @@
 """
-QuakeGuard Critical Stress Test Suite v2.3
+QuakeGuard Critical Stress Test Suite v2.4
 ------------------------------------------------------------
 Features:
 - Client-side Semaphore Throttling
@@ -9,6 +9,7 @@ Features:
 - IoT API Key Authentication Support
 - Paced requests to respect Server Rate Limits
 - Realistic Magnitude Spikes simulating M4.5+ events
+- Redis Pub/Sub Alert Deduplication Verification
 """
 
 import asyncio
@@ -18,6 +19,7 @@ import random
 import os
 import uuid
 import hashlib
+import redis.asyncio as aioredis
 from typing import List, Tuple
 from dataclasses import dataclass
 
@@ -27,6 +29,7 @@ from ecdsa.util import sigencode_der
 # --- CONFIGURATION ---
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 IOT_API_KEY = os.getenv("IOT_API_KEY", "SuperSecretIoTKey2024")
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 NUM_SENSORS = int(os.getenv("NUM_SENSORS", 200)) 
 CONCURRENCY_LIMIT = int(os.getenv("CONCURRENCY_LIMIT", 50)) 
 TIMEOUT_SECONDS = 30
@@ -111,6 +114,29 @@ async def send_measurement(session, sensor, sem, is_malicious=None) -> Tuple[int
         except Exception:
             return 999, 0.0
 
+# --- BACKGROUND TASKS ---
+
+async def listen_for_alerts(stop_event: asyncio.Event) -> int:
+    """Background task to count alerts published to Redis Pub/Sub."""
+    try:
+        redis = await aioredis.from_url(REDIS_URL, decode_responses=True)
+        pubsub = redis.pubsub()
+        await pubsub.subscribe("quake_alerts")
+        
+        alert_count = 0
+        while not stop_event.is_set():
+            msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=0.5)
+            if msg:
+                alert_count += 1
+                print(f"   🔔 Intercepted Alert from worker: {msg['data']}")
+                
+        await pubsub.unsubscribe()
+        await redis.aclose()
+        return alert_count
+    except Exception as e:
+        print(f"   ⚠️ Redis Listener failed (is Redis running at {REDIS_URL}?): {e}")
+        return 0
+
 # --- PHASES ---
 
 async def run_load_test(session, sensors, sem) -> TestStats:
@@ -172,14 +198,13 @@ async def verify_persistence_with_polling(session, sensors, sem) -> bool:
     print(f"   👉 Tracking Sensor ID {test_sensor.sensor_id} (Expected readings: {test_sensor.sent_count})")
     
     for attempt in range(POLLING_RETRIES):
-        async with sem:  # Keeping inside the loop respects concurrency limits safely
+        async with sem:  
             try:
                 async with session.get(f"{API_URL}/sensors/{test_sensor.sensor_id}/statistics") as resp:
                     if resp.status == 200:
                         data = await resp.json()
                         readings = data.get("total_readings", 0)
                         
-                        # 2. Strict Assertion: Ensure ALL sent data was persisted
                         if readings >= test_sensor.sent_count:
                             print(f"   ✅ DB Confirmed! All {test_sensor.sent_count} reading(s) securely persisted.")
                             return True
@@ -191,7 +216,6 @@ async def verify_persistence_with_polling(session, sensors, sem) -> bool:
             except Exception as e:
                 print(f"   ⚠️ Connection Error: {e}")
                 
-        # Wait 1 second before polling again
         await asyncio.sleep(1)
         
     print("   ❌ Polling timed out. Redis Worker may be down or slow.")
@@ -200,7 +224,7 @@ async def verify_persistence_with_polling(session, sensors, sem) -> bool:
 # --- MAIN ---
 
 async def main():
-    print(f"🚀 QUAKEGUARD CRITICAL TEST v2.3")
+    print(f"🚀 QUAKEGUARD CRITICAL TEST v2.4")
     sem = asyncio.Semaphore(CONCURRENCY_LIMIT)
 
     headers = {"X-API-Key": IOT_API_KEY}
@@ -216,8 +240,17 @@ async def main():
             print(f"❌ Setup Failed: {e}")
             return
 
+        # Start Redis Alert Listener for Deduplication checking
+        stop_listener = asyncio.Event()
+        listener_task = asyncio.create_task(listen_for_alerts(stop_listener))
+
         # Execution
         load_stats = await run_load_test(session, sensors, sem)
+        
+        # Wait a moment to ensure all alerts propagate, then stop listener
+        await asyncio.sleep(2)
+        stop_listener.set()
+        total_alerts_published = await listener_task
         
         print("\n⏳ Letting Redis Rate Limiter cool down for 10 seconds...")
         await asyncio.sleep(10)
@@ -234,17 +267,18 @@ async def main():
     print(f"Traffic:      {load_stats.req_success}/{load_stats.req_sent} Accepted")
     print(f"Sec (BadSig): {sec_stats.auth_rejected} Blocked")
     print(f"Sec (Replay): {sec_stats.replay_rejected} Blocked")
+    print(f"Alerts Fired: {total_alerts_published} (Expected deduplication: 1)")
     
     # Update Report to reflect E2E status
     persistence_str = "✅ VERIFIED" if e2e_passed else "❌ FAILED"
     print(f"Persistence:  {persistence_str}")
     print("="*40)
 
-    # Must pass security AND E2E persistence to be certified!
-    if sec_stats.auth_rejected > 0 and sec_stats.replay_rejected > 0 and e2e_passed:
+    # Must pass security, persistence, AND deduplication (<= 1 alert) to be certified!
+    if sec_stats.auth_rejected > 0 and sec_stats.replay_rejected > 0 and e2e_passed and total_alerts_published <= 1:
         print("🏆 SYSTEM CERTIFIED")
     else:
-        print("⚠️ SYSTEM FAILURE")
+        print("⚠️ SYSTEM FAILURE (Check deduplication logs if Alerts Fired > 1)")
 
 if __name__ == "__main__":
     try:

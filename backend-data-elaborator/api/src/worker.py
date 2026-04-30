@@ -37,7 +37,7 @@ def estimate_magnitude(sensor_value: int) -> float:
     return round(max(0.0, min(magnitude, 9.9)), 1)
 
 def process_event(event: dict, db: Session):
-    """Inserts a single sensor measurement into PostGIS and triggers alerts."""
+    """Inserts a single sensor measurement into PostGIS and triggers alerts with deduplication."""
     
     # 1. Save to Database
     new_entry = Misuration(
@@ -53,18 +53,31 @@ def process_event(event: dict, db: Session):
     
     # Trigger a CRITICAL alert if physical magnitude is 4.5 or higher
     if magnitude >= 4.5:
-        # Create the exact JSON schema the Mobile App is expecting
+        zone_id = event.get("zone_id", 0)
+        cooldown_key = f"alert_cooldown:{zone_id}"
+        
+        # A) Atomic check-and-set (Deduplication) - Race condition safe!
+        acquired = redis_sync.set(cooldown_key, "active", nx=True, ex=60)
+        
+        if not acquired:
+            print(f"🚫 ALERT SUPPRESSED: Zone {zone_id} is in 60s cooldown.", flush=True)
+            return
+
+        # B) Create the payload
         alert_payload = {
             "type": "CRITICAL",
-            "zone_id": event.get("zone_id", 0),
+            "zone_id": zone_id,
             "magnitude": magnitude,
             "message": f"High seismic activity detected (Sensor {event.get('misurator_id')})!",
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
-        # Publish to the channel that FastAPI is listening to
+        # C) Publish the alert
         redis_sync.publish("quake_alerts", json.dumps(alert_payload))
-        print(f"🚨 ALERT PUBLISHED: Zone {event.get('zone_id')} - Mag {alert_payload['magnitude']}", flush=True)
+        print(f"🚨 ALERT PUBLISHED: Zone {zone_id} - Mag {magnitude}", flush=True)
+        
+        # D) Set the TTL Cooldown Lock for 60 seconds
+        redis_sync.setex(cooldown_key, 60, "active")
 
 def run_worker():
     print("👷 Worker started. Listening for 'seismic_events'...")
