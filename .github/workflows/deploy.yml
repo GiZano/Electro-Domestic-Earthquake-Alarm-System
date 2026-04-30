@@ -29,6 +29,8 @@ jobs:
       # Step 1: Check out the repository code.
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Validate Commit Messages
+        uses: wagoid/commitlint-github-action@v5
 
       # Step 2: Authenticate with the GitHub Container Registry.
       - name: Log in to the Container Registry

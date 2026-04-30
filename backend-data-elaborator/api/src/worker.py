@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import math
 from datetime import datetime, timezone
 import redis
 from sqlalchemy.orm import Session
@@ -11,8 +12,32 @@ from src.models import Misuration
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 redis_sync = redis.from_url(REDIS_URL, decode_responses=True)
 
+# Seismic Calibration Constants (Tunable via Environment)
+K_CALIBRATION = float(os.getenv("K_CALIBRATION", "1.6"))  # MyShake-style MEMS calibration factor
+B_OFFSET = float(os.getenv("B_OFFSET", "3.0"))            # Empirical offset, anchor: PGA 0.07 m/s² ≈ M3.85
+SENSOR_SCALE = float(os.getenv("SENSOR_SCALE", "100.0"))  # Raw value to m/s² conversion factor
+
+def estimate_magnitude(sensor_value: int) -> float:
+    """
+    Estimates IoT magnitude from STA-based peak acceleration.
+    Formula: M_IoT = log10(PGA_calib) + b
+    Based on MyShake-style MEMS network approach.
+    Reference: Zanotti, G. (2026) - QuakeGuard Magnitude Estimation Note.
+    """
+    pga_m_s2 = sensor_value / SENSOR_SCALE
+    pga_calib = pga_m_s2 / K_CALIBRATION
+    
+    # Guard against log10(0) or negative values
+    if pga_calib <= 0:
+        return 0.0
+    
+    magnitude = math.log10(pga_calib) + B_OFFSET
+    
+    # Clamp to physically meaningful range for MEMS sensors
+    return round(max(0.0, min(magnitude, 9.9)), 1)
+
 def process_event(event: dict, db: Session):
-    """Inserts a single sensor measurement into PostGIS and triggers alerts."""
+    """Inserts a single sensor measurement into PostGIS and triggers alerts with deduplication."""
     
     # 1. Save to Database
     new_entry = Misuration(
@@ -23,23 +48,36 @@ def process_event(event: dict, db: Session):
     db.commit()
 
     # 2. 🚨 ALARM LOGIC: Check if threshold is breached
-    # The stress test sends random values between 100 and 999.
-    # Let's trigger a CRITICAL alert if a reading exceeds 850.
     sensor_value = event.get("value", 0)
+    magnitude = estimate_magnitude(sensor_value)
     
-    if sensor_value > 850:
-        # Create the exact JSON schema the Mobile App is expecting
+    # Trigger a CRITICAL alert if physical magnitude is 4.5 or higher
+    if magnitude >= 4.5:
+        zone_id = event.get("zone_id", 0)
+        cooldown_key = f"alert_cooldown:{zone_id}"
+        
+        # A) Atomic check-and-set (Deduplication) - Race condition safe!
+        acquired = redis_sync.set(cooldown_key, "active", nx=True, ex=60)
+        
+        if not acquired:
+            print(f"🚫 ALERT SUPPRESSED: Zone {zone_id} is in 60s cooldown.", flush=True)
+            return
+
+        # B) Create the payload
         alert_payload = {
             "type": "CRITICAL",
-            "zone_id": event.get("zone_id", 0),
-            "magnitude": round(sensor_value / 100, 1), # Faux magnitude calculation (e.g. 8.5)
+            "zone_id": zone_id,
+            "magnitude": magnitude,
             "message": f"High seismic activity detected (Sensor {event.get('misurator_id')})!",
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
-        # Publish to the channel that FastAPI is listening to
+        # C) Publish the alert
         redis_sync.publish("quake_alerts", json.dumps(alert_payload))
-        print(f"🚨 ALERT PUBLISHED: Zone {event.get('zone_id')} - Mag {alert_payload['magnitude']}", flush=True)
+        print(f"🚨 ALERT PUBLISHED: Zone {zone_id} - Mag {magnitude}", flush=True)
+        
+        # D) Set the TTL Cooldown Lock for 60 seconds
+        redis_sync.setex(cooldown_key, 60, "active")
 
 def run_worker():
     print("👷 Worker started. Listening for 'seismic_events'...")
@@ -55,7 +93,7 @@ def run_worker():
                 
                 try:
                     process_event(event, db)
-                    print(f"✅ Processed sensor {event.get('misurator_id')} -> {event.get('value')}", flush=True)
+                    print(f"✅ Processed sensor {event.get('misurator_id')} -> {event.get('value')} (Mag: {estimate_magnitude(event.get('value', 0))})", flush=True)
                 except Exception as e:
                     print(f"❌ DB Error: {e}. Moving to DLQ.", flush=True)
                     db.rollback()
@@ -66,6 +104,4 @@ def run_worker():
             time.sleep(2)
 
 if __name__ == "__main__":
-    # Wait for DB to be ready
-    time.sleep(5) 
     run_worker()

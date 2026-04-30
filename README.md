@@ -5,6 +5,7 @@
 
 **Full-Stack IoT Architecture for Real-Time Earthquake Detection**
 
+![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge)
 ![C++](https://img.shields.io/badge/C++-Hardware_Logic-00599C?style=for-the-badge&logo=c%2B%2B&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-FastAPI-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
 ![React Native](https://img.shields.io/badge/React_Native-Mobile-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
@@ -12,38 +13,43 @@
 ![Redis](https://img.shields.io/badge/Redis-Message_Broker-DC382D?style=for-the-badge&logo=redis&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Containerization-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
+*Version 0.9.0 (Release Candidate)*
+
 </div>
 
 ---
 
 ## 📖 Overview
-**QuakeGuard** is an advanced Full-Stack IoT architecture designed for the real-time detection, analysis, and reporting of seismic events. 
+**QuakeGuard** is a Full-Stack IoT architecture for real-time detection, analysis, and reporting of seismic events.
 
-The system utilizes intelligent edge sensors (ESP32) that analyze vibrations locally and transmit cryptographically secured data to an asynchronous hybrid Cloud. The backend is specifically engineered to handle the massive traffic spikes (**Thundering Herd** effect) typical during widespread earthquake events, ensuring reliable alarm delivery without bottlenecking.
+The system uses intelligent edge sensors (ESP32-C3) that analyze vibrations locally and transmit cryptographically secured data to an asynchronous cloud backend. The backend is engineered to handle the massive traffic spikes (**Thundering Herd** effect) typical during widespread earthquake events, ensuring reliable alarm delivery without bottlenecking. A React Native mobile app receives real-time haptic and visual alerts via WebSocket.
 
 ---
 
-## 🏗 System Architecture
-
+## 🏗️ System Architecture
 
 The project is highly modular, following **Microservices** and **Event-Driven Design** principles across three main layers:
 
-### 1. 📡 IoT Edge (Data Harvester)
+### 1. 📡 IoT Edge (`iot-data-harvester/`)
 * **Hardware:** ESP32-C3 SuperMini paired with an ADXL345 Accelerometer.
 * **Edge Computing:** 100Hz sampling rate, applying Digital High-Pass Filters (HPF) and the **STA/LTA** (Short Term/Long Term Average) seismic algorithm directly on the device.
 * **Security:** Hardware-level digital signing of payloads using **ECDSA (NIST256p)**.
-* **Resilience:** Temporal timestamp reconstruction to mitigate network latency and out-of-order packet deliveries.
+* **Resilience:** Temporal timestamp reconstruction to mitigate network latency and out-of-order packet delivery.
 
-### 2. ☁️ Backend (Data Elaborator)
-* **Core API:** Built with **FastAPI** (Python) for high-performance asynchronous routing.
-* **Event Pattern:** Producer-Consumer architecture leveraging **Redis** as a Message Broker to decouple ingestion from processing.
+### 2. ☁️ Backend (`backend-data-elaborator/`)
+* **Core API:** Built with **FastAPI** (Python 3.11) for high-performance asynchronous routing.
+* **Security Layer:** Dedicated `src/security.py` module enforcing API Key authentication, ECDSA signature verification, and Anti-Replay timestamp validation on every IoT payload.
+* **Event Pattern:** Producer-Consumer architecture leveraging **Redis** as a Message Broker to decouple ingestion from processing. Includes a fixed-window Rate Limiter (50 req/s per IP).
+* **Real-Time Alerts:** Redis Pub/Sub listener broadcasts CRITICAL seismic alerts to all connected mobile clients via WebSocket.
 * **Persistence:** **PostgreSQL + PostGIS** for robust geospatial data management.
-* **Background Workers:** Dedicated processes for queue consumption, event validation, and alarm aggregation.
-* **Performance:** Fully asynchronous management capable of handling >500 Req/s on standard commercial hardware.
+* **Observability:** `GET /health` endpoint for Docker/Kubernetes liveness probing, concurrently pinging both PostgreSQL and Redis.
+* **Performance:** Fully asynchronous architecture stress-tested at >500 Req/s with 150 concurrent sensors.
 
-### 3. 📱 Frontend (Mobile Monitor)
-* **Framework:** **React Native** (Expo) for cross-platform compatibility.
-* **Features:** Interactive dashboard with real-time visual and haptic alarms via Adaptive Polling, alongside a live sensor network map.
+### 3. 📱 Frontend (`frontend-mobile-app/`)
+* **Framework:** **React Native** (Expo) with TypeScript for cross-platform compatibility.
+* **Architecture:** Zustand for client-side state management, TanStack Query + Axios for server-state caching and background refetching.
+* **Real-Time:** WebSocket context with exponential backoff reconnection, delivering live visual and haptic (SOS pattern) seismic alerts.
+* **Navigation:** Expo Router file-based routing with a 3-tab Bottom Navigator (Monitor, Sensors Map, Settings).
 
 ---
 
@@ -59,7 +65,7 @@ Data integrity is paramount in emergency systems. Every telemetry packet transmi
 }
 ```
 
-The backend rigorously verifies the signature (**SHA256 + ECDSA**) against the sensor's registered public key before accepting the payload. This architecture strictly prevents **Man-in-the-Middle** (MitM) and **Spoofing** attacks, ensuring that alarms cannot be falsely triggered by malicious actors.
+The backend verifies the signature (**SHA256 + ECDSA**) against the sensor's registered public key before accepting any payload. This strictly prevents **Man-in-the-Middle (MitM)** and **Spoofing** attacks, ensuring alarms cannot be falsely triggered by malicious actors. Replay attacks are blocked via a 60-second timestamp validation window.
 
 ---
 
@@ -68,28 +74,82 @@ The backend rigorously verifies the signature (**SHA256 + ECDSA**) against the s
 ### Prerequisites
 * Docker & Docker Compose
 * PlatformIO (VS Code Extension)
-* Node.js & Expo Go (Mobile App)
+* Node.js 18+ & Expo Go (mobile app)
 
-### 1. Launch the Cloud Backend
-Deploy the API, Database, and Message Broker via Docker:
+### 1. Configure Environment Variables
+Before launching, set the required secrets:
 ```bash
-cd "Backend - Data Elaborator"
-docker-compose up --build -d
+cd backend-data-elaborator/api
+cp .env.example .env
+# Edit .env with your own IOT_API_KEY and MOBILE_WS_TOKEN
 ```
-*The backend will be live at `http://localhost:8000`. API documentation is auto-generated at `http://localhost:8000/docs`.*
 
-### 2. Configure and Flash the IoT Edge Device
-1. Modify `IoT - Data Harvester/esp32_config.env` with your local IP and WiFi credentials.
-2. Upload the firmware to the ESP32 via PlatformIO.
-3. **⚠️ IMPORTANT:** On the first boot, copy the generated `PUBLIC KEY` from the serial monitor and register the device via the Swagger UI (`http://localhost:8000/docs`).
-
-### 3. Launch the Mobile Dashboard
+### 2. Launch the Cloud Backend
 ```bash
-cd "Frontend - Mobile App"
+cd backend-data-elaborator/api
+docker compose up --build -d
+```
+The backend will be live at `http://localhost:8000`.
+API documentation is auto-generated at `http://localhost:8000/docs`.
+Health status is available at `http://localhost:8000/health`.
+
+### 3. Configure and Flash the IoT Edge Device
+1. Edit `iot-data-harvester/esp32_config.env` with your local network IP and WiFi credentials.
+2. Flash the firmware to the ESP32-C3 via PlatformIO.
+3. **⚠️ IMPORTANT:** On first boot, copy the generated `PUBLIC KEY` from the serial monitor and register the device via the Swagger UI at `http://localhost:8000/docs`.
+
+### 4. Launch the Mobile App
+```bash
+cd frontend-mobile-app
 npm install
 npx expo start
 ```
-*Scan the generated QR code with your smartphone (ensure your phone is on the same WiFi network as your backend).*
+Scan the QR code with Expo Go. Ensure your phone is on the **same WiFi network** as the backend machine.
+
+---
+
+## 🧪 Running the Stress Test
+
+To validate the full backend pipeline (ingestion → Redis → worker → PostGIS → WebSocket alerts):
+
+```bash
+cd backend-data-elaborator/api
+export API_URL="http://localhost:8000"
+export NUM_SENSORS=150
+export CONCURRENCY_LIMIT=50
+python -m tests.stress_test
+```
+
+A successful run ends with `🏆 SYSTEM CERTIFIED`, confirming all three phases: load handling, security attack blocking, and E2E database persistence.
+
+---
+
+## 🗂️ Project Structure
+
+```
+QuakeGuard/
+├── backend-data-elaborator/
+│   └── api/
+│       ├── src/
+│       │   ├── main.py          # FastAPI gateway
+│       │   ├── security.py      # ECDSA, API Key, Anti-Replay
+│       │   ├── worker.py        # Redis consumer + alert engine
+│       │   ├── models.py        # SQLAlchemy models
+│       │   ├── schemas.py       # Pydantic schemas
+│       │   └── database.py      # DB engine and session
+│       ├── tests/
+│       │   └── stress_test.py   # Critical E2E stress test
+│       └── docker-compose.yml
+├── frontend-mobile-app/
+│   ├── app/                     # Expo Router screens
+│   ├── src/
+│   │   ├── api/                 # Axios client + TanStack Query hooks
+│   │   └── store/               # Zustand state slices
+│   └── context/
+│       └── WebSocketContext.tsx # Real-time alert context
+└── iot-data-harvester/
+    └── src/                     # ESP32-C3 C++ firmware
+```
 
 ---
 
@@ -97,6 +157,6 @@ npx expo start
 
 **Developed by [GiZano](https://giovanni-zanotti.is-a.dev)**
 <br>
-*Version 3.0.0 (Stable) | MIT License*
+*Open Source — AGPL-3.0 License*
 
 </div>
