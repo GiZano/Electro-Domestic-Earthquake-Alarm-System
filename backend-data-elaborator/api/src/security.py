@@ -20,9 +20,6 @@ api_key_scheme = APIKeyHeader(name="X-API-Key", auto_error=False)
 if not IOT_API_KEY:
     raise RuntimeError("🚨 CRITICAL STARTUP ERROR: 'IOT_API_KEY' environment variable is not set!")
 
-# Define the Security Scheme for Swagger UI
-api_key_scheme = APIKeyHeader(name="X-API-Key", auto_error=False)
-
 def verify_api_key(api_key: str = Security(api_key_scheme)):
     """Dependency that checks the API Key and throws a 401 if invalid."""
     if not api_key or api_key != IOT_API_KEY:

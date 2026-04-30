@@ -8,6 +8,7 @@ Features:
 - Dynamic Infrastructure
 - IoT API Key Authentication Support
 - Paced requests to respect Server Rate Limits
+- Realistic Magnitude Spikes simulating M4.5+ events
 """
 
 import asyncio
@@ -80,7 +81,13 @@ async def register_sensor(session, sensor, zone_id, sem):
         except: return False
 
 async def send_measurement(session, sensor, sem, is_malicious=None) -> Tuple[int, float]:
-    value = random.randint(100, 999)
+    
+    # 5% chance of a massive seismic event (M4.5 - M5.0+)
+    if random.random() < 0.05:
+        value = random.randint(5000, 15000)
+    else:
+        value = random.randint(100, 999)
+        
     timestamp = int(time.time())
     
     if is_malicious == 'REPLAY':
@@ -193,7 +200,7 @@ async def verify_persistence_with_polling(session, sensors, sem) -> bool:
 # --- MAIN ---
 
 async def main():
-    print(f"🚀 QUAKEGUARD CRITICAL TEST v2.2")
+    print(f"🚀 QUAKEGUARD CRITICAL TEST v2.3")
     sem = asyncio.Semaphore(CONCURRENCY_LIMIT)
 
     headers = {"X-API-Key": IOT_API_KEY}
@@ -217,7 +224,7 @@ async def main():
         
         sec_stats = await run_security_test(session, zone_id, sem)
         
-        # New End-to-End Test Execution!
+        # End-to-End Test Execution
         e2e_passed = await verify_persistence_with_polling(session, sensors, sem)
 
     # Report
