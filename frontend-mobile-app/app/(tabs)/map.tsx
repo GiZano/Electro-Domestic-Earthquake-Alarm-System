@@ -1,15 +1,12 @@
-import { Radio, ServerCrash } from "lucide-react-native";
+import { Radio } from "lucide-react-native";
 import React from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import MapView, { Callout, Marker, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSensors } from "../../api/hooks/useDashboard";
 import { useSensorStatistics } from "../../api/hooks/useSensors";
+import { LoadingSkeleton } from "../../components/LoadingSkeleton";
+import { ErrorBanner } from "../../components/ErrorBanner";
 
-/**
- * Sub-component for the Marker Callout.
- * CRITICAL: By isolating the hook here, we guarantee useSensorStatistics 
- * is ONLY called when the user taps the marker, preventing 200 concurrent requests.
- */
 const SensorCalloutDetails = ({ sensor }: { sensor: any }) => {
   const { data: stats, isLoading, isError } = useSensorStatistics(sensor.id);
 
@@ -18,16 +15,8 @@ const SensorCalloutDetails = ({ sensor }: { sensor: any }) => {
       <Text style={styles.calloutTitle}>Sensor ID: {sensor.id}</Text>
       
       <View style={styles.statusRow}>
-        <Radio
-          size={14}
-          color={sensor.active ? "#16a34a" : "#dc2626"}
-        />
-        <Text
-          style={[
-            styles.statusText,
-            { color: sensor.active ? "#16a34a" : "#dc2626" },
-          ]}
-        >
+        <Radio size={14} color={sensor.active ? "#16a34a" : "#dc2626"} />
+        <Text style={[styles.statusText, { color: sensor.active ? "#16a34a" : "#dc2626" }]}>
           {sensor.active ? "Active" : "Offline"}
         </Text>
       </View>
@@ -37,7 +26,7 @@ const SensorCalloutDetails = ({ sensor }: { sensor: any }) => {
       {isLoading ? (
         <ActivityIndicator size="small" color="#4f46e5" style={{ marginTop: 5 }} />
       ) : isError ? (
-        <Text style={styles.errorText}>Data unavailable</Text>
+        <Text style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Data unavailable</Text>
       ) : (
         <View style={styles.statsRow}>
           <Text style={styles.statsLabel}>Total Readings:</Text>
@@ -49,25 +38,18 @@ const SensorCalloutDetails = ({ sensor }: { sensor: any }) => {
 };
 
 export default function MapScreen() {
-  // Fetch the global list of sensors (shares cache with Dashboard)
   const { data: sensors, isLoading, isError } = useSensors();
 
   if (isLoading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#dc2626" />
-        <Text style={styles.loadingText}>Connecting to Global Network...</Text>
-      </View>
-    );
+    return <LoadingSkeleton message="Connecting to Global Network..." />;
   }
 
   if (isError) {
     return (
-      <View style={styles.centered}>
-        <ServerCrash size={48} color="#dc2626" />
-        <Text style={styles.errorTitle}>Map Unavailable</Text>
-        <Text style={styles.errorText}>Could not reach the sensor network.</Text>
-      </View>
+      <ErrorBanner 
+        title="Map Unavailable" 
+        message="Could not reach the sensor network. Please check your connection." 
+      />
     );
   }
 
@@ -77,7 +59,7 @@ export default function MapScreen() {
         style={styles.map}
         provider={PROVIDER_DEFAULT}
         initialRegion={{
-          latitude: 41.9028, // Default fallback (Rome, Italy)
+          latitude: 41.9028,
           longitude: 12.4964,
           latitudeDelta: 5,
           longitudeDelta: 5,
@@ -90,7 +72,6 @@ export default function MapScreen() {
             pinColor={sensor.active ? "green" : "red"}
           >
             <Callout tooltip={false}>
-              {/* Inject the lazy-loading details component */}
               <SensorCalloutDetails sensor={sensor} />
             </Callout>
           </Marker>
@@ -101,81 +82,14 @@ export default function MapScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  map: {
-    width: "100%",
-    height: "100%",
-  },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f9fafb",
-  },
-  loadingText: {
-    marginTop: 15,
-    fontSize: 16,
-    color: "#4b5563",
-    fontWeight: "500",
-  },
-  errorTitle: {
-    marginTop: 15,
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#1f2937",
-  },
-  errorText: {
-    marginTop: 5,
-    fontSize: 14,
-    color: "#6b7280",
-    textAlign: "center",
-  },
-  calloutContainer: {
-    padding: 10,
-    width: 160,
-    backgroundColor: "white",
-    borderRadius: 8,
-  },
-  calloutTitle: {
-    fontWeight: "800",
-    fontSize: 14,
-    marginBottom: 6,
-    color: "#111827",
-  },
-  statusRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 8,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  statsDivider: {
-    height: 1,
-    backgroundColor: "#e5e7eb",
-    marginVertical: 6,
-  },
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 4,
-  },
-  statsLabel: {
-    fontSize: 12,
-    color: "#4b5563",
-    fontWeight: "500",
-  },
-  statsValue: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#4f46e5",
-  },
+  container: { flex: 1, backgroundColor: "#fff" },
+  map: { width: "100%", height: "100%" },
+  calloutContainer: { padding: 10, width: 160, backgroundColor: "white", borderRadius: 8 },
+  calloutTitle: { fontWeight: "800", fontSize: 14, marginBottom: 6, color: "#111827" },
+  statusRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
+  statusText: { fontSize: 12, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 },
+  statsDivider: { height: 1, backgroundColor: "#e5e7eb", marginVertical: 6 },
+  statsRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4 },
+  statsLabel: { fontSize: 12, color: "#4b5563", fontWeight: "500" },
+  statsValue: { fontSize: 14, fontWeight: "700", color: "#4f46e5" },
 });

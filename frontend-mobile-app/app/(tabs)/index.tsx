@@ -1,6 +1,6 @@
-import { ShieldAlert, ShieldCheck, Wifi, WifiOff, Activity, ServerCrash } from "lucide-react-native";
+import { ShieldAlert, ShieldCheck, Wifi, WifiOff, Activity } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
-import { StyleSheet, Text, View, ActivityIndicator } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, {
   Easing,
@@ -12,7 +12,9 @@ import Animated, {
 } from "react-native-reanimated";
 import { VictoryChart, VictoryLine, VictoryTheme, VictoryAxis } from "victory-native";
 import { useWebSocket } from "../../context/WebSocketContext";
-import { useSensors, useRecentReadings } from "../../api/hooks/useDashboard"; // 💡 Your new hooks!
+import { useSensors, useRecentReadings } from "../../api/hooks/useDashboard";
+import { LoadingSkeleton } from "../../components/LoadingSkeleton";
+import { ErrorBanner } from "../../components/ErrorBanner";
 
 export default function MonitorScreen() {
   const { isConnected, lastAlert } = useWebSocket();
@@ -22,9 +24,8 @@ export default function MonitorScreen() {
 
   // 1. Fetch live data from TanStack Query
   const { data: sensors, isLoading: loadingSensors, isError: errorSensors } = useSensors();
-  const { data: readings, isLoading: loadingReadings } = useRecentReadings();
+  const { data: readings, isLoading: loadingReadings, isError: errorReadings } = useRecentReadings();
 
-  // Calculate active sensors for the summary
   const totalSensors = sensors?.length || 0;
   const activeSensors = sensors?.filter((s: any) => s.active).length || 0;
 
@@ -92,7 +93,6 @@ export default function MonitorScreen() {
         </Text>
       </View>
 
-      {/* Alert Details Box (Only shows during active alert) */}
       {isAlertActive && lastAlert && (
         <View style={styles.alertDetails}>
           <Text style={styles.alertValue}>Mag: {lastAlert.magnitude.toFixed(1)}</Text>
@@ -100,197 +100,85 @@ export default function MonitorScreen() {
         </View>
       )}
 
-      {/* Dashboard Section: Summary Row */}
+      {/* Dashboard Section: Rendered Conditionally based on HTTP states */}
       <View style={styles.dashboardCard}>
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Active Nodes</Text>
-            {loadingSensors ? (
-              <ActivityIndicator size="small" color="#4f46e5" />
-            ) : errorSensors ? (
-              <ServerCrash size={20} color="#dc2626" />
-            ) : (
-              <Text style={styles.summaryValue}>{activeSensors} / {totalSensors}</Text>
-            )}
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>Signal Status</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Activity size={18} color="#16a34a" />
-              <Text style={[styles.summaryValue, { color: "#16a34a" }]}>Stable</Text>
+        {errorSensors || errorReadings ? (
+          <ErrorBanner 
+            title="Telemetry Offline" 
+            message="Could not connect to the sensor network. Please check your connection." 
+          />
+        ) : loadingSensors || loadingReadings ? (
+          <LoadingSkeleton message="Calibrating sensors..." />
+        ) : (
+          <>
+            <View style={styles.summaryRow}>
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryLabel}>Active Nodes</Text>
+                <Text style={styles.summaryValue}>{activeSensors} / {totalSensors}</Text>
+              </View>
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryLabel}>Signal Status</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Activity size={18} color="#16a34a" />
+                  <Text style={[styles.summaryValue, { color: "#16a34a" }]}>Stable</Text>
+                </View>
+              </View>
             </View>
-          </View>
-        </View>
 
-        {/* Dashboard Section: The Live Seismograph */}
-        <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>Live Network Seismograph</Text>
-          {loadingReadings ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#4f46e5" />
-              <Text style={styles.subText}>Calibrating sensors...</Text>
+            <View style={styles.chartContainer}>
+              <Text style={styles.chartTitle}>Live Network Seismograph</Text>
+              {readings && readings.length > 0 ? (
+                <VictoryChart 
+                  theme={VictoryTheme.material} 
+                  height={220} 
+                  padding={{ top: 20, bottom: 40, left: 50, right: 20 }}
+                >
+                  <VictoryAxis 
+                    dependentAxis 
+                    style={{ tickLabels: { fontSize: 10, fill: "#6b7280" } }} 
+                  />
+                  <VictoryLine
+                    style={{
+                      data: { stroke: isAlertActive ? "#dc2626" : "#4f46e5", strokeWidth: 2 }
+                    }}
+                    data={readings}
+                    x="device_timestamp"
+                    y="value"
+                    animate={{ duration: 500, onLoad: { duration: 500 } }}
+                  />
+                </VictoryChart>
+              ) : (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                  <Text style={{ color: "#6b7280" }}>Awaiting sensor telemetry...</Text>
+                </View>
+              )}
             </View>
-          ) : readings && readings.length > 0 ? (
-            <VictoryChart 
-              theme={VictoryTheme.material} 
-              height={220} 
-              padding={{ top: 20, bottom: 40, left: 50, right: 20 }}
-            >
-              <VictoryAxis 
-                dependentAxis 
-                style={{ tickLabels: { fontSize: 10, fill: "#6b7280" } }} 
-              />
-              <VictoryLine
-                style={{
-                  data: { stroke: isAlertActive ? "#dc2626" : "#4f46e5", strokeWidth: 2 }
-                }}
-                data={readings}
-                x="device_timestamp"
-                y="value"
-                animate={{ duration: 500, onLoad: { duration: 500 } }}
-              />
-            </VictoryChart>
-          ) : (
-            <View style={styles.loadingContainer}>
-              <Text style={styles.subText}>Awaiting sensor telemetry...</Text>
-            </View>
-          )}
-        </View>
+          </>
+        )}
       </View>
 
     </SafeAreaView>
   );
 }
 
+// ... [styles remain exactly the same as previous index.tsx]
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 10,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#111827",
-  },
-  connectionBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  connectionText: {
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 0.5,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 20,
-  },
-  iconContainer: {
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  statusText: {
-    fontSize: 26,
-    fontWeight: "900",
-    textAlign: "center",
-    letterSpacing: 1,
-  },
-  dashboardCard: {
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-    flex: 1,
-    marginTop: 10,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-    paddingBottom: 20,
-    marginBottom: 20,
-  },
-  summaryItem: {
-    alignItems: 'flex-start',
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: "#6b7280",
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  summaryValue: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#1f2937",
-  },
-  chartContainer: {
-    flex: 1,
-  },
-  chartTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#374151",
-    marginBottom: 10,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  subText: {
-    fontSize: 14,
-    color: "#6b7280",
-    marginTop: 10,
-  },
-  alertDetails: {
-    marginHorizontal: 20,
-    marginBottom: 10,
-    padding: 15,
-    backgroundColor: "#fee2e2",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#fecaca",
-    alignItems: 'center',
-  },
-  alertValue: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#b91c1c",
-  },
-  alertMessage: {
-    fontSize: 14,
-    fontStyle: "italic",
-    marginTop: 5,
-    color: "#991b1b",
-  },
+  container: { flex: 1, padding: 20 },
+  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingHorizontal: 10 },
+  headerTitle: { fontSize: 24, fontWeight: "bold", color: "#111827" },
+  connectionBadge: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#ffffff", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  connectionText: { fontSize: 12, fontWeight: "800", letterSpacing: 0.5 },
+  heroSection: { alignItems: 'center', justifyContent: 'center', marginVertical: 20 },
+  iconContainer: { marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 5 },
+  statusText: { fontSize: 26, fontWeight: "900", textAlign: "center", letterSpacing: 1 },
+  dashboardCard: { backgroundColor: "white", borderRadius: 20, padding: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 12, elevation: 3, flex: 1, marginTop: 10 },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: "#f3f4f6", paddingBottom: 20, marginBottom: 20 },
+  summaryItem: { alignItems: 'flex-start' },
+  summaryLabel: { fontSize: 12, color: "#6b7280", fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
+  summaryValue: { fontSize: 20, fontWeight: "bold", color: "#1f2937" },
+  chartContainer: { flex: 1 },
+  chartTitle: { fontSize: 16, fontWeight: "700", color: "#374151", marginBottom: 10 },
+  alertDetails: { marginHorizontal: 20, marginBottom: 10, padding: 15, backgroundColor: "#fee2e2", borderRadius: 12, borderWidth: 1, borderColor: "#fecaca", alignItems: 'center' },
+  alertValue: { fontSize: 18, fontWeight: "800", color: "#b91c1c" },
+  alertMessage: { fontSize: 14, fontStyle: "italic", marginTop: 5, color: "#991b1b" }
 });
