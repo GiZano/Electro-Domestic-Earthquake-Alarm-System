@@ -24,4 +24,5 @@ jobs:
             ci
             deps
             core
+            style
           requireScope: true
