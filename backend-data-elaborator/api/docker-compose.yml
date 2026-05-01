@@ -88,8 +88,10 @@ services:
       - MQTT_BROKER=mosquitto
       - IOT_API_KEY=${IOT_API_KEY}
     depends_on:
-      - mosquitto
-      - fastapi-app
+      mosquitto:
+        condition: service_healthy
+      fastapi-app:
+        condition: service_healthy
 
 volumes:
   postgres_data:
