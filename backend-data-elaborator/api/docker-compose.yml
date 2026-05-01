@@ -44,6 +44,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # --- WORKER ---
   worker:
@@ -59,6 +64,32 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+
+  # --- MQTT BROKER ---
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mosquitto_sub", "-t", "$$SYS/#", "-C", "1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # --- MQTT BRIDGE ---
+  mqtt-bridge:
+    build: .
+    restart: always
+    command: python src/mqtt_subscriber.py
+    environment:
+      - MQTT_BROKER=mosquitto
+      - IOT_API_KEY=${IOT_API_KEY}
+    depends_on:
+      - mosquitto
+      - fastapi-app
 
 volumes:
   postgres_data:
