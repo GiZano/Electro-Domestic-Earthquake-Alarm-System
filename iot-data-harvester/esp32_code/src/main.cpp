@@ -18,6 +18,7 @@
 #include <ArduinoJson.h>
 #include <Preferences.h>
 #include <time.h>
+#include <PubSubClient.h>
 
 // --- Cryptographic Libraries (MbedTLS) ---
 #include "mbedtls/entropy.h"
@@ -45,6 +46,9 @@ constexpr int I2C_CLOCK_SPEED = 100000;
 #endif
 #ifndef SERVER_REGISTER_PATH
   #define SERVER_REGISTER_PATH "/devices/register"
+#endif
+#ifndef MQTT_PORT
+  #define MQTT_PORT 1883
 #endif
 
 #ifndef ENROLLMENT_TOKEN
@@ -263,11 +267,14 @@ void sensorTask(void *pvParameters) {
 }
 
 // --------------------------------------------------------------------------
-// TASK 2: NETWORK DISPATCH
+// TASK 2: NETWORK DISPATCH (MQTT REFACTOR)
 // --------------------------------------------------------------------------
 void networkTask(void *pvParameters) {
-    WiFiClient client;
-    client.setTimeout(2000); 
+    WiFiClient espClient;
+    PubSubClient mqttClient(espClient);
+    
+    // Configure MQTT Broker (Using same SERVER_HOST IP)
+    mqttClient.setServer(SERVER_HOST, MQTT_PORT);
 
     while (WiFi.status() != WL_CONNECTED) {
         vTaskDelay(pdMS_TO_TICKS(1000));
@@ -277,18 +284,30 @@ void networkTask(void *pvParameters) {
 
     SeismicEvent receivedEvt;
     for(;;) {
-        if (xQueueReceive(eventQueue, &receivedEvt, portMAX_DELAY) == pdTRUE) {
-            
-            if (globalSensorID == 0) {
-                Serial.println("[NET] Warning: Event detected but Device is UNREGISTERED!");
-                continue;
-            }
-
-            if (WiFi.status() != WL_CONNECTED) {
-                WiFi.reconnect();
+        // Keep MQTT connection alive
+        if (!mqttClient.connected()) {
+            Serial.print("[NET] Reconnecting to MQTT Broker...");
+            // Use MAC address as unique client ID
+            String clientId = "QuakeGuard-" + WiFi.macAddress();
+            if (mqttClient.connect(clientId.c_str())) {
+                Serial.println(" Connected!");
+            } else {
                 vTaskDelay(pdMS_TO_TICKS(2000));
                 continue;
             }
+        }
+        /* 
+         * NOTE: xQueueReceive below blocks for up to 100ms if empty.
+         * This drops the effective mqttClient.loop() frequency to ~10Hz.
+         * For our low-volume anomaly queue and standard 15s keep-alives, 
+         * this is completely safe and saves CPU cycles.
+         */
+        mqttClient.loop(); // Process incoming keepalives
+
+        // Wait for a seismic event from the queue
+        if (xQueueReceive(eventQueue, &receivedEvt, pdMS_TO_TICKS(100)) == pdTRUE) {
+            
+            if (globalSensorID == 0) continue; // Unregistered
 
             time_t now_unix; time(&now_unix);
             unsigned long age_ms = millis() - receivedEvt.event_millis;
@@ -303,21 +322,15 @@ void networkTask(void *pvParameters) {
             doc["misurator_id"] = globalSensorID; 
             doc["device_timestamp"] = evt_time; 
             doc["signature_hex"] = sig;
-            String json; serializeJson(doc, json);
+            
+            String json; 
+            serializeJson(doc, json);
 
-            if (client.connect(SERVER_HOST, SERVER_PORT)) {
-                client.println(String("POST ") + SERVER_PATH + " HTTP/1.1");
-                client.println(String("Host: ") + SERVER_HOST);
-                client.println("Content-Type: application/json");
-                client.print("Content-Length: "); client.println(json.length());
-                client.println("Connection: close"); client.println();
-                client.println(json);
-                
-                while(client.connected() || client.available()) { 
-                    if(client.available()) client.readStringUntil('\n'); 
-                }
-                client.stop();
-                Serial.println("[NET] Event Sent OK.");
+            // 🚀 FIRE AND FORGET! Milliseconds instead of HTTP round-trips!
+            if (mqttClient.publish("quakeguard/telemetry", json.c_str())) {
+                Serial.println("[NET] MQTT Publish OK.");
+            } else {
+                Serial.println("[NET] MQTT Publish FAILED.");
             }
         }
     }
