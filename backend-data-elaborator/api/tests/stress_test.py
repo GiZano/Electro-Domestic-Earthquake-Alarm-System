@@ -1,13 +1,12 @@
 """
-QuakeGuard Critical Stress Test Suite v2.4
+QuakeGuard Critical Stress Test Suite v3.0 (MQTT Edition)
 ------------------------------------------------------------
 Features:
-- Client-side Semaphore Throttling
+- Massive MQTT Telemetry Firehosing (aiomqtt)
 - Smart Polling for End-to-End DB Verification
-- Active Security Attacks (Invalid Sig + Replay)
-- Dynamic Infrastructure
-- IoT API Key Authentication Support
-- Paced requests to respect Server Rate Limits
+- Active Security Attacks (Invalid Sig + Replay) verified via API
+- Dynamic Infrastructure Provisioning (HTTP)
+- IOT API Key Authentication Support
 - Realistic Magnitude Spikes simulating M4.5+ events
 - Redis Pub/Sub Alert Deduplication Verification
 """
@@ -19,8 +18,10 @@ import random
 import os
 import uuid
 import hashlib
+import json
 import redis.asyncio as aioredis
-from typing import List, Tuple
+import aiomqtt
+from typing import Tuple
 from dataclasses import dataclass
 
 from ecdsa import SigningKey, NIST256p
@@ -30,10 +31,14 @@ from ecdsa.util import sigencode_der
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 IOT_API_KEY = os.getenv("IOT_API_KEY", "SuperSecretIoTKey2024")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
+MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
+MQTT_TOPIC = "quakeguard/telemetry"
+
 NUM_SENSORS = int(os.getenv("NUM_SENSORS", 200)) 
 CONCURRENCY_LIMIT = int(os.getenv("CONCURRENCY_LIMIT", 50)) 
 TIMEOUT_SECONDS = 30
-POLLING_RETRIES = 10 # Max seconds to wait for worker persistence
+POLLING_RETRIES = 10 
 
 @dataclass
 class TestStats:
@@ -62,7 +67,7 @@ class MaliciousSensor(VirtualSensor):
         fake_sk = SigningKey.generate(curve=NIST256p)
         return fake_sk.sign(message.encode('utf-8'), hashfunc=hashlib.sha256, sigencode=sigencode_der).hex()
 
-# --- UTILS ---
+# --- UTILS (HTTP Provisioning) ---
 
 async def create_dynamic_zone(session: aiohttp.ClientSession) -> int:
     city_name = f"TestZone_{uuid.uuid4().hex[:8]}"
@@ -83,9 +88,19 @@ async def register_sensor(session, sensor, zone_id, sem):
                 return False
         except: return False
 
-async def send_measurement(session, sensor, sem, is_malicious=None) -> Tuple[int, float]:
-    
-    # 5% chance of a massive seismic event (M4.5 - M5.0+)
+async def get_sensor_readings(session, sensor_id: int) -> int:
+    """Helper to check how many readings the backend actually persisted."""
+    try:
+        async with session.get(f"{API_URL}/sensors/{sensor_id}/statistics") as resp:
+            if resp.status == 200:
+                data = await resp.json()
+                return data.get("total_readings", 0)
+    except: pass
+    return 0
+
+# --- MQTT PUBLISHING ---
+
+async def publish_measurement(mqtt_client, sensor, sem, is_malicious=None) -> Tuple[bool, float]:
     if random.random() < 0.05:
         value = random.randint(5000, 15000)
     else:
@@ -94,7 +109,7 @@ async def send_measurement(session, sensor, sem, is_malicious=None) -> Tuple[int
     timestamp = int(time.time())
     
     if is_malicious == 'REPLAY':
-        timestamp -= 7200 # 2 hours ago (Ancient History)
+        timestamp -= 7200 # 2 hours ago
 
     message = f"{value}:{timestamp}"
     
@@ -108,16 +123,15 @@ async def send_measurement(session, sensor, sem, is_malicious=None) -> Tuple[int
     start_t = time.perf_counter()
     async with sem:
         try:
-            async with session.post(f"{API_URL}/misurations/", json=payload, timeout=TIMEOUT_SECONDS) as resp:
-                await resp.read()
-                return resp.status, time.perf_counter() - start_t
+            # Publish payload to broker with QoS 1 (Guaranteed delivery to Mosquitto)
+            await mqtt_client.publish(MQTT_TOPIC, payload=json.dumps(payload), qos=1)
+            return True, time.perf_counter() - start_t
         except Exception:
-            return 999, 0.0
+            return False, 0.0
 
 # --- BACKGROUND TASKS ---
 
 async def listen_for_alerts(stop_event: asyncio.Event) -> int:
-    """Background task to count alerts published to Redis Pub/Sub."""
     try:
         redis = await aioredis.from_url(REDIS_URL, decode_responses=True)
         pubsub = redis.pubsub()
@@ -134,63 +148,65 @@ async def listen_for_alerts(stop_event: asyncio.Event) -> int:
         await redis.aclose()
         return alert_count
     except Exception as e:
-        print(f"   ⚠️ Redis Listener failed (is Redis running at {REDIS_URL}?): {e}")
+        print(f"   ⚠️ Redis Listener failed: {e}")
         return 0
 
 # --- PHASES ---
 
-async def run_load_test(session, sensors, sem) -> TestStats:
+async def run_load_test(mqtt_client, sensors, sem) -> TestStats:
     stats = TestStats()
-    print(f"🔥 Phase 1: Firehose ({len(sensors)} concurrent requests)...")
+    print(f"🔥 Phase 1: MQTT Firehose ({len(sensors)} sensors publishing)...")
     tasks = []
+    
     for s in sensors:
-        tasks.append(send_measurement(session, s, sem))
+        tasks.append(publish_measurement(mqtt_client, s, sem))
         s.sent_count += 1 
-        
-        # Pace the requests to ~40 per second to avoid triggering our new 50 req/sec Rate Limiter
+        # Pace the requests to ~40 per second to avoid triggering rate limiter in the Bridge
         await asyncio.sleep(0.025)
 
     results = await asyncio.gather(*tasks)
-    for status_code, latency in results:
+    for success, latency in results:
         stats.req_sent += 1
         stats.latency_accum += latency
-        if status_code == 202: stats.req_success += 1
-        else: 
-            stats.req_failed += 1
-            if status_code == 429:
-                pass # Expected if timing gets bunched up
+        if success: stats.req_success += 1
+        else: stats.req_failed += 1
+            
     return stats
 
-async def run_security_test(session, zone_id, sem) -> TestStats:
+async def run_security_test(session, mqtt_client, zone_id, sem) -> TestStats:
     stats = TestStats()
-    print("\n⚔️  Phase 2: Security Attacks...")
+    print("\n⚔️  Phase 2: Security Attacks (Verifying via Backend DB)...")
     bad_sensor = MaliciousSensor()
     await register_sensor(session, bad_sensor, zone_id, sem)
     
     # Attack A: Bad Sig
     print("   👉 A: Bad Signature...", end=" ")
-    status_a, _ = await send_measurement(session, bad_sensor, sem, is_malicious='BAD_SIG')
-    if status_a == 401: 
-        print("✅ Blocked (401)")
+    await publish_measurement(mqtt_client, bad_sensor, sem, is_malicious='BAD_SIG')
+    await asyncio.sleep(2) # Give bridge/worker time to process and reject
+    
+    readings = await get_sensor_readings(session, bad_sensor.sensor_id)
+    if readings == 0: 
+        print("✅ Blocked (Dropped by backend)")
         stats.auth_rejected += 1
-    else: print(f"💀 FAILED (Got {status_a})")
+    else: print("💀 FAILED (Backend persisted invalid signature)")
 
     # Attack B: Replay
     print("   👉 B: Replay Attack...", end=" ")
-    status_b, _ = await send_measurement(session, bad_sensor, sem, is_malicious='REPLAY')
-    if status_b == 403: 
-        print("✅ Blocked (403)")
+    await publish_measurement(mqtt_client, bad_sensor, sem, is_malicious='REPLAY')
+    await asyncio.sleep(2)
+    
+    readings = await get_sensor_readings(session, bad_sensor.sensor_id)
+    if readings == 0: 
+        print("✅ Blocked (Dropped by backend)")
         stats.replay_rejected += 1
-    else: print(f"💀 FAILED (Got {status_b})")
+    else: print("💀 FAILED (Backend persisted replay attack)")
     
     return stats
 
-async def verify_persistence_with_polling(session, sensors, sem) -> bool:
+async def verify_persistence_with_polling(session, sensors) -> bool:
     print(f"\n🔍 Phase 3: E2E Verification (Polling Worker)...")
     
-    # 1. Robust Selection: Find a sensor that successfully registered AND sent data
     test_sensor = next((s for s in sensors if s.sensor_id > 0 and s.sent_count > 0), None)
-    
     if not test_sensor:
         print("   ❌ E2E Failed: No valid sensors found with sent data to verify.")
         return False
@@ -198,24 +214,12 @@ async def verify_persistence_with_polling(session, sensors, sem) -> bool:
     print(f"   👉 Tracking Sensor ID {test_sensor.sensor_id} (Expected readings: {test_sensor.sent_count})")
     
     for attempt in range(POLLING_RETRIES):
-        async with sem:  
-            try:
-                async with session.get(f"{API_URL}/sensors/{test_sensor.sensor_id}/statistics") as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        readings = data.get("total_readings", 0)
-                        
-                        if readings >= test_sensor.sent_count:
-                            print(f"   ✅ DB Confirmed! All {test_sensor.sent_count} reading(s) securely persisted.")
-                            return True
-                        else:
-                            print(f"   ⏳ Worker processing... {readings}/{test_sensor.sent_count} (Attempt {attempt+1}/{POLLING_RETRIES})")
-                    else:
-                        print(f"   ⚠️ API Error: Expected 200, got {resp.status}")
-                        return False
-            except Exception as e:
-                print(f"   ⚠️ Connection Error: {e}")
-                
+        readings = await get_sensor_readings(session, test_sensor.sensor_id)
+        if readings >= test_sensor.sent_count:
+            print(f"   ✅ DB Confirmed! All {test_sensor.sent_count} reading(s) securely persisted.")
+            return True
+        else:
+            print(f"   ⏳ Worker processing... {readings}/{test_sensor.sent_count} (Attempt {attempt+1}/{POLLING_RETRIES})")
         await asyncio.sleep(1)
         
     print("   ❌ Polling timed out. Redis Worker may be down or slow.")
@@ -224,57 +228,56 @@ async def verify_persistence_with_polling(session, sensors, sem) -> bool:
 # --- MAIN ---
 
 async def main():
-    print(f"🚀 QUAKEGUARD CRITICAL TEST v2.4")
+    print(f"🚀 QUAKEGUARD CRITICAL TEST v3.0 (MQTT)")
     sem = asyncio.Semaphore(CONCURRENCY_LIMIT)
-
     headers = {"X-API-Key": IOT_API_KEY}
     
     async with aiohttp.ClientSession(headers=headers) as session:
-        # Setup
-        try:
-            zone_id = await create_dynamic_zone(session)
-            sensors = [VirtualSensor() for _ in range(NUM_SENSORS)]
-            await asyncio.gather(*[register_sensor(session, s, zone_id, sem) for s in sensors])
-            print(f"📝 Registered {NUM_SENSORS} sensors.")
-        except Exception as e:
-            print(f"❌ Setup Failed: {e}")
-            return
+        async with aiomqtt.Client(hostname=MQTT_BROKER, port=MQTT_PORT) as mqtt_client:
+            
+            # Setup
+            try:
+                zone_id = await create_dynamic_zone(session)
+                sensors = [VirtualSensor() for _ in range(NUM_SENSORS)]
+                await asyncio.gather(*[register_sensor(session, s, zone_id, sem) for s in sensors])
+                print(f"📝 Registered {NUM_SENSORS} sensors via HTTP.")
+            except Exception as e:
+                print(f"❌ Setup Failed: {e}")
+                return
 
-        # Start Redis Alert Listener for Deduplication checking
-        stop_listener = asyncio.Event()
-        listener_task = asyncio.create_task(listen_for_alerts(stop_listener))
+            # Start Redis Alert Listener for Deduplication checking
+            stop_listener = asyncio.Event()
+            listener_task = asyncio.create_task(listen_for_alerts(stop_listener))
 
-        # Execution
-        load_stats = await run_load_test(session, sensors, sem)
-        
-        # Wait a moment to ensure all alerts propagate, then stop listener
-        await asyncio.sleep(2)
-        stop_listener.set()
-        total_alerts_published = await listener_task
-        
-        print("\n⏳ Letting Redis Rate Limiter cool down for 10 seconds...")
-        await asyncio.sleep(10)
-        
-        sec_stats = await run_security_test(session, zone_id, sem)
-        
-        # End-to-End Test Execution
-        e2e_passed = await verify_persistence_with_polling(session, sensors, sem)
+            # Execution
+            load_stats = await run_load_test(mqtt_client, sensors, sem)
+            
+            # Wait a moment to ensure all alerts propagate, then stop listener
+            await asyncio.sleep(2)
+            stop_listener.set()
+            total_alerts_published = await listener_task
+            
+            print("\n⏳ Letting Redis Rate Limiter cool down for 10 seconds...")
+            await asyncio.sleep(10)
+            
+            sec_stats = await run_security_test(session, mqtt_client, zone_id, sem)
+            
+            # End-to-End Test Execution
+            e2e_passed = await verify_persistence_with_polling(session, sensors)
 
     # Report
     print("\n" + "="*40)
     print("📊 MISSION REPORT")
     print("="*40)
-    print(f"Traffic:      {load_stats.req_success}/{load_stats.req_sent} Accepted")
+    print(f"MQTT Publish:   {load_stats.req_success}/{load_stats.req_sent} ACK'd by Broker")
     print(f"Sec (BadSig): {sec_stats.auth_rejected} Blocked")
     print(f"Sec (Replay): {sec_stats.replay_rejected} Blocked")
     print(f"Alerts Fired: {total_alerts_published} (Expected deduplication: 1)")
     
-    # Update Report to reflect E2E status
     persistence_str = "✅ VERIFIED" if e2e_passed else "❌ FAILED"
     print(f"Persistence:  {persistence_str}")
     print("="*40)
 
-    # Must pass security, persistence, AND deduplication (<= 1 alert) to be certified!
     if sec_stats.auth_rejected > 0 and sec_stats.replay_rejected > 0 and e2e_passed and total_alerts_published <= 1:
         print("🏆 SYSTEM CERTIFIED")
     else:
