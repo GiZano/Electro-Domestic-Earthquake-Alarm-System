@@ -24,10 +24,11 @@ from redis import asyncio as aioredis
 from geoalchemy2.elements import WKTElement
 
 # --- LOCAL MODULES ---
-from src.database import get_db, engine
+from src.database import get_db, engine, SessionLocal
 import src.models as models
 import src.schemas as schemas
 from src.security import verify_api_key, validate_iot_payload
+from src.seed import seed_zones
 
 # --- SECURE CONFIGURATION ---
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
@@ -110,6 +111,9 @@ async def redis_alert_listener() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    with SessionLocal() as db:
+        seed_zones(db)
+        
     listener_task = asyncio.create_task(redis_alert_listener())
     yield
     listener_task.cancel()
@@ -270,22 +274,19 @@ def register_device(payload: schemas.DeviceRegisterRequest, db: Session = Depend
     if existing:
         return {"sensor_id": existing.id}
 
-    # 3. Create a fallback Zone if none exist 
-    # TODO: This is a temporary pragmatic workaround for fresh databases.
-    # Supersede and remove this logic once the initial database seeding (Zone seeding) is implemented.
-    default_zone = db.query(models.Zone).first()
+    # 3. Retrieve the fallback Zone (guaranteed to exist via seeder)
+    default_zone = db.query(models.Zone).filter(models.Zone.city == "Unknown Region").first()
+    
+    # Failsafe just in case the db seeder was bypassed
     if not default_zone:
-        default_zone = models.Zone(city="Unassigned Provisioning Zone")
-        db.add(default_zone)
-        db.commit()
-        db.refresh(default_zone)
+        default_zone = db.query(models.Zone).first() 
 
     # 4. Save the new device
     new_device = models.Misurator(
         active=True,
         zone_id=default_zone.id,
-        latitude=0.0,  # Default fallback until updated via app
-        longitude=0.0, # Default fallback until updated via app
+        latitude=0.0, 
+        longitude=0.0, 
         public_key_hex=payload.public_key_hex,
         mac_address=payload.mac_address
     )
@@ -294,7 +295,6 @@ def register_device(payload: schemas.DeviceRegisterRequest, db: Session = Depend
     db.commit()
     db.refresh(new_device)
 
-    # 5. Return the exact JSON structure the ESP32 is waiting for!
     return {"sensor_id": new_device.id}
 
 @app.get("/misurators/", response_model=List[schemas.Misurator], tags=["Data Retrieval"])

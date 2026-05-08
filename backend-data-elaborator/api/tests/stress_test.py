@@ -69,12 +69,15 @@ class MaliciousSensor(VirtualSensor):
 
 # --- UTILS (HTTP Provisioning) ---
 
-async def create_dynamic_zone(session: aiohttp.ClientSession) -> int:
-    city_name = f"TestZone_{uuid.uuid4().hex[:8]}"
-    async with session.post(f"{API_URL}/zones/", json={"city": city_name}) as resp:
-        if resp.status not in [200, 201]: raise Exception(f"Zone creation failed: {resp.status}")
-        data = await resp.json()
-        return data['id']
+async def get_test_zone(session: aiohttp.ClientSession) -> int:
+    """Fetches the ID of the seeded 'Unknown Region' zone to use for load testing."""
+    async with session.get(f"{API_URL}/zones/") as resp:
+        if resp.status != 200: 
+            raise Exception(f"Failed to fetch zones: {resp.status}")
+        
+        zones = await resp.json()
+        fallback_zone = next((z for z in zones if z["city"] == "Unknown Region"), zones[0])
+        return fallback_zone['id']
 
 async def register_sensor(session, sensor, zone_id, sem):
     async with sem:
@@ -237,10 +240,10 @@ async def main():
             
             # Setup
             try:
-                zone_id = await create_dynamic_zone(session)
+                zone_id = await get_test_zone(session) # <-- Use the fetch function instead
                 sensors = [VirtualSensor() for _ in range(NUM_SENSORS)]
                 await asyncio.gather(*[register_sensor(session, s, zone_id, sem) for s in sensors])
-                print(f"📝 Registered {NUM_SENSORS} sensors via HTTP.")
+                print(f"📝 Registered {NUM_SENSORS} sensors to Zone {zone_id}.")
             except Exception as e:
                 print(f"❌ Setup Failed: {e}")
                 return
