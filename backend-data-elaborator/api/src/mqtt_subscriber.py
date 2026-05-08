@@ -18,12 +18,12 @@ def wait_for_api(retries=10, delay=3):
     print("Checking API connection...")
     for i in range(retries):
         try:
-            r = requests.get(API_HEALTH_URL)
+            r = requests.get(API_HEALTH_URL, timeout=5)
             if r.status_code == 200:
-                print("✅ API is healthy and ready!")
                 return
-        except Exception:
-            pass
+        except requests.exceptions.RequestException as e:
+            print(f"Health check failed: {e}")
+            
         print(f"⏳ Waiting for API... ({i+1}/{retries})")
         time.sleep(delay)
     raise RuntimeError("❌ API never became healthy")
@@ -36,7 +36,7 @@ def on_message(client, userdata, msg):
     try:
         payload = msg.payload.decode()
         headers = {"X-API-Key": IOT_API_KEY, "Content-Type": "application/json"}
-        response = requests.post(API_INGESTION_URL, data=payload, headers=headers)
+        response = requests.post(API_INGESTION_URL, data=payload, headers=headers, timeout=10)
         
         if response.status_code == 202:
             print("✅ Payload bridged successfully.")
