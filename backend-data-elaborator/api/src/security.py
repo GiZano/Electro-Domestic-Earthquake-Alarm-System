@@ -5,8 +5,12 @@ import os
 from fastapi import Security, HTTPException, status, Depends
 from fastapi.security import APIKeyHeader
 from sqlalchemy.orm import Session
-from ecdsa import VerifyingKey, NIST256p
-from ecdsa.util import sigdecode_der, sigdecode_string
+
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.serialization import load_der_public_key
+from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
+from cryptography.exceptions import InvalidSignature
 
 from src.database import get_db
 import src.models as models
@@ -30,7 +34,7 @@ def verify_api_key(api_key: str = Security(api_key_scheme)):
     return api_key
 
 def verify_device_signature(public_key_hex: str, message: str, signature_hex: str) -> bool:
-    """Validates the ECDSA signature from the IoT device."""
+    """Validates the ECDSA signature from the IoT device using the cryptography library."""
     if not public_key_hex or not signature_hex:
         return False
         
@@ -39,20 +43,38 @@ def verify_device_signature(public_key_hex: str, message: str, signature_hex: st
         sig_bytes = bytes.fromhex(signature_hex)
         message_bytes = message.encode('utf-8')
 
+        # 1. Load the Public Key (Handle DER vs Raw String)
         try:
-            vk = VerifyingKey.from_der(key_bytes)
-        except Exception:
-            vk = VerifyingKey.from_string(key_bytes, curve=NIST256p)
+            public_key = load_der_public_key(key_bytes)
+        except ValueError:
+            # Fallback for older sensors: Raw uncompressed 64-byte point
+            if len(key_bytes) == 64:
+                key_bytes = b'\x04' + key_bytes # Prepend standard uncompressed marker
+            public_key = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), key_bytes)
         
+        # 2. Verify the Signature (Handle DER vs Raw String)
         try:
-            return vk.verify(sig_bytes, message_bytes, sigdecode=sigdecode_der, hashfunc=hashlib.sha256)
-        except Exception:
+            # Try standard DER encoded signature
+            public_key.verify(sig_bytes, message_bytes, ec.ECDSA(hashes.SHA256()))
+            return True
+        except (InvalidSignature, Exception):
+            pass
+            
+        # Fallback for older sensors: Try Raw Signature (r || s)
+        if len(sig_bytes) == 64:
+            r = int.from_bytes(sig_bytes[:32], 'big')
+            s = int.from_bytes(sig_bytes[32:], 'big')
+            der_sig = encode_dss_signature(r, s) # Convert raw to DER
             try:
-                return vk.verify(sig_bytes, message_bytes, sigdecode=sigdecode_string, hashfunc=hashlib.sha256)
-            except Exception:
+                public_key.verify(der_sig, message_bytes, ec.ECDSA(hashes.SHA256()))
+                return True
+            except InvalidSignature:
                 return False
+                
     except Exception:
         return False
+        
+    return False
 
 async def validate_iot_payload(
     misuration: schemas.MisurationCreate,

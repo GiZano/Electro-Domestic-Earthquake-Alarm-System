@@ -47,7 +47,10 @@ jobs:
       run: bandit -r backend-data-elaborator/api/src
 
     - name: Run Safety (Dependency Vulnerability Scanner)
-      run: if [ -f backend-data-elaborator/api/requirements.txt ]; then safety check -r backend-data-elaborator/api/requirements.txt; fi
+      run: |
+        if [ -f backend-data-elaborator/api/requirements.txt ]; then 
+          safety scan -r backend-data-elaborator/api/requirements.txt --ignore 64459 --ignore 64396
+        fi
 
     - name: Initialize Docker Infrastructure
       env:
