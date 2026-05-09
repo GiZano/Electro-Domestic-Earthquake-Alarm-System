@@ -40,16 +40,20 @@ jobs:
     - name: Install Python Dependencies & Security Tools
       run: |
         python -m pip install --upgrade pip
-        pip install bandit safety aiohttp ecdsa redis sqlalchemy psycopg2-binary geoalchemy2
+        # Swapped ecdsa for cryptography here
+        pip install bandit safety aiohttp cryptography redis sqlalchemy psycopg2-binary geoalchemy2
         if [ -f backend-data-elaborator/api/requirements.txt ]; then pip install -r backend-data-elaborator/api/requirements.txt; fi
 
     - name: Run Bandit (Static Security Linter)
       run: bandit -r backend-data-elaborator/api/src
 
     - name: Run Safety (Dependency Vulnerability Scanner)
+      env:
+        SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
       run: |
+        # No more --ignore flags needed!
         if [ -f backend-data-elaborator/api/requirements.txt ]; then 
-          safety scan -r backend-data-elaborator/api/requirements.txt --ignore 64459 --ignore 64396
+          safety scan -r backend-data-elaborator/api/requirements.txt
         fi
 
     - name: Initialize Docker Infrastructure
