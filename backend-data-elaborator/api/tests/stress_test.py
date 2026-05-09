@@ -16,16 +16,17 @@ import aiohttp
 import time
 import random
 import os
-import uuid
-import hashlib
 import json
+import hashlib
 import redis.asyncio as aioredis
 import aiomqtt
 from typing import Tuple
 from dataclasses import dataclass
 
-from ecdsa import SigningKey, NIST256p
-from ecdsa.util import sigencode_der
+# --- NEW CRYPTOGRAPHY IMPORTS ---
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 # --- CONFIGURATION ---
 API_URL = os.getenv("API_URL", "http://localhost:8000")
@@ -51,9 +52,16 @@ class TestStats:
 
 class VirtualSensor:
     def __init__(self):
-        self.sk = SigningKey.generate(curve=NIST256p)
-        self.vk = self.sk.verifying_key
-        self.public_key_hex = self.vk.to_der().hex()
+        # Generate private key using cryptography SECP256R1 (equivalent to NIST256p)
+        self.sk = ec.generate_private_key(ec.SECP256R1())
+        
+        # Extract the public key in DER format and convert to hex
+        public_key = self.sk.public_key()
+        self.public_key_hex = public_key.public_bytes(
+            encoding=Encoding.DER,
+            format=PublicFormat.SubjectPublicKeyInfo
+        ).hex()
+        
         self.sensor_id: int = 0
         # Bounding box roughly around Italy
         self.lat = round(random.uniform(36.0, 47.0), 6)
@@ -61,12 +69,22 @@ class VirtualSensor:
         self.sent_count = 0 
 
     def sign_message(self, message: str) -> str:
-        return self.sk.sign(message.encode('utf-8'), hashfunc=hashlib.sha256, sigencode=sigencode_der).hex()
+        # Sign the message using SHA256 and convert to hex
+        signature_bytes = self.sk.sign(
+            message.encode('utf-8'),
+            ec.ECDSA(hashes.SHA256())
+        )
+        return signature_bytes.hex()
 
 class MaliciousSensor(VirtualSensor):
     def sign_with_wrong_key(self, message: str) -> str:
-        fake_sk = SigningKey.generate(curve=NIST256p)
-        return fake_sk.sign(message.encode('utf-8'), hashfunc=hashlib.sha256, sigencode=sigencode_der).hex()
+        # Generate a completely separate fake private key to forge the signature
+        fake_sk = ec.generate_private_key(ec.SECP256R1())
+        signature_bytes = fake_sk.sign(
+            message.encode('utf-8'),
+            ec.ECDSA(hashes.SHA256())
+        )
+        return signature_bytes.hex()
 
 # --- UTILS (HTTP Provisioning) ---
 
