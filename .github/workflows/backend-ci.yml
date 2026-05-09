@@ -61,6 +61,7 @@ jobs:
         POSTGRES_DB: ${{ secrets.CI_POSTGRES_DB }}
         POSTGRES_USER: ${{ secrets.CI_POSTGRES_USER }}
         POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
+        IOT_API_KEY: "ci-test-key-123"
         API_PORT: 8000
       run: |
         cd backend-data-elaborator/api
@@ -75,6 +76,7 @@ jobs:
         API_URL: "http://localhost:8000"
         NUM_SENSORS: 150
         CONCURRENCY_LIMIT: 50
+        IOT_API_KEY: "ci-test-key-123"
       run: |
         cd backend-data-elaborator/api
         export PYTHONPATH=$PYTHONPATH:.
