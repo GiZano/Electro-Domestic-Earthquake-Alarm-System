@@ -175,6 +175,9 @@ bool performProvisioning() {
     doc["mac_address"] = WiFi.macAddress();
     doc["enrollment_token"] = ENROLLMENT_TOKEN;
     
+    doc["latitude"] = 0.0;
+    doc["longitude"] = 0.0;
+    
     String requestBody;
     serializeJson(doc, requestBody);
 

@@ -18,7 +18,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, func
 from sqlalchemy.exc import OperationalError
 from redis import asyncio as aioredis
 from geoalchemy2.elements import WKTElement
@@ -141,6 +141,26 @@ async def rate_limiter(request: Request):
             detail="Rate limit exceeded. Too many requests from this IP."
         )
 
+def resolve_zone(db: Session, latitude: float, longitude: float) -> int:
+    """
+    Spatial auto-assignment helper.
+    Finds the smallest containing polygon for given GPS coordinates.
+    Falls back to 'Unknown Region' if no match is found.
+    """
+    point = WKTElement(f"POINT({longitude} {latitude})", srid=4326)
+    
+    # Query PostGIS to find the containing polygon, ordered by smallest area first
+    matched_zone = db.query(models.Zone).filter(
+        func.ST_Contains(models.Zone.geom, point)
+    ).order_by(func.ST_Area(models.Zone.geom).asc()).first()
+
+    if matched_zone:
+        return matched_zone.id
+        
+    # Fallback to Unknown Region
+    fallback = db.query(models.Zone).filter(models.Zone.city == "Unknown Region").first()
+    return fallback.id if fallback else 1 # Final failsafe
+
 # ==========================================
 # WEBSOCKET ENDPOINT
 # ==========================================
@@ -237,14 +257,13 @@ def create_misurator(misurator: schemas.MisuratorCreate, db: Session = Depends(g
     if existing:
         return existing
 
-    zone = db.query(models.Zone).filter(models.Zone.id == misurator.zone_id).first()
-    if not zone:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zone not found")
-    
+    # 🌍 SPATIAL AUTO-ASSIGNMENT LOGIC (Refactored)
+    assigned_zone_id = misurator.zone_id or resolve_zone(db, misurator.latitude, misurator.longitude)
+
     gps_point = f"POINT({misurator.longitude} {misurator.latitude})"
     db_misurator = models.Misurator(
         active=misurator.active, 
-        zone_id=misurator.zone_id,
+        zone_id=assigned_zone_id,
         latitude=misurator.latitude, 
         longitude=misurator.longitude,
         location=WKTElement(gps_point, srid=4326), 
@@ -257,15 +276,10 @@ def create_misurator(misurator: schemas.MisuratorCreate, db: Session = Depends(g
 
 @app.post("/devices/register", status_code=status.HTTP_201_CREATED, tags=["Provisioning"])
 def register_device(payload: schemas.DeviceRegisterRequest, db: Session = Depends(get_db)):
-    """
-    Automated Device Handshake.
-    Validates the enrollment token, registers the MAC/Public Key, and returns the assigned ID.
-    """
-    # 1. Validate the hardware token against the secure environment variable
+    """Automated Device Handshake with Spatial Zone Assignment."""
     if payload.enrollment_token != ENROLLMENT_TOKEN:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid enrollment token")
 
-    # 2. Check if this exact device is already registered (reboot scenario)
     existing = db.query(models.Misurator).filter(
         (models.Misurator.mac_address == payload.mac_address) |
         (models.Misurator.public_key_hex == payload.public_key_hex)
@@ -274,19 +288,16 @@ def register_device(payload: schemas.DeviceRegisterRequest, db: Session = Depend
     if existing:
         return {"sensor_id": existing.id}
 
-    # 3. Retrieve the fallback Zone (guaranteed to exist via seeder)
-    default_zone = db.query(models.Zone).filter(models.Zone.city == "Unknown Region").first()
-    
-    # Failsafe just in case the db seeder was bypassed
-    if not default_zone:
-        default_zone = db.query(models.Zone).first() 
+    # 🌍 SPATIAL AUTO-ASSIGNMENT LOGIC (Refactored)
+    assigned_zone_id = resolve_zone(db, payload.latitude, payload.longitude)
+    point = WKTElement(f"POINT({payload.longitude} {payload.latitude})", srid=4326)
 
-    # 4. Save the new device
     new_device = models.Misurator(
         active=True,
-        zone_id=default_zone.id,
-        latitude=0.0, 
-        longitude=0.0, 
+        zone_id=assigned_zone_id,
+        latitude=payload.latitude, 
+        longitude=payload.longitude, 
+        location=point,
         public_key_hex=payload.public_key_hex,
         mac_address=payload.mac_address
     )

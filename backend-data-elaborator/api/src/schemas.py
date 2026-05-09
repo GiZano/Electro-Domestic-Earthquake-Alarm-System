@@ -30,7 +30,7 @@ class Zone(ZoneBase):
 # ==========================================
 class MisuratorBase(BaseModel):
     active: bool
-    zone_id: int
+    zone_id: Optional[int] = None
 
 class MisuratorCreate(MisuratorBase):
     """
@@ -87,5 +87,7 @@ class Misuration(BaseModel):
 class DeviceRegisterRequest(BaseModel):
     """Payload sent by the ESP32 during its first boot."""
     public_key_hex: str = Field(..., description="The generated ECDSA public key")
-    mac_address: str = Field(..., max_length=17, description="The hardware MAC address (e.g., 00:1B:44:11:3A:B7)")
+    mac_address: str = Field(..., max_length=17, description="The hardware MAC address")
     enrollment_token: str = Field(..., description="The hardcoded factory enrollment token")
+    latitude: float = Field(default=0.0, ge=-90, le=90)
+    longitude: float = Field(default=0.0, ge=-180, le=180)

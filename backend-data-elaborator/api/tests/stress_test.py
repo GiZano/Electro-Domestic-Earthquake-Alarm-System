@@ -55,8 +55,9 @@ class VirtualSensor:
         self.vk = self.sk.verifying_key
         self.public_key_hex = self.vk.to_der().hex()
         self.sensor_id: int = 0
-        self.lat = round(random.uniform(-90, 90), 6)
-        self.lon = round(random.uniform(-180, 180), 6)
+        # Bounding box roughly around Italy
+        self.lat = round(random.uniform(36.0, 47.0), 6)
+        self.lon = round(random.uniform(6.5, 18.5), 6)
         self.sent_count = 0 
 
     def sign_message(self, message: str) -> str:
@@ -79,17 +80,23 @@ async def get_test_zone(session: aiohttp.ClientSession) -> int:
         fallback_zone = next((z for z in zones if z["city"] == "Unknown Region"), zones[0])
         return fallback_zone['id']
 
-async def register_sensor(session, sensor, zone_id, sem):
+async def register_sensor(session, sensor, sem):
     async with sem:
-        payload = { "active": True, "zone_id": zone_id, "latitude": sensor.lat, "longitude": sensor.lon, "public_key_hex": sensor.public_key_hex }
+        payload = { "active": True, "latitude": sensor.lat, "longitude": sensor.lon, "public_key_hex": sensor.public_key_hex }
         try:
             async with session.post(f"{API_URL}/misurators/", json=payload) as resp:
                 if resp.status in [200, 201]:
                     data = await resp.json()
                     sensor.sensor_id = data['id']
                     return True
+                
+                # 💡 FIX: Print the exact error so we aren't flying blind!
+                error_text = await resp.text()
+                print(f"❌ Registration Failed (HTTP {resp.status}): {error_text}")
                 return False
-        except: return False
+        except Exception as e:
+            print(f"❌ Connection Error: {e}")
+            return False
 
 async def get_sensor_readings(session, sensor_id: int) -> int:
     """Helper to check how many readings the backend actually persisted."""
@@ -176,11 +183,11 @@ async def run_load_test(mqtt_client, sensors, sem) -> TestStats:
             
     return stats
 
-async def run_security_test(session, mqtt_client, zone_id, sem) -> TestStats:
+async def run_security_test(session, mqtt_client, sem) -> TestStats:
     stats = TestStats()
     print("\n⚔️  Phase 2: Security Attacks (Verifying via Backend DB)...")
     bad_sensor = MaliciousSensor()
-    await register_sensor(session, bad_sensor, zone_id, sem)
+    await register_sensor(session, bad_sensor, sem)
     
     # Attack A: Bad Sig
     print("   👉 A: Bad Signature...", end=" ")
@@ -240,10 +247,9 @@ async def main():
             
             # Setup
             try:
-                zone_id = await get_test_zone(session) # <-- Use the fetch function instead
                 sensors = [VirtualSensor() for _ in range(NUM_SENSORS)]
-                await asyncio.gather(*[register_sensor(session, s, zone_id, sem) for s in sensors])
-                print(f"📝 Registered {NUM_SENSORS} sensors to Zone {zone_id}.")
+                await asyncio.gather(*[register_sensor(session, s, sem) for s in sensors])
+                print(f"📝 Registered {NUM_SENSORS} sensors via Spatial Auto-Assignment.")
             except Exception as e:
                 print(f"❌ Setup Failed: {e}")
                 return
@@ -263,7 +269,7 @@ async def main():
             print("\n⏳ Letting Redis Rate Limiter cool down for 10 seconds...")
             await asyncio.sleep(10)
             
-            sec_stats = await run_security_test(session, mqtt_client, zone_id, sem)
+            sec_stats = await run_security_test(session, mqtt_client, sem)
             
             # End-to-End Test Execution
             e2e_passed = await verify_persistence_with_polling(session, sensors)
