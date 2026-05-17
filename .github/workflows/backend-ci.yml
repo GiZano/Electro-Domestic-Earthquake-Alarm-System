@@ -20,9 +20,9 @@ jobs:
     steps:
     - name: Checkout Source Code
       uses: actions/checkout@v4
+      
     - name: Validate Commit Messages
       uses: wagoid/commitlint-github-action@v5
-
 
     - name: Setup Python Environment
       uses: actions/setup-python@v5
@@ -40,8 +40,7 @@ jobs:
     - name: Install Python Dependencies & Security Tools
       run: |
         python -m pip install --upgrade pip
-        # Swapped ecdsa for cryptography here
-        pip install bandit safety aiohttp cryptography redis sqlalchemy psycopg2-binary geoalchemy2
+        pip install bandit safety aiohttp cryptography redis sqlalchemy psycopg2-binary geoalchemy2 aiomqtt
         if [ -f backend-data-elaborator/api/requirements.txt ]; then pip install -r backend-data-elaborator/api/requirements.txt; fi
 
     - name: Run Bandit (Static Security Linter)
@@ -51,7 +50,6 @@ jobs:
       env:
         SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
       run: |
-        # No more --ignore flags needed!
         if [ -f backend-data-elaborator/api/requirements.txt ]; then 
           safety scan -r backend-data-elaborator/api/requirements.txt
         fi
@@ -65,12 +63,17 @@ jobs:
         MOBILE_WS_TOKEN: "ci-ws-token-456"
         ENROLLMENT_TOKEN: "ci-enroll-token-789"
         API_PORT: 8000
+        MQTT_PORT: 1883  # 1. FIXED: Added so docker-compose can map the broker port outwards
       run: |
         cd backend-data-elaborator/api
         docker compose up -d --build
+        
         echo "Waiting for database readiness..."
-        # Updated to use the secret reference for the user flag
         timeout 30s bash -c 'until docker compose exec -T postgres pg_isready -U ${{ secrets.CI_POSTGRES_USER }}; do sleep 2; done'
+        
+        echo "Waiting for MQTT Broker readiness..."
+        timeout 30s bash -c 'until nc -z localhost 1883; do sleep 1; done' # 2. FIXED: Prevents race conditions
+        
         docker compose ps
 
     - name: Execute Critical Stress Test
@@ -79,6 +82,8 @@ jobs:
         NUM_SENSORS: 150
         CONCURRENCY_LIMIT: 50
         IOT_API_KEY: "ci-test-key-123"
+        MQTT_BROKER: "localhost" # 3. FIXED: Explicitly forces aiomqtt to target the host pipeline
+        MQTT_PORT: 1883          # 4. FIXED: Explicitly passes port to stress test runtime
       run: |
         cd backend-data-elaborator/api
         export PYTHONPATH=$PYTHONPATH:.
