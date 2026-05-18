@@ -13,6 +13,8 @@
 ![Redis](https://img.shields.io/badge/Redis-Message_Broker-DC382D?style=for-the-badge&logo=redis&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Containerization-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
+![QuakeGuard Logo](docs/assets/logo/png/github-banner.png)
+
 *Version 0.9.0 (Release Candidate)*
 
 </div>
