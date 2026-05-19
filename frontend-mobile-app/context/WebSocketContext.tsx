@@ -7,10 +7,22 @@ import React, {
   useState,
   useCallback,
 } from "react";
-import { Vibration } from "react-native";
-// 💡 IMPORT MOBILE_WS_TOKEN HERE
+import { Vibration, Platform } from "react-native";
+import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
 import { API_BASE_URL, MOBILE_WS_TOKEN } from "../constants/config";
 import { useAlertStore } from '../store/useAlertStore';
+import { usePreferencesStore } from '../store/usePrefrencesStore';
+
+// --- NOTIFICATION HANDLER ---
+// Tells the app how to handle notifications received while the app is actively open
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: usePreferencesStore.getState().notificationsEnabled,
+    shouldPlaySound: usePreferencesStore.getState().notificationsEnabled,
+    shouldSetBadge: false,
+  }),
+});
 
 // --- TYPES & INTERFACES ---
 export interface AlertMessage {
@@ -44,6 +56,33 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
   const ws = useRef<WebSocket | null>(null);
   const reconnectTimeout = useRef<ReturnType<typeof setTimeout> | null>(null); 
   const reconnectAttempts = useRef<number>(0);
+
+  // Startup: Request Notification Permissions
+  useEffect(() => {
+    const registerForPushNotificationsAsync = async () => {
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'default',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#FF231F7C',
+        });
+      }
+      if (Device.isDevice) {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        if (existingStatus !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+        if (finalStatus !== 'granted') {
+          console.warn('Failed to get push token for push notification!');
+          return;
+        }
+      }
+    };
+    registerForPushNotificationsAsync();
+  }, []);
   
   const connect = useCallback(() => {
     if (ws.current?.readyState === WebSocket.OPEN) return;
@@ -64,11 +103,27 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
         const message: AlertMessage = JSON.parse(event.data);
         console.log("⚡ ALERT RECEIVED:", message);
 
+        // ALWAYS update state (Dashboard UI relies on this)
         setLastAlert(message);
-        useAlertStore.getState().addAlert(message); // Keep our Zustand history!
+        useAlertStore.getState().addAlert(message); 
 
-        if (message.type === "CRITICAL") {
+        // GATE: Check user preferences before disturbing them
+        const { notificationsEnabled } = usePreferencesStore.getState();
+
+        if (message.type === "CRITICAL" && notificationsEnabled) {
+          // Hardware Haptics
           Vibration.vibrate(SOS_VIBRATION_PATTERN);
+          
+          // Local OS Push Notification
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: "⚠️ CRITICAL SEISMIC ALERT",
+              body: `Magnitude ${message.magnitude.toFixed(1)} detected. ${message.message}`,
+              sound: true,
+              priority: Notifications.AndroidNotificationPriority.MAX,
+            },
+            trigger: null, // Fire immediately
+          });
         }
       } catch (err) {
         console.error("❌ Error parsing WS message:", err);
@@ -79,7 +134,6 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
       console.log("❌ WS Disconnected");
       setIsConnected(false);
 
-      // 💡 INLINED RECONNECTION LOGIC: Breaks the circular dependency!
       const delay = Math.min(
         1000 * Math.pow(2, reconnectAttempts.current),
         MAX_RECONNECT_DELAY
@@ -88,7 +142,7 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
       console.log(`⏳ Reconnecting in ${delay / 1000} seconds...`);
       reconnectTimeout.current = setTimeout(() => {
         reconnectAttempts.current += 1;
-        connect(); // Recursive call is perfectly safe and lint-compliant here
+        connect();
       }, delay);
     };
 
@@ -100,9 +154,7 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
   useEffect(() => {
     connect();
     return () => {
-      if (reconnectTimeout.current) {
-        clearTimeout(reconnectTimeout.current);
-      }
+      if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
       ws.current?.close();
     };
   }, [connect]);

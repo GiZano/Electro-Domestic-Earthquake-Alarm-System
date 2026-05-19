@@ -1,6 +1,7 @@
 import { Vibration } from "react-native";
 import { create } from "zustand";
 import { API_BASE_URL } from "../constants/config";
+import { usePreferencesStore } from "./usePrefrencesStore";
 
 // ------------------------------------------------------------------
 // Interfaces
@@ -91,7 +92,10 @@ export const useQuakeStore = create<QuakeState>((set, get) => ({
 
         // Trigger haptic feedback on state transition to ALERT
         if (newStatus === "ALERT" && currentStatus === "SECURE") {
-          Vibration.vibrate([0, 500, 200, 500]); // Wait 0ms, Vibrate 500ms, Wait 200ms, Vibrate 500ms
+          const { notificationsEnabled } = usePreferencesStore.getState(); // <-- ADD THIS CHECK
+          if (notificationsEnabled) {
+            Vibration.vibrate([0, 500, 200, 500]);
+          }
         }
 
         set({ systemStatus: newStatus, lastAlertTime: latestAlertTime });
