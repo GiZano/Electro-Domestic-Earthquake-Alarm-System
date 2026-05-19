@@ -91,3 +91,12 @@ class DeviceRegisterRequest(BaseModel):
     enrollment_token: str = Field(..., description="The hardcoded factory enrollment token")
     latitude: float = Field(default=0.0, ge=-90, le=90)
     longitude: float = Field(default=0.0, ge=-180, le=180)
+
+# ==========================================
+# DEMO SCHEMAS
+# ==========================================
+class DemoAlertRequest(BaseModel):
+    """Payload for manually triggering a simulated earthquake alert."""
+    zone_id: int = Field(default=1, description="Target Zone ID for the alert")
+    magnitude: float = Field(default=7.5, description="Simulated earthquake magnitude")
+    message: str = Field(default="Simulated Critical Event", description="Custom alert message")
