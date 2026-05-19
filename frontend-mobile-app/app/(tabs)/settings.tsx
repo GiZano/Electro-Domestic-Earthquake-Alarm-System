@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, Switch, Alert, TouchableOpacity } from "react-n
 import { SafeAreaView } from "react-native-safe-area-context";
 // 💡 ADD Trash2 icon
 import { Settings as SettingsIcon, Bell, WifiOff, Trash2 } from "lucide-react-native";
-import { usePreferencesStore } from "../../store/usePrefrencesStore";
+import { usePreferencesStore } from "../../store/usePreferencesStore";
 // 💡 IMPORT the store
 import { useAlertStore } from "../../store/useAlertStore";
 

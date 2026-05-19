@@ -12,10 +12,9 @@ import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import { API_BASE_URL, MOBILE_WS_TOKEN } from "../constants/config";
 import { useAlertStore } from '../store/useAlertStore';
-import { usePreferencesStore } from '../store/usePrefrencesStore';
+import { usePreferencesStore } from '../store/usePreferencesStore';
 
 // --- NOTIFICATION HANDLER ---
-// Tells the app how to handle notifications received while the app is actively open
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: usePreferencesStore.getState().notificationsEnabled,
@@ -42,22 +41,27 @@ const WebSocketContext = createContext<WebSocketContextType | null>(null);
 
 // --- CONSTANTS ---
 const SOS_VIBRATION_PATTERN = [
-  0, 200, 100, 200, 100, 200, // 3 short
-  300, 500, 300, 500, 300, 500, // 3 long
-  300, 200, 100, 200, 100, 200, // 3 short
+  0, 200, 100, 200, 100, 200, 
+  300, 500, 300, 500, 300, 500, 
+  300, 200, 100, 200, 100, 200, 
 ];
 
-const MAX_RECONNECT_DELAY = 30000; // 30 seconds max backoff
+const MAX_RECONNECT_DELAY = 30000;
 
 export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [lastAlert, setLastAlert] = useState<AlertMessage | null>(null);
   
+  // Bring in the offline mode flag
+  const isOfflineMode = usePreferencesStore((state) => state.isOfflineMode);
+  
   const ws = useRef<WebSocket | null>(null);
   const reconnectTimeout = useRef<ReturnType<typeof setTimeout> | null>(null); 
   const reconnectAttempts = useRef<number>(0);
+  
+  // Track intentional closures so the onclose handler doesn't aggressively reconnect
+  const intentionalClose = useRef<boolean>(false);
 
-  // Startup: Request Notification Permissions
   useEffect(() => {
     const registerForPushNotificationsAsync = async () => {
       if (Platform.OS === 'android') {
@@ -85,8 +89,11 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
   }, []);
   
   const connect = useCallback(() => {
+    // Prevent connection if offline mode is currently active
+    if (usePreferencesStore.getState().isOfflineMode) return;
     if (ws.current?.readyState === WebSocket.OPEN) return;
 
+    intentionalClose.current = false;
     const wsUrl = `${API_BASE_URL.replace("http", "ws")}/ws/alerts?token=${MOBILE_WS_TOKEN}`;
     console.log(`🔌 Attempting WS Connection: ${wsUrl}`);
 
@@ -103,18 +110,13 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
         const message: AlertMessage = JSON.parse(event.data);
         console.log("⚡ ALERT RECEIVED:", message);
 
-        // ALWAYS update state (Dashboard UI relies on this)
         setLastAlert(message);
         useAlertStore.getState().addAlert(message); 
 
-        // GATE: Check user preferences before disturbing them
         const { notificationsEnabled } = usePreferencesStore.getState();
 
         if (message.type === "CRITICAL" && notificationsEnabled) {
-          // Hardware Haptics
           Vibration.vibrate(SOS_VIBRATION_PATTERN);
-          
-          // Local OS Push Notification
           Notifications.scheduleNotificationAsync({
             content: {
               title: "⚠️ CRITICAL SEISMIC ALERT",
@@ -122,7 +124,7 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
               sound: true,
               priority: Notifications.AndroidNotificationPriority.MAX,
             },
-            trigger: null, // Fire immediately
+            trigger: null,
           });
         }
       } catch (err) {
@@ -133,6 +135,9 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
     ws.current.onclose = () => {
       console.log("❌ WS Disconnected");
       setIsConnected(false);
+
+      // Do not attempt to reconnect if the user intentionally went offline
+      if (intentionalClose.current) return;
 
       const delay = Math.min(
         1000 * Math.pow(2, reconnectAttempts.current),
@@ -150,6 +155,19 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
       console.error("⚠️ WS Error:", error);
     };
   }, []);
+
+  // 💡 THE NEW WATCHER: React to the offline toggle changing
+  useEffect(() => {
+    if (isOfflineMode) {
+      console.log("🛑 Offline Mode Activated. Shutting down WS...");
+      intentionalClose.current = true;
+      if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
+      ws.current?.close();
+    } else {
+      console.log("🟢 Online Mode Activated. Booting up WS...");
+      connect();
+    }
+  }, [isOfflineMode, connect]);
 
   useEffect(() => {
     connect();
