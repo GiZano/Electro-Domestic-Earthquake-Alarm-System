@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../client';
-import { usePreferencesStore } from '../../store/usePrefrencesStore';
+import { usePreferencesStore } from '../../store/usePreferencesStore';
 
 export const useSensors = () => {
   const isOfflineMode = usePreferencesStore((state) => state.isOfflineMode);

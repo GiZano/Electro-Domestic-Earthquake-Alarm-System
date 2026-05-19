@@ -1,7 +1,7 @@
 import { Vibration } from "react-native";
 import { create } from "zustand";
 import { API_BASE_URL } from "../constants/config";
-import { usePreferencesStore } from "./usePrefrencesStore";
+import { usePreferencesStore } from "./usePreferencesStore";
 
 // ------------------------------------------------------------------
 // Interfaces
