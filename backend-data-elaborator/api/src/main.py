@@ -14,6 +14,7 @@ import time
 import os
 from typing import List
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, Request
 from fastapi.responses import JSONResponse
@@ -234,6 +235,32 @@ async def health_check():
         
     return health_status
 
+@app.post("/demo/trigger-earthquake", status_code=status.HTTP_200_OK, tags=["Demo"])
+async def trigger_demo_earthquake(
+    payload: schemas.DemoAlertRequest,
+    api_key: str = Depends(verify_api_key)
+):
+    """
+    Instantly triggers a simulated CRITICAL earthquake alert.
+    Bypasses the IoT ingestion pipeline and broadcasts directly to all connected WebSocket clients.
+    """
+    # Construct the exact payload format expected by the frontend WebSocketContext
+    alert_data = {
+        "type": "CRITICAL",
+        "zone_id": payload.zone_id,
+        "magnitude": payload.magnitude,
+        "message": payload.message,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+    # Publish directly to the Redis Pub/Sub channel
+    await redis_client.publish("quake_alerts", json.dumps(alert_data))
+
+    return {
+        "status": "success",
+        "detail": "Demo alert broadcasted successfully",
+        "payload": alert_data
+    }
 
 @app.post("/zones/", response_model=schemas.Zone, status_code=status.HTTP_201_CREATED, tags=["Registration"])
 def create_zone(zone: schemas.ZoneCreate, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
