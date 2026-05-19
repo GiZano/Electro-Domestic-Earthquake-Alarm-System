@@ -1,5 +1,5 @@
--- Connettiti al database giusto (opzionale se lo script viene eseguito nel contesto giusto, ma sicuro)
+-- Connect to correct database (optional if executed in correct environment, but secure)
 \c monitoraggio_db;
 
--- Abilita PostGIS
+-- Turn PostGIS ON
 CREATE EXTENSION IF NOT EXISTS postgis;

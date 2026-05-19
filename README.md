@@ -318,8 +318,11 @@ QuakeGuard/
 │       │   └── database.py          # DB engine and session factory
 │       ├── tests/
 │       │   └── stress_test.py       # Critical E2E stress test suite
+│       ├── build.ps1                # Automatic container publish
 │       ├── docker-compose.yml
 │       ├── Dockerfile
+│       ├── mosquitto.conf
+│       ├── requirements.txt         # Python requirements for backend development
 │       └── .env.example
 ├── frontend-mobile-app/
 │   ├── app/                         # Expo Router screens
@@ -327,19 +330,24 @@ QuakeGuard/
 │   │       ├── index.tsx            # Monitor / Dashboard
 │   │       ├── map.tsx              # Sensor Network Map
 │   │       └── settings.tsx         # User Preferences
-│   ├── src/
-│   │   ├── api/                     # Axios client + TanStack Query hooks
-│   │   ├── components/              # Shared UI components
-│   │   └── store/                   # Zustand state slices
+│   ├── api/                     # Axios client + TanStack Query hooks
+│   ├── components/              # Shared UI components
+│   ├── store/                   # Zustand state slices
 │   ├── context/
 │   │   └── WebSocketContext.tsx     # Real-time alert context
 │   └── constants/
 │       └── config.ts                # Centralized configuration
 └── iot-data-harvester/
     └── esp32_code/
-        └── src/
-            ├── main.cpp             # FreeRTOS tasks, STA/LTA, MQTT, provisioning
-            └── RingBuffer.h         # Statically allocated circular buffer
+        ├── src/
+        │   ├── main.cpp             # FreeRTOS tasks, STA/LTA, MQTT, provisioning
+        │   └── RingBuffer.h         # Statically allocated circular buffer
+        ├── test/                    # Test scripts to insert into the ESP32
+        ├── key_generator/
+        │   └── key_gen.py           # ECDSA key generator for backend testing
+        ├── esp32_config.env.example
+        ├── extra_script.py          # ENV variables injector
+        └── platformio.ini
 ```
 
 ---
@@ -363,12 +371,9 @@ See the [LICENSE](LICENSE) file for details.
 
 <div align="center">
 
-**Developed by [GiZano](https://giovanni-zanotti.is-a.dev)**
+**Developed by [GiZano](https://giovanni-zanotti.is-a.dev) and [riccardo0731](https://riccardo0731.github.io)**
 <br>
 *Open Source — AGPL-3.0 License*
 <br><br>
-
-[![Portfolio](https://img.shields.io/badge/Portfolio-giovanni--zanotti.is--a.dev-red?style=for-the-badge)](https://giovanni-zanotti.is-a.dev/Pages/Works/quakeguard.html)
-[![GitHub](https://img.shields.io/badge/GitHub-GiZano%2FQuakeGuard-181717?style=for-the-badge&logo=github)](https://github.com/GiZano/QuakeGuard)
 
 </div>
