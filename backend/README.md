@@ -11,7 +11,7 @@ This repository hosts the **API Gateway**, **Background Worker**, and **Persiste
 The project is organized as a modular microservice architecture:
 
 ```text
-backend-data-elaborator/
+backend/
 └── api/
     ├── init-scripts/       # SQL initialization scripts (PostGIS)
     ├── src/                # Source Code

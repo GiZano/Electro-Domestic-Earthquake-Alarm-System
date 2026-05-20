@@ -64,7 +64,7 @@ The project follows **Microservices** and **Event-Driven Design** principles acr
 
 ---
 
-## 📡 IoT Edge (`iot-data-harvester/`)
+## 📡 IoT Edge (`firmware/`)
 
 | Feature | Detail |
 |---------|--------|
@@ -80,7 +80,7 @@ The project follows **Microservices** and **Event-Driven Design** principles acr
 
 ---
 
-## ☁️ Backend (`backend-data-elaborator/`)
+## ☁️ Backend (`backend/`)
 
 | Feature | Detail |
 |---------|--------|
@@ -99,7 +99,7 @@ The project follows **Microservices** and **Event-Driven Design** principles acr
 
 ---
 
-## 📱 Frontend (`frontend-mobile-app/`)
+## 📱 Frontend (`mobile/`)
 
 | Feature | Detail |
 |---------|--------|
@@ -153,7 +153,7 @@ Payload accepted → Redis Queue
 ### 1. Configure Environment Variables
 
 ```bash
-cd backend-data-elaborator/api
+cd backend/api
 cp .env.example .env
 ```
 
@@ -174,7 +174,7 @@ API_PORT=8000
 ### 2. Launch the Backend Stack
 
 ```bash
-cd backend-data-elaborator/api
+cd backend/api
 docker compose up --build -d
 ```
 
@@ -187,7 +187,7 @@ docker compose up --build -d
 ### 3. Configure and Flash the IoT Firmware
 
 ```bash
-cd iot-data-harvester/esp32_code
+cd firmware/esp32_code
 cp esp32_config.env.example esp32_config.env
 # Edit esp32_config.env with your network IP and ENROLLMENT_TOKEN
 ```
@@ -202,7 +202,7 @@ Flash via PlatformIO. On first boot the device will:
 ### 4. Launch the Mobile App
 
 ```bash
-cd frontend-mobile-app
+cd mobile
 npm install
 ```
 
@@ -232,7 +232,7 @@ Scan the QR code with Expo Go. Ensure your phone is on the **same WiFi network**
 Validates the full pipeline: ingestion → Redis → worker → PostGIS → WebSocket alerts.
 
 ```bash
-cd backend-data-elaborator/api
+cd backend/api
 export API_URL="http://localhost:8000"
 export NUM_SENSORS=150
 export CONCURRENCY_LIMIT=50
@@ -293,9 +293,9 @@ The database is pre-seeded with 8 global macro-regions. Sensors are automaticall
 
 | Workflow | Trigger | Checks |
 |----------|---------|--------|
-| `backend-ci.yml` | `backend-data-elaborator/**` | Bandit, Safety, stress test |
-| `frontend-ci.yml` | `frontend-mobile-app/**` | ESLint, npm audit |
-| `iot-ci.yml` | `iot-data-harvester/**` | PlatformIO compilation |
+| `backend-ci.yml` | `backend/**` | Bandit, Safety, stress test |
+| `frontend-ci.yml` | `mobile/**` | ESLint, npm audit |
+| `iot-ci.yml` | `firmware/**` | PlatformIO compilation |
 | `pr-lint.yml` | All PRs | Semantic PR title (`type(scope): message`) |
 | `devops-ci.yml` | `.github/workflows/**` | Actionlint workflow validation |
 
@@ -305,7 +305,7 @@ The database is pre-seeded with 8 global macro-regions. Sensors are automaticall
 
 ```
 QuakeGuard/
-├── backend-data-elaborator/
+├── backend/
 │   └── api/
 │       ├── src/
 │       │   ├── main.py              # FastAPI gateway + REST endpoints
@@ -324,7 +324,7 @@ QuakeGuard/
 │       ├── mosquitto.conf
 │       ├── requirements.txt         # Python requirements for backend development
 │       └── .env.example
-├── frontend-mobile-app/
+├── mobile/
 │   ├── app/                         # Expo Router screens
 │   │   └── (tabs)/
 │   │       ├── index.tsx            # Monitor / Dashboard
@@ -337,7 +337,7 @@ QuakeGuard/
 │   │   └── WebSocketContext.tsx     # Real-time alert context
 │   └── constants/
 │       └── config.ts                # Centralized configuration
-└── iot-data-harvester/
+└── firmware/
     └── esp32_code/
         ├── src/
         │   ├── main.cpp             # FreeRTOS tasks, STA/LTA, MQTT, provisioning
