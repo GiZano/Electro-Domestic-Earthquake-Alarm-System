@@ -6,7 +6,7 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'backend-data-elaborator/**'
+      - 'backend/**'
       - '.github/workflows/**'
 
 env:
@@ -53,11 +53,11 @@ jobs:
 
       # Step 4: Build the Docker image and push it to GHCR.
       # The build context is explicitly set to the 'api' subdirectory 
-      # inside 'backend-data-elaborator' where the Dockerfile and source code reside.
+      # inside 'backend' where the Dockerfile and source code reside.
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./backend-data-elaborator/api
+          context: ./backend/api
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

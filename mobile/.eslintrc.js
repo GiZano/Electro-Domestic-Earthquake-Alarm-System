@@ -1,4 +1,4 @@
-// frontend-mobile-app/.eslintrc.js
+// mobile/.eslintrc.js
 module.exports = {
   extends: ['expo'],
   ignorePatterns: ['/dist/*', '/node_modules/*'],

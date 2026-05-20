@@ -4,12 +4,12 @@ on:
   push:
     branches: [ "main", "develop" ]
     paths:
-      - 'frontend-mobile-app/**'
+      - 'mobile/**'
       - '.github/workflows/frontend-ci.yml'
   pull_request:
     branches: [ "main" ]
     paths:
-      - 'frontend-mobile-app/**'
+      - 'mobile/**'
       - '.github/workflows/frontend-ci.yml'
 
 jobs:
@@ -31,22 +31,22 @@ jobs:
     - name: Cache Node Modules
       uses: actions/cache@v4
       with:
-        path: frontend-mobile-app/node_modules
-        key: ${{ runner.os }}-node-${{ hashFiles('frontend-mobile-app/package-lock.json') }}
+        path: mobile/node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('mobile/package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-node-
 
     - name: Install JS Dependencies
       run: |
-        cd frontend-mobile-app
+        cd mobile
         npm install
 
     - name: NPM Security Audit
       run: |
-        cd frontend-mobile-app
+        cd mobile
         npm audit --audit-level=high
 
     - name: ESLint Code Quality Check
       run: |
-        cd frontend-mobile-app
+        cd mobile
         npx eslint . --ext .js,.jsx,.ts,.tsx
