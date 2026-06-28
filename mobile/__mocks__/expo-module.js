@@ -1,3 +1,4 @@
+/* global jest */
 module.exports = {
   __esModule: true,
   default: {},

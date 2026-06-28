@@ -1,3 +1,4 @@
+/* global jest */
 export const Vibration = {
   vibrate: jest.fn(),
 };

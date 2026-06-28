@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cmath>
+#include <cstdio>
 #include "../src/RingBuffer.h"
 
 static int failures = 0;
