@@ -10,3 +10,7 @@ esp32_code.code-workspace
 __pycache__
 /__pycache__
 codebase_context.txt
+MEMORIA.md
+PROBLEMI.md
+node_modules/
+*.pdf

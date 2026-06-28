@@ -89,9 +89,13 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
   }, []);
   
   const connect = useCallback(() => {
-    // Prevent connection if offline mode is currently active
     if (usePreferencesStore.getState().isOfflineMode) return;
-    if (ws.current?.readyState === WebSocket.OPEN) return;
+    
+    // FIX: Dobbiamo bloccare anche se il socket è in stato "CONNECTING" (0), 
+    // altrimenti React ne crea due quasi contemporaneamente.
+    if (ws.current?.readyState === WebSocket.OPEN || ws.current?.readyState === WebSocket.CONNECTING) {
+      return;
+    }
 
     intentionalClose.current = false;
     const wsUrl = `${API_BASE_URL.replace("http", "ws")}/ws/alerts?token=${MOBILE_WS_TOKEN}`;
@@ -162,20 +166,26 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
       console.log("🛑 Offline Mode Activated. Shutting down WS...");
       intentionalClose.current = true;
       if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
-      ws.current?.close();
+      if (ws.current) {
+        ws.current.close();
+        ws.current = null; // Pulizia profonda
+      }
     } else {
       console.log("🟢 Online Mode Activated. Booting up WS...");
       connect();
     }
-  }, [isOfflineMode, connect]);
 
-  useEffect(() => {
-    connect();
+    // Cleanup function per quando l'app viene chiusa
     return () => {
       if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
-      ws.current?.close();
+      if (ws.current) {
+        ws.current.close();
+        ws.current = null;
+      }
     };
-  }, [connect]);
+  }, [isOfflineMode, connect]);
+  
+  // 💡 IL SECONDO useEffect(() => { connect() }) È STATO ELIMINATO COMPLETAMENTE!
 
   return (
     <WebSocketContext.Provider value={{ isConnected, lastAlert }}>

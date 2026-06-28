@@ -39,6 +39,8 @@
   )
 }
 
+#let monospace(body) = text(font: "DejaVu Sans Mono", body)
+
 #let techstack(content) = {
   grid(
     columns: (1fr,),
