@@ -1,5 +1,11 @@
+/* eslint-disable import/first */
+jest.mock("../constants/config", () => ({
+  API_BASE_URL: "http://localhost:8000",
+}));
+
 import { useQuakeStore } from "../store/quakeStore";
 import { usePreferencesStore } from "../store/usePreferencesStore";
+/* eslint-enable import/first */
 
 beforeEach(() => {
   useQuakeStore.setState({

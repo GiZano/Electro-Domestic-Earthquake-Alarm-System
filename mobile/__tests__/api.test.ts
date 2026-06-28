@@ -1,4 +1,10 @@
+/* eslint-disable import/first */
+jest.mock("../constants/config", () => ({
+  API_BASE_URL: "http://localhost:8000",
+}));
+
 import { api } from "../services/api";
+/* eslint-enable import/first */
 
 beforeEach(() => {
   jest.resetAllMocks();

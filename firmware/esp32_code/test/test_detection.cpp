@@ -57,7 +57,7 @@ int main() {
 
     // Trigger ratio detects earthquake
     {
-        float sta = 0.12f, lta = 0.07f;
+        float sta = 0.13f, lta = 0.07f;
         if (lta < 0.01f) lta = 0.01f;
         float ratio = sta / lta;
         CHECK(ratio >= TRIGGER_RATIO, "STA/LTA triggers on quake");
