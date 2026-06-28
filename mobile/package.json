@@ -9,9 +9,6 @@
     "web": "expo start --web",
     "test": "jest"
   },
-  "jest": {
-    "preset": "jest-expo"
-  },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
     "@react-navigation/native": "^7.1.8",
