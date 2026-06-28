@@ -50,3 +50,8 @@ jobs:
       run: |
         cd mobile
         npx eslint . --ext .js,.jsx,.ts,.tsx
+
+    - name: Run Jest Unit Tests
+      run: |
+        cd mobile
+        npx jest --passWithNoTests

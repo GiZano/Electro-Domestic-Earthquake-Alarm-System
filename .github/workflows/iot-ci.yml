@@ -48,3 +48,8 @@ jobs:
       run: |
         cd firmware/esp32_code
         pio run
+
+    - name: Run Native Unit Tests
+      run: |
+        cd firmware/esp32_code
+        pio test -e test_native --without-uploading

@@ -6,7 +6,11 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "test": "jest"
+  },
+  "jest": {
+    "preset": "jest-expo"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -38,10 +42,14 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.12",
     "@types/react": "~19.1.0",
     "eslint": "^8.57.1",
     "eslint-config-expo": "^55.0.0",
+    "jest": "^29.7.0",
+    "jest-expo": "^52.0.0",
     "react-test-renderer": "19.1.0",
+    "ts-jest": "^29.2.0",
     "typescript": "~5.9.2"
   },
   "private": true
