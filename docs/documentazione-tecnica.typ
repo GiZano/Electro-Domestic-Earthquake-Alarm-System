@@ -687,7 +687,7 @@ endpoint FastAPI con `TestClient`:
 Il test di carico esistente (`tests/stress_test.py`) completa la suite con 150+
 sensori virtuali via MQTT.
 
-== Frontend (TypeScript — Jest, 21 test)
+== Frontend (TypeScript — Jest, 20 test)
 
 I test Jest coprono la logica pura degli store Zustand e del servizio API:
 
@@ -698,19 +698,19 @@ I test Jest coprono la logica pura degli store Zustand e del servizio API:
   [$monospace("useAlertStore")$], [5], [Aggiunta alert, limite 10, ordine LIFO, reset],
   [$monospace("usePreferencesStore")$], [3], [Toggle offline mode, toggle notifiche],
   [$monospace("quakeStore")$], [7], [Fetch sensori, start/stop monitoring, error handling, polling singolo],
-  [$monospace("api")$], [6], [GET/POST, errori HTTP, errori di rete, body JSON],
+  [$monospace("api")$], [5], [GET/POST, errori HTTP, errori di rete, body JSON],
 )
 
-== IoT (C++ — PlatformIO Unity, 12 test)
+== IoT (C++ — Unity, 12 test)
 
-I test nativi PlatformIO compilano ed eseguono su host Linux senza hardware:
+I test compilano con g++ ed eseguono su host Linux senza hardware:
 
 #table(
   columns: (3cm, 1.5cm, auto),
   stroke: 0.5pt + rgb("#e5e7eb"),
   [*Modulo*], [*Test*], [*Cosa verifica*],
-  [$monospace("RingBuffer")$], [6], [Push, media, buffer pieno, wraparound, sovrascrittura],
-  [$monospace("Detect")$], [6], [HPF filtro gravità, transienti, noise floor, trigger ratio, protezione divisione per zero],
+  [$monospace("RingBuffer")$], [6], [Stato vuoto, push, buffer pieno, riempimento uniforme, wraparound, sovrascrittura],
+  [$monospace("Detect")$], [6], [HPF rimozione gravità, transienti, noise floor, trigger sisma, soppressione rumore, protezione divisione per zero],
 )
 
 == Workflow CI
@@ -720,7 +720,7 @@ Tutti i test sono integrati nei workflow GitHub Actions esistenti:
 #techstack[
   - `backend-ci.yml`: bandit + safety + pytest unit + pytest integration + stress test
   - `frontend-ci.yml`: eslint + npm audit + Jest (mobile/)
-  - `iot-ci.yml`: pio build + pio test native (firmware/)
+  - `iot-ci.yml`: pio build + g++ unit test (firmware/)
 ]
 
 #pagebreak()

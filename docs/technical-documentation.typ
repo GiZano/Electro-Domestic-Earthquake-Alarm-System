@@ -687,7 +687,7 @@ endpoints with `TestClient`:
 The existing load test (`tests/stress_test.py`) completes the suite with 150+
 virtual sensors over MQTT.
 
-== Frontend (TypeScript — Jest, 21 tests)
+== Frontend (TypeScript — Jest, 20 tests)
 
 Jest tests cover pure Zustand store logic and the API service:
 
@@ -698,19 +698,19 @@ Jest tests cover pure Zustand store logic and the API service:
   [$monospace("useAlertStore")$], [5], [Alert addition, 10-item cap, LIFO order, reset],
   [$monospace("usePreferencesStore")$], [3], [Offline mode toggle, notifications toggle],
   [$monospace("quakeStore")$], [7], [Sensor fetch, monitoring start/stop, error handling, single polling],
-  [$monospace("api")$], [6], [GET/POST, HTTP errors, network errors, JSON body],
+  [$monospace("api")$], [5], [GET/POST, HTTP errors, network errors, JSON body],
 )
 
-== IoT (C++ — PlatformIO Unity, 12 tests)
+== IoT (C++ — Unity, 12 tests)
 
-Native PlatformIO tests compile and run on Linux host without hardware:
+Tests compile with g++ and run on Linux host without hardware:
 
 #table(
   columns: (3cm, 1.5cm, auto),
   stroke: 0.5pt + rgb("#e5e7eb"),
   [*Module*], [*Tests*], [*What it verifies*],
-  [$monospace("RingBuffer")$], [6], [Push, average, buffer full, wraparound, overwrite],
-  [$monospace("Detect")$], [6], [HPF gravity removal, transients, noise floor, trigger ratio, zero-division protection],
+  [$monospace("RingBuffer")$], [6], [Empty state, push, buffer full, uniform fill, wraparound, overwrite],
+  [$monospace("Detect")$], [6], [HPF gravity removal, transients, noise floor, quake trigger, noise suppression, zero-division protection],
 )
 
 == CI Workflow Integration
@@ -720,7 +720,7 @@ All tests are integrated into the existing GitHub Actions workflows:
 #techstack[
   - `backend-ci.yml`: bandit + safety + pytest unit + pytest integration + stress test
   - `frontend-ci.yml`: eslint + npm audit + Jest
-  - `iot-ci.yml`: pio build + pio test native (firmware/)
+  - `iot-ci.yml`: pio build + g++ unit test (firmware/)
 ]
 
 #pagebreak()
