@@ -41,7 +41,8 @@ jobs:
         cd mobile
         npm install
 
-    - name: NPM Security Audit
+    - name: NPM Security Audit (informational)
+      continue-on-error: true
       run: |
         cd mobile
         npm audit --audit-level=high

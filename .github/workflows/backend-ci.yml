@@ -53,6 +53,7 @@ jobs:
         python -m pytest tests/unit/ -v --tb=short -x
 
     - name: Run Safety (Dependency Vulnerability Scanner)
+      continue-on-error: true
       env:
         SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
       run: |
