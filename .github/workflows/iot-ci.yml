@@ -52,4 +52,7 @@ jobs:
     - name: Run Native Unit Tests
       run: |
         cd firmware/esp32_code
-        pio test -e test_native --without-uploading
+        g++ -std=c++11 -I src test/test_ringbuffer.cpp -o /tmp/test_ringbuffer
+        /tmp/test_ringbuffer
+        g++ -std=c++11 -I src test/test_detection.cpp -lm -o /tmp/test_detection
+        /tmp/test_detection

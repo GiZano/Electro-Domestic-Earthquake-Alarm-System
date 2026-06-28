@@ -1,69 +1,76 @@
-#include <unity.h>
+#include <cassert>
+#include <cmath>
 #include "../src/RingBuffer.h"
 
-void setUp(void) {}
-void tearDown(void) {}
+static int failures = 0;
 
-void test_ringbuffer_new_is_empty(void) {
-    RingBuffer<10> buf;
-    TEST_ASSERT_FALSE(buf.isFull());
-    TEST_ASSERT_FLOAT_WITHIN(0.001, 0.0, buf.average());
-}
+#define CHECK(cond, msg) do { \
+    if (!(cond)) { \
+        fprintf(stderr, "FAIL: %s (%s)\n", msg, #cond); \
+        failures++; \
+    } \
+} while(0)
 
-void test_ringbuffer_push_one_value(void) {
-    RingBuffer<10> buf;
-    buf.push(5.0f);
-    TEST_ASSERT_FALSE(buf.isFull());
-    TEST_ASSERT_FLOAT_WITHIN(0.001, 5.0, buf.average());
-}
+#define CHECK_FLOAT(a, op, b, msg) do { \
+    if (!((a) op (b))) { \
+        fprintf(stderr, "FAIL: %s -- expected %f %s %f\n", msg, (double)(a), #op, (double)(b)); \
+        failures++; \
+    } \
+} while(0)
 
-void test_ringbuffer_push_multiple(void) {
-    RingBuffer<10> buf;
-    for (int i = 1; i <= 10; i++) {
-        buf.push((float)i);
+int main() {
+    // New buffer is empty
+    {
+        RingBuffer<10> buf;
+        CHECK(!buf.isFull(), "new buffer not full");
+        CHECK_FLOAT(buf.average(), ==, 0.0f, "empty average is zero");
     }
-    TEST_ASSERT_TRUE(buf.isFull());
-    TEST_ASSERT_FLOAT_WITHIN(0.001, 5.5, buf.average());
-}
 
-void test_ringbuffer_average_of_identical(void) {
-    RingBuffer<100> buf;
-    for (int i = 0; i < 100; i++) {
-        buf.push(3.14f);
+    // Push one value
+    {
+        RingBuffer<10> buf;
+        buf.push(5.0f);
+        CHECK(!buf.isFull(), "single push not full");
+        CHECK_FLOAT(buf.average(), ==, 5.0f, "single push average");
     }
-    TEST_ASSERT_TRUE(buf.isFull());
-    TEST_ASSERT_FLOAT_WITHIN(0.001, 3.14, buf.average());
-}
 
-void test_ringbuffer_wraparound(void) {
-    RingBuffer<5> buf;
-    for (int i = 0; i < 100; i++) {
-        buf.push(10.0f);
+    // Fill buffer completely
+    {
+        RingBuffer<10> buf;
+        for (int i = 1; i <= 10; i++) buf.push((float)i);
+        CHECK(buf.isFull(), "full buffer");
+        CHECK_FLOAT(buf.average(), ==, 5.5f, "full buffer average");
     }
-    TEST_ASSERT_TRUE(buf.isFull());
-    TEST_ASSERT_FLOAT_WITHIN(0.001, 10.0, buf.average());
-}
 
-void test_ringbuffer_overwrite_updates_average(void) {
-    RingBuffer<5> buf;
-    for (int i = 0; i < 5; i++) {
-        buf.push(0.0f);
+    // Uniform values
+    {
+        RingBuffer<100> buf;
+        for (int i = 0; i < 100; i++) buf.push(3.14f);
+        CHECK(buf.isFull(), "uniform full");
+        CHECK_FLOAT(fabs(buf.average() - 3.14f), <, 0.001f, "uniform average");
     }
-    TEST_ASSERT_FLOAT_WITHIN(0.001, 0.0, buf.average());
 
-    buf.push(50.0f);
-    TEST_ASSERT_FLOAT_WITHIN(0.001, 10.0, buf.average());
-}
+    // Wraparound
+    {
+        RingBuffer<5> buf;
+        for (int i = 0; i < 100; i++) buf.push(10.0f);
+        CHECK(buf.isFull(), "wrap full");
+        CHECK_FLOAT(buf.average(), ==, 10.0f, "wrap average");
+    }
 
-int main(int argc, char **argv) {
-    UNITY_BEGIN();
+    // Overwrite changes average
+    {
+        RingBuffer<5> buf;
+        for (int i = 0; i < 5; i++) buf.push(0.0f);
+        CHECK_FLOAT(buf.average(), ==, 0.0f, "zeros average");
+        buf.push(50.0f);
+        CHECK_FLOAT(buf.average(), ==, 10.0f, "overwrite average");
+    }
 
-    RUN_TEST(test_ringbuffer_new_is_empty);
-    RUN_TEST(test_ringbuffer_push_one_value);
-    RUN_TEST(test_ringbuffer_push_multiple);
-    RUN_TEST(test_ringbuffer_average_of_identical);
-    RUN_TEST(test_ringbuffer_wraparound);
-    RUN_TEST(test_ringbuffer_overwrite_updates_average);
-
-    return UNITY_END();
+    if (failures > 0) {
+        fprintf(stderr, "\n%d test(s) FAILED\n", failures);
+        return 1;
+    }
+    printf("All RingBuffer tests PASSED\n");
+    return 0;
 }
