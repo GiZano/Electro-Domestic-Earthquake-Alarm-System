@@ -154,12 +154,16 @@ async def rate_limiter(request: Request):
             detail="Rate limit exceeded. Too many requests from this IP."
         )
 
-def resolve_zone(db: Session, latitude: float, longitude: float) -> int:
+def resolve_zone(db: Session, latitude: float | None, longitude: float | None) -> int:
     """
     Spatial auto-assignment helper.
     Finds the smallest containing polygon for given GPS coordinates.
-    Falls back to 'Unknown Region' if no match is found.
+    Falls back to 'Unknown Region' if no match is found or coordinates are null.
     """
+    if latitude is None or longitude is None:
+        fallback = db.query(models.Zone).filter(models.Zone.city == "Unknown Region").first()
+        return fallback.id if fallback else 1
+
     point = WKTElement(f"POINT({longitude} {latitude})", srid=4326)
     
     # Query PostGIS to find the containing polygon, ordered by smallest area first
