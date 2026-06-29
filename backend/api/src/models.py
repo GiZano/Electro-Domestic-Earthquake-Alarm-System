@@ -49,9 +49,7 @@ class Sensor(Base):
     # The public key is the primary cryptographic identity
     public_key_hex = Column(String, nullable=False, unique=True, index=True)
     
-    # [CRITICAL FIX] Hardware identifiers for Provisioning
     mac_address = Column(String(17), nullable=True, unique=True, index=True)
-    firmware_version = Column(String(20), nullable=True)
 
     # Relationships
     zone = relationship("Zone", back_populates="sensors")
@@ -75,8 +73,8 @@ class Alert(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     zone_id = Column(Integer, ForeignKey("zones.id"), nullable=False)
-    timestamp = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    severity = Column(Float, nullable=False) 
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    magnitude = Column(Float, nullable=False) 
     message = Column(String(255), nullable=True)
 
     zone = relationship("Zone")

@@ -45,10 +45,10 @@ class TestReadingModel:
 
 class TestAlertModel:
     def test_create_alert(self):
-        a = Alert(zone_id=1, severity=4.5, message="Test alert")
-        assert a.severity == 4.5
+        a = Alert(zone_id=1, magnitude=4.5, message="Test alert")
+        assert a.magnitude == 4.5
         assert "Test" in a.message
 
     def test_alert_defaults(self):
-        a = Alert(zone_id=1, severity=5.0)
+        a = Alert(zone_id=1, magnitude=5.0)
         assert a.message is None

@@ -45,7 +45,7 @@ class SensorCreate(SensorBase):
 class SensorUpdate(BaseModel):
     active: Optional[bool] = None
     zone_id: Optional[int] = None
-    public_key_hex: Optional[str] = None
+    public_key_hex: Optional[str] = Field(default=None, min_length=64)
 
 class Sensor(SensorBase):
     id: int
@@ -71,7 +71,7 @@ class ReadingCreate(BaseModel):
     )
     sensor_id: int = Field(..., gt=0, description="The ID of the registered sensor")
     device_timestamp: int = Field(..., gt=1600000000, description="Unix timestamp of the event")
-    signature_hex: str = Field(..., min_length=64, description="ECDSA NIST256p Signature")
+    signature_hex: str = Field(..., min_length=128, description="ECDSA NIST256p Signature")
 
 class Reading(BaseModel):
     id: int
@@ -89,8 +89,8 @@ class DeviceRegisterRequest(BaseModel):
     public_key_hex: str = Field(..., description="The generated ECDSA public key")
     mac_address: str = Field(..., max_length=17, description="The hardware MAC address")
     enrollment_token: str = Field(..., description="The hardcoded factory enrollment token")
-    latitude: float = Field(default=0.0, ge=-90, le=90)
-    longitude: float = Field(default=0.0, ge=-180, le=180)
+    latitude: float = Field(default=None, ge=-90, le=90)
+    longitude: float = Field(default=None, ge=-180, le=180)
 
 # ==========================================
 # DEMO SCHEMAS
@@ -98,5 +98,5 @@ class DeviceRegisterRequest(BaseModel):
 class DemoAlertRequest(BaseModel):
     """Payload for manually triggering a simulated earthquake alert."""
     zone_id: int = Field(default=1, description="Target Zone ID for the alert")
-    magnitude: float = Field(default=7.5, description="Simulated earthquake magnitude")
+    magnitude: float = Field(default=7.5, le=10.0, description="Simulated earthquake magnitude")
     message: str = Field(default="Simulated Critical Event", description="Custom alert message")
