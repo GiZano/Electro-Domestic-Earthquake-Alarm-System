@@ -15,7 +15,9 @@ import os
 from typing import List
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
+import asyncpg
 from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -25,7 +27,7 @@ from redis import asyncio as aioredis
 from geoalchemy2.elements import WKTElement
 
 # --- LOCAL MODULES ---
-from src.database import get_db, engine, SessionLocal
+from src.database import get_db, engine, SessionLocal, DATABASE_URL
 import src.models as models
 import src.schemas as schemas
 from src.security import verify_api_key, validate_iot_payload
@@ -199,12 +201,20 @@ async def health_check():
         "redis": "connected"
     }
     http_status_code = status.HTTP_200_OK
-    loop = asyncio.get_running_loop()
 
     # 1. Define discrete async checks with error logging
     async def check_postgres():
         try:
-            await loop.run_in_executor(None, ping_db)
+            parsed = urlparse(DATABASE_URL)
+            conn = await asyncpg.connect(
+                host=parsed.hostname or "localhost",
+                port=parsed.port or 5432,
+                user=parsed.username,
+                password=parsed.password,
+                database=parsed.path.lstrip("/"),
+            )
+            await conn.execute("SELECT 1")
+            await conn.close()
             return True
         except Exception as e:
             print(f"❌ Health Check - Postgres Error: {e}", flush=True)
