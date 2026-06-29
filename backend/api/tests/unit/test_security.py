@@ -109,7 +109,7 @@ class TestValidateIoTPayload:
 
         with pytest.raises(HTTPException) as exc:
             await validate_iot_payload(reading, api_key="valid", db=mock_db)
-        assert exc.value.status_code == 403
+        assert exc.value.status_code == 401
 
     @pytest.mark.asyncio
     async def test_replay_attack(self, crypto_keypair, signer):
@@ -153,4 +153,4 @@ class TestValidateIoTPayload:
 
         with pytest.raises(HTTPException) as exc:
             await validate_iot_payload(reading, api_key="valid", db=mock_db)
-        assert exc.value.status_code == 403
+        assert exc.value.status_code == 401

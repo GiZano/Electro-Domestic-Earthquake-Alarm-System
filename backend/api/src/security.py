@@ -21,7 +21,7 @@ import src.schemas as schemas
 IOT_API_KEY = os.getenv("IOT_API_KEY")
 
 # Define the Security Scheme for Swagger UI
-api_key_scheme = APIKeyHeader(name="X-API-Key", auto_error=False)
+api_key_scheme = APIKeyHeader(name="X-API-Key", auto_error=True)
 if not IOT_API_KEY:
     raise RuntimeError("🚨 CRITICAL STARTUP ERROR: 'IOT_API_KEY' environment variable is not set!")
 
@@ -91,7 +91,7 @@ async def validate_iot_payload(
     """
     sensor = db.query(models.Sensor).filter(models.Sensor.id == reading.sensor_id).first()
     if not sensor or not sensor.active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sensor unauthorized")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication failed")
 
     # Check Replay Attack
     if abs(time.time() - reading.device_timestamp) > 60:
