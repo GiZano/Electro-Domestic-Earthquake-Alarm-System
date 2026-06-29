@@ -299,7 +299,10 @@ def create_zone(zone: schemas.ZoneCreate, db: Session = Depends(get_db), api_key
     return db_zone
 
 @app.get("/zones/", response_model=List[schemas.Zone], tags=["Data Retrieval"])
-def get_zones(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+def get_zones(skip: int = 0, limit: int = 20, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+    if skip < 0:
+        skip = 0
+    limit = min(limit, 1000)
     return db.query(models.Zone).offset(skip).limit(limit).all()
 
 def _create_sensor(db: Session, active: bool, zone_id: int | None, latitude: float | None, longitude: float | None, public_key_hex: str, mac_address: str | None = None) -> models.Sensor:
@@ -345,7 +348,10 @@ def register_device(payload: schemas.DeviceRegisterRequest, db: Session = Depend
     return {"sensor_id": new_device.id}
 
 @app.get("/sensors/", response_model=List[schemas.Sensor], tags=["Data Retrieval"])
-def get_sensors(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+def get_sensors(skip: int = 0, limit: int = 20, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+    if skip < 0:
+        skip = 0
+    limit = min(limit, 1000)
     return db.query(models.Sensor).offset(skip).limit(limit).all()
 
 @app.post("/readings/", status_code=status.HTTP_202_ACCEPTED, tags=["Ingestion"], dependencies=[Depends(rate_limiter)])
@@ -374,9 +380,12 @@ def get_sensor_statistics(id: int, db: Session = Depends(get_db), api_key: str =
     }
 
 @app.get("/readings/", response_model=List[schemas.Reading], tags=["Data Retrieval"])
-def get_readings(skip: int = 0, limit: int = 50, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+def get_readings(skip: int = 0, limit: int = 20, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
     """
     Fetch recent sensor readings. 
     Used primarily by the frontend dashboard to render the live seismograph.
     """
+    if skip < 0:
+        skip = 0
+    limit = min(limit, 1000)
     return db.query(models.Reading).order_by(models.Reading.recorded_at.desc()).offset(skip).limit(limit).all()
