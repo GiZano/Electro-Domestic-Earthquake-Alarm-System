@@ -64,8 +64,6 @@ def ping_db() -> None:
     with engine.connect() as connection:
         connection.execute(text("SELECT 1"))
 
-wait_for_db()
-models.Base.metadata.create_all(bind=engine)
 redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
 
 # ==========================================
@@ -112,9 +110,13 @@ async def redis_alert_listener() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, wait_for_db)
+    await loop.run_in_executor(None, lambda: models.Base.metadata.create_all(bind=engine))
+
     with SessionLocal() as db:
         seed_zones(db)
-        
+
     listener_task = asyncio.create_task(redis_alert_listener())
     yield
     listener_task.cancel()
