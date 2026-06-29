@@ -24,10 +24,10 @@ class Zone(Base):
     geom = Column(Geometry('POLYGON', srid=4326), nullable=True)
 
     # Relationships
-    misurators = relationship("Misurator", back_populates="zone", cascade="all, delete-orphan")
+    sensors = relationship("Sensor", back_populates="zone", cascade="all, delete-orphan")
 
 
-class Misurator(Base):
+class Sensor(Base):
     """
     IoT Sensor Device.
     Includes Security (ECDSA Key) and Hardware Identity (MAC, Firmware).
@@ -46,28 +46,28 @@ class Misurator(Base):
     location = Column(Geometry('POINT', srid=4326), nullable=True)
 
     # --- SECURITY & IDENTITY ---
-    # La chiave pubblica è l'identità crittografica primaria
+    # The public key is the primary cryptographic identity
     public_key_hex = Column(String, nullable=False, unique=True, index=True)
     
-    # [FIX CRITICO] Identificativi Hardware per il Provisioning
+    # [CRITICAL FIX] Hardware identifiers for Provisioning
     mac_address = Column(String(17), nullable=True, unique=True, index=True)
     firmware_version = Column(String(20), nullable=True)
 
     # Relationships
-    zone = relationship("Zone", back_populates="misurators")
-    misurations = relationship("Misuration", back_populates="misurator", cascade="all, delete-orphan")
+    zone = relationship("Zone", back_populates="sensors")
+    readings = relationship("Reading", back_populates="sensor", cascade="all, delete-orphan")
 
 
-class Misuration(Base):
+class Reading(Base):
     __tablename__ = "misurations"
 
     id = Column(Integer, primary_key=True, index=True)
     recorded_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
     value = Column(Integer, nullable=False)
     
-    misurator_id = Column(Integer, ForeignKey("misurators.id"), nullable=False)
+    sensor_id = Column(Integer, ForeignKey("misurators.id"), nullable=False)
 
-    misurator = relationship("Misurator", back_populates="misurations")
+    sensor = relationship("Sensor", back_populates="readings")
 
 
 class Alert(Base):

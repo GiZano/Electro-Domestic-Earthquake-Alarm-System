@@ -293,28 +293,28 @@ def create_zone(zone: schemas.ZoneCreate, db: Session = Depends(get_db), api_key
 def get_zones(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
     return db.query(models.Zone).offset(skip).limit(limit).all()
 
-@app.post("/misurators/", response_model=schemas.Misurator, status_code=status.HTTP_201_CREATED, tags=["Registration"])
-def create_misurator(misurator: schemas.MisuratorCreate, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
-    existing = db.query(models.Misurator).filter(models.Misurator.public_key_hex == misurator.public_key_hex).first()
+@app.post("/sensors/", response_model=schemas.Sensor, status_code=status.HTTP_201_CREATED, tags=["Registration"])
+def create_sensor(sensor: schemas.SensorCreate, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+    existing = db.query(models.Sensor).filter(models.Sensor.public_key_hex == sensor.public_key_hex).first()
     if existing:
         return existing
 
     # 🌍 SPATIAL AUTO-ASSIGNMENT LOGIC (Refactored)
-    assigned_zone_id = misurator.zone_id or resolve_zone(db, misurator.latitude, misurator.longitude)
+    assigned_zone_id = sensor.zone_id or resolve_zone(db, sensor.latitude, sensor.longitude)
 
-    gps_point = f"POINT({misurator.longitude} {misurator.latitude})"
-    db_misurator = models.Misurator(
-        active=misurator.active, 
+    gps_point = f"POINT({sensor.longitude} {sensor.latitude})"
+    db_sensor = models.Sensor(
+        active=sensor.active, 
         zone_id=assigned_zone_id,
-        latitude=misurator.latitude, 
-        longitude=misurator.longitude,
+        latitude=sensor.latitude, 
+        longitude=sensor.longitude,
         location=WKTElement(gps_point, srid=4326), 
-        public_key_hex=misurator.public_key_hex
+        public_key_hex=sensor.public_key_hex
     )
-    db.add(db_misurator)
+    db.add(db_sensor)
     db.commit()
-    db.refresh(db_misurator)
-    return db_misurator
+    db.refresh(db_sensor)
+    return db_sensor
 
 @app.post("/devices/register", status_code=status.HTTP_201_CREATED, tags=["Provisioning"])
 def register_device(payload: schemas.DeviceRegisterRequest, db: Session = Depends(get_db)):
@@ -322,9 +322,9 @@ def register_device(payload: schemas.DeviceRegisterRequest, db: Session = Depend
     if payload.enrollment_token != ENROLLMENT_TOKEN:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid enrollment token")
 
-    existing = db.query(models.Misurator).filter(
-        (models.Misurator.mac_address == payload.mac_address) |
-        (models.Misurator.public_key_hex == payload.public_key_hex)
+    existing = db.query(models.Sensor).filter(
+        (models.Sensor.mac_address == payload.mac_address) |
+        (models.Sensor.public_key_hex == payload.public_key_hex)
     ).first()
 
     if existing:
@@ -334,7 +334,7 @@ def register_device(payload: schemas.DeviceRegisterRequest, db: Session = Depend
     assigned_zone_id = resolve_zone(db, payload.latitude, payload.longitude)
     point = WKTElement(f"POINT({payload.longitude} {payload.latitude})", srid=4326)
 
-    new_device = models.Misurator(
+    new_device = models.Sensor(
         active=True,
         zone_id=assigned_zone_id,
         latitude=payload.latitude, 
@@ -350,22 +350,22 @@ def register_device(payload: schemas.DeviceRegisterRequest, db: Session = Depend
 
     return {"sensor_id": new_device.id}
 
-@app.get("/misurators/", response_model=List[schemas.Misurator], tags=["Data Retrieval"])
-def get_misurators(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
-    return db.query(models.Misurator).offset(skip).limit(limit).all()
+@app.get("/sensors/", response_model=List[schemas.Sensor], tags=["Data Retrieval"])
+def get_sensors(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+    return db.query(models.Sensor).offset(skip).limit(limit).all()
 
-@app.post("/misurations/", status_code=status.HTTP_202_ACCEPTED, tags=["Ingestion"], dependencies=[Depends(rate_limiter)])
-async def create_misuration_async(
+@app.post("/readings/", status_code=status.HTTP_202_ACCEPTED, tags=["Ingestion"], dependencies=[Depends(rate_limiter)])
+async def create_reading_async(
     # 💡 MAGIC HAPPENS HERE: validate_iot_payload handles all cryptography, replay checks, and API Key checks!
     valid_data: dict = Depends(validate_iot_payload)
 ):
     # Extract the validated objects returned from our security module
-    misuration = valid_data["misuration"]
-    misurator = valid_data["misurator"]
+    reading = valid_data["reading"]
+    sensor = valid_data["sensor"]
     
     # Enqueue for Worker
-    payload = misuration.model_dump()
-    payload['zone_id'] = misurator.zone_id
+    payload = reading.model_dump()
+    payload['zone_id'] = sensor.zone_id
     
     # Offload to the Redis queue
     await redis_client.lpush("seismic_events", json.dumps(payload))
@@ -373,16 +373,16 @@ async def create_misuration_async(
 
 @app.get("/sensors/{id}/statistics", tags=["Data Retrieval"])
 def get_sensor_statistics(id: int, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
-    count = db.query(models.Misuration).filter(models.Misuration.misurator_id == id).count()
+    count = db.query(models.Reading).filter(models.Reading.sensor_id == id).count()
     return {
         "sensor_id": id,
         "total_readings": count
     }
 
-@app.get("/misurations/", response_model=List[schemas.Misuration], tags=["Data Retrieval"])
-def get_misurations(skip: int = 0, limit: int = 50, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+@app.get("/readings/", response_model=List[schemas.Reading], tags=["Data Retrieval"])
+def get_readings(skip: int = 0, limit: int = 50, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
     """
     Fetch recent sensor readings. 
     Used primarily by the frontend dashboard to render the live seismograph.
     """
-    return db.query(models.Misuration).order_by(models.Misuration.recorded_at.desc()).offset(skip).limit(limit).all()
+    return db.query(models.Reading).order_by(models.Reading.recorded_at.desc()).offset(skip).limit(limit).all()

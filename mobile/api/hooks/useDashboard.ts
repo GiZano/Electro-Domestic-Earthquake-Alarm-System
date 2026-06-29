@@ -8,7 +8,7 @@ export const useSensors = () => {
   return useQuery({
     queryKey: ['sensors'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/misurators/');
+      const { data } = await apiClient.get('/sensors/');
       return data;
     },
     refetchInterval: 10000, 
@@ -22,7 +22,7 @@ export const useRecentReadings = () => {
   return useQuery({
     queryKey: ['recentReadings'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/misurations/?limit=50');
+      const { data } = await apiClient.get('/readings/?limit=50');
       return data.reverse(); 
     },
     refetchInterval: 2000, 

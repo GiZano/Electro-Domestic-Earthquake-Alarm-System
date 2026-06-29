@@ -10,7 +10,7 @@ if not IOT_API_KEY:
 MQTT_BROKER = os.getenv("MQTT_BROKER", "mosquitto")
 MQTT_PORT = int(os.getenv("MQTT_PORT", 1883)) 
 MQTT_TOPIC = "quakeguard/telemetry"
-API_INGESTION_URL = "http://fastapi-app:8000/misurations/"
+API_INGESTION_URL = "http://fastapi-app:8000/readings/"
 API_HEALTH_URL = "http://fastapi-app:8000/health"
 
 def wait_for_api(retries=10, delay=3):

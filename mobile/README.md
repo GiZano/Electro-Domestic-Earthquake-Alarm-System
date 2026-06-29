@@ -22,7 +22,7 @@
 
 ### 2. 🗺️ Sensor Map (WIP)
 
-- **Data Visualization:** Fetches sensor coordinates (`GET /misurators/`) and displays them on a map interface.
+- **Data Visualization:** Fetches sensor coordinates (`GET /sensors/`) and displays them on a map interface.
 - **Status Indicators:** Markers change color based on the active/inactive status of the sensor.
 
 ## ⚠️ Known Issues

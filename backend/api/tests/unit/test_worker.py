@@ -9,7 +9,7 @@ class TestProcessEvent:
     def test_process_normal_event(self, mock_db_session, mock_redis):
         event = {
             "value": 150,
-            "misurator_id": 1,
+            "sensor_id": 1,
         }
         process_event(event, mock_db_session)
         assert mock_db_session.add.called
@@ -18,7 +18,7 @@ class TestProcessEvent:
     def test_process_triggers_alert(self, mock_db_session, mock_redis):
         event = {
             "value": 5500,
-            "misurator_id": 1,
+            "sensor_id": 1,
             "zone_id": 2,
         }
         process_event(event, mock_db_session)
@@ -28,7 +28,7 @@ class TestProcessEvent:
         mock_redis.set.return_value = False
         event = {
             "value": 5500,
-            "misurator_id": 1,
+            "sensor_id": 1,
             "zone_id": 2,
         }
         process_event(event, mock_db_session)
@@ -38,7 +38,7 @@ class TestProcessEvent:
         mock_db_session.commit.side_effect = Exception("DB Error")
         event = {
             "value": 150,
-            "misurator_id": 1,
+            "sensor_id": 1,
         }
         with pytest.raises(Exception, match="DB Error"):
             process_event(event, mock_db_session)
@@ -46,7 +46,7 @@ class TestProcessEvent:
     def test_process_below_threshold(self, mock_db_session, mock_redis):
         event = {
             "value": 50,
-            "misurator_id": 1,
+            "sensor_id": 1,
         }
         process_event(event, mock_db_session)
         assert not mock_redis.publish.called
