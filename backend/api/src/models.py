@@ -32,7 +32,7 @@ class Sensor(Base):
     IoT Sensor Device.
     Includes Security (ECDSA Key) and Hardware Identity (MAC, Firmware).
     """
-    __tablename__ = "misurators"
+    __tablename__ = "sensors"
 
     id = Column(Integer, primary_key=True, index=True)
     active = Column(Boolean, default=True, nullable=False)
@@ -59,13 +59,13 @@ class Sensor(Base):
 
 
 class Reading(Base):
-    __tablename__ = "misurations"
+    __tablename__ = "readings"
 
     id = Column(Integer, primary_key=True, index=True)
     recorded_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
     value = Column(Integer, nullable=False)
     
-    sensor_id = Column(Integer, ForeignKey("misurators.id"), nullable=False)
+    sensor_id = Column(Integer, ForeignKey("sensors.id"), nullable=False)
 
     sensor = relationship("Sensor", back_populates="readings")
 
