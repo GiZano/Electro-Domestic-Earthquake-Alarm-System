@@ -58,7 +58,7 @@ def verify_device_signature(public_key_hex: str, message: str, signature_hex: st
             # Try standard DER encoded signature
             public_key.verify(sig_bytes, message_bytes, ec.ECDSA(hashes.SHA256()))
             return True
-        except (InvalidSignature, Exception):
+        except InvalidSignature:
             pass
             
         # Fallback for older sensors: Try Raw Signature (r || s)
