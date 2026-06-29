@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 import redis
 from sqlalchemy.orm import Session
 from src.database import SessionLocal, engine
-from src.models import Reading
+from src.models import Reading, Alert
 
 # Redis Config
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
@@ -34,7 +34,7 @@ def estimate_magnitude(sensor_value: int) -> float:
     magnitude = math.log10(pga_calib) + B_OFFSET
     
     # Clamp to physically meaningful range for MEMS sensors
-    return round(max(0.0, min(magnitude, 9.9)), 1)
+    return max(0.0, min(magnitude, 9.9))
 
 def process_event(event: dict, db: Session):
     """Inserts a single sensor measurement into PostGIS and triggers alerts with deduplication."""
@@ -45,39 +45,43 @@ def process_event(event: dict, db: Session):
         sensor_id=event.get("sensor_id")
     )
     db.add(new_entry)
-    db.commit()
 
     # 2. 🚨 ALARM LOGIC: Check if threshold is breached
     sensor_value = event.get("value", 0)
     magnitude = estimate_magnitude(sensor_value)
+    zone_id = event.get("zone_id", 0)
+    alert_published = False
     
     # Trigger a CRITICAL alert if physical magnitude is 4.5 or higher
     if magnitude >= 4.5:
-        zone_id = event.get("zone_id", 0)
         cooldown_key = f"alert_cooldown:{zone_id}"
         
-        # A) Atomic check-and-set (Deduplication) - Race condition safe!
-        acquired = redis_sync.set(cooldown_key, "active", nx=True, ex=60)
-        
-        if not acquired:
+        # Atomic check-and-set with 60s TTL (Deduplication)
+        if redis_sync.set(cooldown_key, "active", nx=True, ex=60):
+            alert_published = True
+            alert_entry = Alert(
+                zone_id=zone_id,
+                severity=magnitude,
+                message=f"High seismic activity detected (Sensor {event.get('sensor_id')})!"
+            )
+            db.add(alert_entry)
+        else:
             print(f"🚫 ALERT SUPPRESSED: Zone {zone_id} is in 60s cooldown.", flush=True)
-            return
 
-        # B) Create the payload
+    # 3. Commit atomically: Reading (+ Alert if triggered)
+    db.commit()
+
+    # 4. Publish alert to Redis (best-effort after DB commit — outbox pattern)
+    if alert_published:
         alert_payload = {
             "type": "CRITICAL",
             "zone_id": zone_id,
-            "magnitude": magnitude,
+            "magnitude": round(magnitude, 1),
             "message": f"High seismic activity detected (Sensor {event.get('sensor_id')})!",
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-        
-        # C) Publish the alert
         redis_sync.publish("quake_alerts", json.dumps(alert_payload))
-        print(f"🚨 ALERT PUBLISHED: Zone {zone_id} - Mag {magnitude}", flush=True)
-        
-        # D) Set the TTL Cooldown Lock for 60 seconds
-        redis_sync.setex(cooldown_key, 60, "active")
+        print(f"🚨 ALERT PUBLISHED: Zone {zone_id} - Mag {round(magnitude, 1)}", flush=True)
 
 def run_worker():
     print("👷 Worker started. Listening for 'seismic_events'...")

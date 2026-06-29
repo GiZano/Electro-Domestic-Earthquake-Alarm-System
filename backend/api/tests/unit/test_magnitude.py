@@ -41,4 +41,3 @@ class TestEstimateMagnitude:
     def test_rounding(self):
         mag = estimate_magnitude(555)
         assert isinstance(mag, float)
-        assert len(str(mag).split(".")[-1]) <= 1
