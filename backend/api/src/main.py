@@ -302,28 +302,30 @@ def create_zone(zone: schemas.ZoneCreate, db: Session = Depends(get_db), api_key
 def get_zones(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
     return db.query(models.Zone).offset(skip).limit(limit).all()
 
-@app.post("/sensors/", response_model=schemas.Sensor, status_code=status.HTTP_201_CREATED, tags=["Registration"])
-def create_sensor(sensor: schemas.SensorCreate, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
-    existing = db.query(models.Sensor).filter(models.Sensor.public_key_hex == sensor.public_key_hex).first()
-    if existing:
-        return existing
-
-    # 🌍 SPATIAL AUTO-ASSIGNMENT LOGIC (Refactored)
-    assigned_zone_id = sensor.zone_id or resolve_zone(db, sensor.latitude, sensor.longitude)
-
-    gps_point = f"POINT({sensor.longitude} {sensor.latitude})"
+def _create_sensor(db: Session, active: bool, zone_id: int | None, latitude: float | None, longitude: float | None, public_key_hex: str, mac_address: str | None = None) -> models.Sensor:
+    """Create and persist a Sensor with spatial zone auto-assignment."""
+    assigned_zone_id = zone_id or resolve_zone(db, latitude, longitude)
+    point = WKTElement(f"POINT({longitude} {latitude})", srid=4326)
     db_sensor = models.Sensor(
-        active=sensor.active, 
+        active=active,
         zone_id=assigned_zone_id,
-        latitude=sensor.latitude, 
-        longitude=sensor.longitude,
-        location=WKTElement(gps_point, srid=4326), 
-        public_key_hex=sensor.public_key_hex
+        latitude=latitude,
+        longitude=longitude,
+        location=point,
+        public_key_hex=public_key_hex,
+        mac_address=mac_address,
     )
     db.add(db_sensor)
     db.commit()
     db.refresh(db_sensor)
     return db_sensor
+
+@app.post("/sensors/", response_model=schemas.Sensor, status_code=status.HTTP_201_CREATED, tags=["Registration"])
+def create_sensor(sensor: schemas.SensorCreate, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+    existing = db.query(models.Sensor).filter(models.Sensor.public_key_hex == sensor.public_key_hex).first()
+    if existing:
+        return existing
+    return _create_sensor(db, sensor.active, sensor.zone_id, sensor.latitude, sensor.longitude, sensor.public_key_hex)
 
 @app.post("/devices/register", status_code=status.HTTP_201_CREATED, tags=["Provisioning"])
 def register_device(payload: schemas.DeviceRegisterRequest, db: Session = Depends(get_db)):
@@ -339,24 +341,7 @@ def register_device(payload: schemas.DeviceRegisterRequest, db: Session = Depend
     if existing:
         return {"sensor_id": existing.id}
 
-    # 🌍 SPATIAL AUTO-ASSIGNMENT LOGIC (Refactored)
-    assigned_zone_id = resolve_zone(db, payload.latitude, payload.longitude)
-    point = WKTElement(f"POINT({payload.longitude} {payload.latitude})", srid=4326)
-
-    new_device = models.Sensor(
-        active=True,
-        zone_id=assigned_zone_id,
-        latitude=payload.latitude, 
-        longitude=payload.longitude, 
-        location=point,
-        public_key_hex=payload.public_key_hex,
-        mac_address=payload.mac_address
-    )
-    
-    db.add(new_device)
-    db.commit()
-    db.refresh(new_device)
-
+    new_device = _create_sensor(db, True, None, payload.latitude, payload.longitude, payload.public_key_hex, payload.mac_address)
     return {"sensor_id": new_device.id}
 
 @app.get("/sensors/", response_model=List[schemas.Sensor], tags=["Data Retrieval"])
