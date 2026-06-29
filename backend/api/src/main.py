@@ -134,15 +134,19 @@ app = FastAPI(title="QuakeGuard Backend", version="2.2.0", lifespan=lifespan)
 # ==========================================
 
 async def rate_limiter(request: Request):
-    """Fixed-window rate limiter using Redis. Uses X-Forwarded-For if behind proxy."""
+    """Sliding-window rate limiter using Redis sorted sets. Uses X-Forwarded-For if behind proxy."""
     forwarded = request.headers.get("X-Forwarded-For")
     client_ip = forwarded.split(",")[0].strip() if forwarded else request.client.host
-    current_second = int(time.time())
-    key = f"rate_limit:{client_ip}:{current_second}"
+    now = time.time()
+    window = 1.0
+    key = f"rate_limit:{client_ip}"
     
-    request_count = await redis_client.incr(key)
-    if request_count == 1:
-        await redis_client.expire(key, 5) 
+    # Remove entries outside the window and add current timestamp
+    await redis_client.zremrangebyscore(key, 0, now - window)
+    await redis_client.zadd(key, {str(now): now})
+    await redis_client.expire(key, 60)
+    
+    request_count = await redis_client.zcard(key)
         
     if request_count > 50:
         raise HTTPException(
