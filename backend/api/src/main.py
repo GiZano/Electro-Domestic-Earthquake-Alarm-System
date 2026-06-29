@@ -35,12 +35,12 @@ from src.seed import seed_zones
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 
 MOBILE_WS_TOKEN = os.getenv("MOBILE_WS_TOKEN")
-if not MOBILE_WS_TOKEN:
-    raise RuntimeError("🚨 CRITICAL STARTUP ERROR: 'MOBILE_WS_TOKEN' environment variable is not set!")
+if not MOBILE_WS_TOKEN or len(MOBILE_WS_TOKEN) < 8:
+    raise RuntimeError("🚨 CRITICAL STARTUP ERROR: 'MOBILE_WS_TOKEN' environment variable is not set or too short (min 8 chars)!")
 
 ENROLLMENT_TOKEN = os.getenv("ENROLLMENT_TOKEN")
-if not ENROLLMENT_TOKEN:
-    raise RuntimeError("🚨 CRITICAL STARTUP ERROR: 'ENROLLMENT_TOKEN' environment variable is not set!")
+if not ENROLLMENT_TOKEN or len(ENROLLMENT_TOKEN) < 8:
+    raise RuntimeError("🚨 CRITICAL STARTUP ERROR: 'ENROLLMENT_TOKEN' environment variable is not set or too short (min 8 chars)!")
 
 # ==========================================
 # INFRASTRUCTURE INITIALIZATION
