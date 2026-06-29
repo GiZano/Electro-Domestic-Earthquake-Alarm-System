@@ -378,12 +378,12 @@ A CRITICAL alert is triggered when $M >= 4.5$, with per-zone deduplication
   [GET], [/health], [Health check (PostgreSQL + Redis ping)],
   [POST], [/zones/], [Create geographic zone],
   [GET], [/zones/], [List zones],
-  [POST], [/misurators/], [Register sensor with public key],
+  [POST], [/sensors/], [Register sensor with public key],
   [POST], [/devices/register], [ESP32 auto-handshake],
-  [GET], [/misurators/], [List registered sensors],
-  [POST], [/misurations/], [Data ingestion (with ECDSA validation)],
+  [GET], [/sensors/], [List registered sensors],
+  [POST], [/readings/], [Data ingestion (with ECDSA validation)],
   [GET], [/sensors/{id}/statistics], [Sensor statistics],
-  [GET], [/misurations/], [Last 50 readings],
+  [GET], [/readings/], [Last 50 readings],
   [POST], [/demo/trigger-earthquake], [Simulate earthquake (demo)],
 )
 
@@ -683,7 +683,7 @@ Unit tests (`tests/unit/`) run without Docker and cover:
 
 Integration tests (`tests/integration/`) require Docker and test FastAPI
 endpoints with `TestClient`:
-- 10 tests on health, CRUD zones/misurators/misurations, statistics, provisioning
+- 10 tests on health, CRUD zones/sensors/readings, statistics, provisioning
 - HTTP response verification (401, 403, 201, 202, 503)
 
 The existing load test (`tests/stress_test.py`) completes the suite with 150+

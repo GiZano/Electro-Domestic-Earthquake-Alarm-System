@@ -77,7 +77,7 @@ def verify_device_signature(public_key_hex: str, message: str, signature_hex: st
     return False
 
 async def validate_iot_payload(
-    misuration: schemas.MisurationCreate,
+    reading: schemas.ReadingCreate,
     api_key: str = Depends(verify_api_key),
     db: Session = Depends(get_db)
 ):
@@ -88,21 +88,21 @@ async def validate_iot_payload(
     3. Prevents Replay Attacks.
     4. Verifies the ECDSA Digital Signature.
     """
-    misurator = db.query(models.Misurator).filter(models.Misurator.id == misuration.misurator_id).first()
-    if not misurator or not misurator.active:
+    sensor = db.query(models.Sensor).filter(models.Sensor.id == reading.sensor_id).first()
+    if not sensor or not sensor.active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sensor unauthorized")
 
     # Check Replay Attack
-    if abs(time.time() - misuration.device_timestamp) > 60:
+    if abs(time.time() - reading.device_timestamp) > 60:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Replay Attack Detected: Timestamp invalid")
 
     # Verify Signature
-    message = f"{misuration.value}:{int(misuration.device_timestamp)}"
+    message = f"{reading.value}:{int(reading.device_timestamp)}"
     loop = asyncio.get_running_loop()
-    is_valid = await loop.run_in_executor(None, verify_device_signature, misurator.public_key_hex, message, misuration.signature_hex)
+    is_valid = await loop.run_in_executor(None, verify_device_signature, sensor.public_key_hex, message, reading.signature_hex)
 
     if not is_valid:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid digital signature")
 
     # If everything is valid, return the data so the endpoint can use it!
-    return {"misurator": misurator, "misuration": misuration}
+    return {"sensor": sensor, "reading": reading}

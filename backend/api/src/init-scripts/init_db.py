@@ -1,5 +1,5 @@
 from database import engine, Base
-from models import Zone, Misurator, Misuration
+from models import Zone, Sensor, Reading
 from sqlalchemy.orm import Session
 
 def init_database():
@@ -22,18 +22,18 @@ def init_database():
         db.add_all([zone1, zone2, zone3])
         db.commit()
 
-        # Create Misurators
-        misurator1 = Misurator(active=False, zone_id=4)
-        misurator2 = Misurator(active=False, zone_id=4)
+        # Create Sensors
+        sensor1 = Sensor(active=False, zone_id=4)
+        sensor2 = Sensor(active=False, zone_id=4)
 
-        db.add_all([misurator1, misurator2])
+        db.add_all([sensor1, sensor2])
         db.commit()
 
-        # Create Misurations
-        misuration1 = Misuration(value=100, misurator_id=1)
-        misuration2 = Misuration(value=200, misurator_id=2)
+        # Create Readings
+        reading1 = Reading(value=100, sensor_id=1)
+        reading2 = Reading(value=200, sensor_id=2)
 
-        db.add_all([misuration1, misuration2])
+        db.add_all([reading1, reading2])
         db.commit()
 
         print("Example data succesfully loaded!")

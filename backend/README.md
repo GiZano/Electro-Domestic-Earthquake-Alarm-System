@@ -93,19 +93,19 @@ Interactive Swagger UI is available at:
 Endpoints for provisioning the infrastructure.
 
 * **POST** `/zones/` - Create a new monitoring zone.
-* **POST** `/misurators/` - Register a new sensor.
+* **POST** `/sensors/` - Register a new sensor.
     * *Note:* Requires the sensor's ECDSA Public Key (Hex format).
 * **GET** `/zones/` - Retrieve available zones.
-* **GET** `/misurators/` - Retrieve registered sensors.
+* **GET** `/sensors/` - Retrieve registered sensors.
 
 ### 📥 Data Ingestion (IoT)
-* **POST** `/misurations/` - High-frequency ingestion endpoint.
+* **POST** `/readings/` - High-frequency ingestion endpoint.
     * **Payload:** Telemetry data including `value`, `device_timestamp`, and `signature_hex`.
     * **Security:** Rejects any payload with an invalid or missing digital signature.
 
 ### 📊 Data Retrieval & Analytics
 * **GET** `/zones/{zone_id}/alerts` - Retrieve confirmed seismic alerts for a specific area.
-* **GET** `/sensors/{misurator_id}/statistics` - Get aggregated metrics (Count, Avg, Max, Min) for sensor diagnostics.
+* **GET** `/sensors/{sensor_id}/statistics` - Get aggregated metrics (Count, Avg, Max, Min) for sensor diagnostics.
 
 ### 🟢 System
 * **GET** `/health` - Detailed status check of API, Database, and Redis connectivity.
