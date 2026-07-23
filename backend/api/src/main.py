@@ -116,11 +116,8 @@ async def lifespan(app: FastAPI):
     await loop.run_in_executor(None, wait_for_db)
     await loop.run_in_executor(None, lambda: models.Base.metadata.create_all(bind=engine))
 
-    db = SessionLocal()
-    try:
+    with SessionLocal() as db:
         seed_zones(db)
-    finally:
-        db.close()
 
     listener_task = asyncio.create_task(redis_alert_listener())
     yield
