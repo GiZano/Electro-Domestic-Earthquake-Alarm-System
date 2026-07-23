@@ -14,10 +14,13 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-# Retrieve database connection string
+# Retrieve database connection string and pool config
 DATABASE_URL = os.getenv("DATABASE_URL")
+DB_POOL_SIZE = int(os.getenv("DB_POOL_SIZE", "10"))
+DB_MAX_OVERFLOW = int(os.getenv("DB_MAX_OVERFLOW", "20"))
+DB_POOL_TIMEOUT = int(os.getenv("DB_POOL_TIMEOUT", "10"))
 
-if not DATABASE_URL:
+if not DATABASE_URL or DATABASE_URL.strip() == "":
     raise ValueError("FATAL: DATABASE_URL environment variable is not set.")
 
 # ==========================================
@@ -28,25 +31,10 @@ if not DATABASE_URL:
 # Target: 100 concurrent requests from the script.
 engine = create_engine(
     DATABASE_URL,
-    # 1. pool_size: The number of connections to keep open inside the connection pool.
-    #    Increased to 40 to maintain a high baseline of readiness.
-    pool_size=40,
-
-    # 2. max_overflow: The number of connections to allow in excess of pool_size.
-    #    Set to 60. Total capacity = 40 + 60 = 100 connections.
-    #    This ensures we cover the burst of 100 requests from your script.
-    max_overflow=60,
-
-    # 3. pool_timeout: The number of seconds to wait before giving up on getting a connection.
-    #    Increased to 60s to prevent TimeoutErrors during heavy congestion.
-    pool_timeout=60,
-
-    # 4. pool_pre_ping: Enables "pessimistic disconnect handling".
-    #    The engine will test the connection liveness before returning it.
-    #    Prevents "server closed the connection unexpectedly" errors.
+    pool_size=DB_POOL_SIZE,
+    max_overflow=DB_MAX_OVERFLOW,
+    pool_timeout=DB_POOL_TIMEOUT,
     pool_pre_ping=True,
-    
-    # 5. pool_recycle: Recycle connections every hour (3600s) to prevent stale connections.
     pool_recycle=3600
 )
 
