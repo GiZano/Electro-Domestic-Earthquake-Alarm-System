@@ -61,7 +61,7 @@ def process_event(event: dict, db: Session):
             alert_published = True
             alert_entry = Alert(
                 zone_id=zone_id,
-                severity=magnitude,
+                magnitude=magnitude,
                 message=f"High seismic activity detected (Sensor {event.get('sensor_id')})!"
             )
             db.add(alert_entry)
