@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import asyncio
 import os
+import logging
 from fastapi import Security, HTTPException, status, Depends
 from fastapi.security import APIKeyHeader
 from sqlalchemy.orm import Session
@@ -12,6 +13,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
 from cryptography.exceptions import InvalidSignature
+
+logger = logging.getLogger(__name__)
 
 from src.database import get_db
 import src.models as models
@@ -48,10 +51,14 @@ def verify_device_signature(public_key_hex: str, message: str, signature_hex: st
         try:
             public_key = load_der_public_key(key_bytes)
         except ValueError:
-            # Fallback for older sensors: Raw uncompressed 64-byte point
+            logger.exception("DER public key loading failed, trying raw 64-byte fallback")
             if len(key_bytes) == 64:
-                key_bytes = b'\x04' + key_bytes # Prepend standard uncompressed marker
-            public_key = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), key_bytes)
+                key_bytes = b'\x04' + key_bytes
+            try:
+                public_key = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), key_bytes)
+            except ValueError:
+                logger.exception("Raw public key point is not on the curve SECP256R1")
+                return False
         
         # 2. Verify the Signature (Handle DER vs Raw String)
         try:
@@ -59,7 +66,9 @@ def verify_device_signature(public_key_hex: str, message: str, signature_hex: st
             public_key.verify(sig_bytes, message_bytes, ec.ECDSA(hashes.SHA256()))
             return True
         except InvalidSignature:
-            pass
+            logger.exception("DER signature verification failed")
+        except Exception:
+            logger.exception("Unexpected error during DER signature verification")
             
         # Fallback for older sensors: Try Raw Signature (r || s)
         if len(sig_bytes) == 64:
@@ -73,6 +82,7 @@ def verify_device_signature(public_key_hex: str, message: str, signature_hex: st
                 return False
                 
     except Exception:
+        logger.exception("Signature verification failed unexpectedly")
         return False
         
     return False
