@@ -79,7 +79,7 @@ def create_signed_payload(signing_key: SigningKey, sensor_id: int = 101) -> dict
     # JSON Construction
     payload = {
         "value": seismic_value,
-        "misurator_id": sensor_id,
+        "sensor_id": sensor_id,
         "device_timestamp": timestamp,
         "signature_hex": signature_hex
     }
@@ -99,8 +99,8 @@ if __name__ == "__main__":
         print(json.dumps(packet, indent=4))
         
         print("\n[INSTRUCTIONS]")
-        print(f"1. Insert the PUBLIC KEY above into your database for sensor ID {packet['misurator_id']}.")
-        print("2. Send the JSON payload to: POST /misurations/")
+        print(f"1. Insert the PUBLIC KEY above into your database for sensor ID {packet['sensor_id']}.")
+        print("2. Send the JSON payload to: POST /readings/")
         
     except Exception as e:
         print(f"[ERROR] An unexpected error occurred: {e}")

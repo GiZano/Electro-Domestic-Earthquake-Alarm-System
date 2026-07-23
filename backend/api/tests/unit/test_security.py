@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch, AsyncMock
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 from src.security import verify_device_signature, verify_api_key, validate_iot_payload
-from src.schemas import MisurationCreate
+from src.schemas import ReadingCreate
 from fastapi import HTTPException
 
 
@@ -68,24 +68,24 @@ class TestValidateIoTPayload:
         message = f"{value}:{ts}"
         sig_hex = signer(message)
 
-        misuration = MisurationCreate(
+        reading = ReadingCreate(
             value=value,
-            misurator_id=1,
+            sensor_id=1,
             device_timestamp=ts,
             signature_hex=sig_hex,
         )
 
-        mock_misurator = MagicMock()
-        mock_misurator.id = 1
-        mock_misurator.active = True
-        mock_misurator.public_key_hex = crypto_keypair["pk_hex"]
+        mock_sensor = MagicMock()
+        mock_sensor.id = 1
+        mock_sensor.active = True
+        mock_sensor.public_key_hex = crypto_keypair["pk_hex"]
 
         mock_db = MagicMock()
-        mock_db.query.return_value.filter.return_value.first.return_value = mock_misurator
+        mock_db.query.return_value.filter.return_value.first.return_value = mock_sensor
 
-        result = await validate_iot_payload(misuration, api_key="valid", db=mock_db)
-        assert result["misurator"] == mock_misurator
-        assert result["misuration"] == misuration
+        result = await validate_iot_payload(reading, api_key="valid", db=mock_db)
+        assert result["sensor"] == mock_sensor
+        assert result["reading"] == reading
 
     @pytest.mark.asyncio
     async def test_inactive_sensor(self, crypto_keypair, signer):
@@ -94,22 +94,22 @@ class TestValidateIoTPayload:
         message = f"{value}:{ts}"
         sig_hex = signer(message)
 
-        misuration = MisurationCreate(
+        reading = ReadingCreate(
             value=value,
-            misurator_id=1,
+            sensor_id=1,
             device_timestamp=ts,
             signature_hex=sig_hex,
         )
 
-        mock_misurator = MagicMock()
-        mock_misurator.active = False
+        mock_sensor = MagicMock()
+        mock_sensor.active = False
 
         mock_db = MagicMock()
-        mock_db.query.return_value.filter.return_value.first.return_value = mock_misurator
+        mock_db.query.return_value.filter.return_value.first.return_value = mock_sensor
 
         with pytest.raises(HTTPException) as exc:
-            await validate_iot_payload(misuration, api_key="valid", db=mock_db)
-        assert exc.value.status_code == 403
+            await validate_iot_payload(reading, api_key="valid", db=mock_db)
+        assert exc.value.status_code == 401
 
     @pytest.mark.asyncio
     async def test_replay_attack(self, crypto_keypair, signer):
@@ -118,32 +118,32 @@ class TestValidateIoTPayload:
         message = f"{value}:{ts}"
         sig_hex = signer(message)
 
-        misuration = MisurationCreate(
+        reading = ReadingCreate(
             value=value,
-            misurator_id=1,
+            sensor_id=1,
             device_timestamp=ts,
             signature_hex=sig_hex,
         )
 
-        mock_misurator = MagicMock()
-        mock_misurator.id = 1
-        mock_misurator.active = True
-        mock_misurator.public_key_hex = crypto_keypair["pk_hex"]
+        mock_sensor = MagicMock()
+        mock_sensor.id = 1
+        mock_sensor.active = True
+        mock_sensor.public_key_hex = crypto_keypair["pk_hex"]
 
         mock_db = MagicMock()
-        mock_db.query.return_value.filter.return_value.first.return_value = mock_misurator
+        mock_db.query.return_value.filter.return_value.first.return_value = mock_sensor
 
         with pytest.raises(HTTPException) as exc:
-            await validate_iot_payload(misuration, api_key="valid", db=mock_db)
+            await validate_iot_payload(reading, api_key="valid", db=mock_db)
         assert exc.value.status_code == 403
         assert "Replay" in exc.value.detail
 
     @pytest.mark.asyncio
     async def test_nonexistent_sensor(self):
         ts = int(time.time())
-        misuration = MisurationCreate(
+        reading = ReadingCreate(
             value=450,
-            misurator_id=999,
+            sensor_id=999,
             device_timestamp=ts,
             signature_hex="a" * 128,
         )
@@ -152,5 +152,5 @@ class TestValidateIoTPayload:
         mock_db.query.return_value.filter.return_value.first.return_value = None
 
         with pytest.raises(HTTPException) as exc:
-            await validate_iot_payload(misuration, api_key="valid", db=mock_db)
-        assert exc.value.status_code == 403
+            await validate_iot_payload(reading, api_key="valid", db=mock_db)
+        assert exc.value.status_code == 401

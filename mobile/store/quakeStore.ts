@@ -49,7 +49,7 @@ export const useQuakeStore = create<QuakeState>((set, get) => ({
    */
   fetchSensors: async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/misurators/`);
+      const response = await fetch(`${API_BASE_URL}/sensors/`);
       if (!response.ok) throw new Error("Network response was not ok");
       const data: Sensor[] = await response.json();
       set({ sensors: data });

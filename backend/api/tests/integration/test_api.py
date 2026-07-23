@@ -51,19 +51,19 @@ class TestZonesEndpoint:
         assert resp.status_code == 201
 
 
-class TestMisuratorsEndpoint:
-    def test_list_misurators(self, client, override_db, auth_headers):
-        resp = client.get("/misurators/", headers=auth_headers)
+class TestSensorsEndpoint:
+    def test_list_sensors(self, client, override_db, auth_headers):
+        resp = client.get("/sensors/", headers=auth_headers)
         assert resp.status_code == 200
 
-    def test_list_misurators_unauthorized(self, client, override_db):
-        resp = client.get("/misurators/")
+    def test_list_sensors_unauthorized(self, client, override_db):
+        resp = client.get("/sensors/")
         assert resp.status_code == 403
 
 
-class TestMisurationsEndpoint:
-    def test_get_misurations(self, client, override_db, auth_headers):
-        resp = client.get("/misurations/", headers=auth_headers)
+class TestReadingsEndpoint:
+    def test_get_readings(self, client, override_db, auth_headers):
+        resp = client.get("/readings/", headers=auth_headers)
         assert resp.status_code == 200
 
     def test_get_statistics(self, client, override_db, auth_headers):

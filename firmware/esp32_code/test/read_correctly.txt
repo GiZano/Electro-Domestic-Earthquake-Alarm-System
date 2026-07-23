@@ -217,7 +217,7 @@ void networkTask(void *pvParameters) {
             String sig = signMessage(payload);
 
             JsonDocument doc;
-            doc["value"] = val; doc["misurator_id"] = SENSOR_ID_CONF;
+            doc["value"] = val; doc["sensor_id"] = SENSOR_ID_CONF;
             doc["device_timestamp"] = evt_time; doc["signature_hex"] = sig;
             String json; serializeJson(doc, json);
 

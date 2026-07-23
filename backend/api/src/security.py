@@ -1,5 +1,6 @@
 import time
 import hashlib
+import hmac
 import asyncio
 import os
 from fastapi import Security, HTTPException, status, Depends
@@ -20,13 +21,13 @@ import src.schemas as schemas
 IOT_API_KEY = os.getenv("IOT_API_KEY")
 
 # Define the Security Scheme for Swagger UI
-api_key_scheme = APIKeyHeader(name="X-API-Key", auto_error=False)
+api_key_scheme = APIKeyHeader(name="X-API-Key", auto_error=True)
 if not IOT_API_KEY:
     raise RuntimeError("🚨 CRITICAL STARTUP ERROR: 'IOT_API_KEY' environment variable is not set!")
 
 def verify_api_key(api_key: str = Security(api_key_scheme)):
-    """Dependency that checks the API Key and throws a 401 if invalid."""
-    if not api_key or api_key != IOT_API_KEY:
+    """Dependency that checks the API Key and throws a 401 if invalid. Uses constant-time comparison."""
+    if not api_key or not hmac.compare_digest(api_key, IOT_API_KEY):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Unauthorized: Invalid or missing X-API-Key header"
@@ -57,7 +58,7 @@ def verify_device_signature(public_key_hex: str, message: str, signature_hex: st
             # Try standard DER encoded signature
             public_key.verify(sig_bytes, message_bytes, ec.ECDSA(hashes.SHA256()))
             return True
-        except (InvalidSignature, Exception):
+        except InvalidSignature:
             pass
             
         # Fallback for older sensors: Try Raw Signature (r || s)
@@ -77,7 +78,7 @@ def verify_device_signature(public_key_hex: str, message: str, signature_hex: st
     return False
 
 async def validate_iot_payload(
-    misuration: schemas.MisurationCreate,
+    reading: schemas.ReadingCreate,
     api_key: str = Depends(verify_api_key),
     db: Session = Depends(get_db)
 ):
@@ -88,21 +89,21 @@ async def validate_iot_payload(
     3. Prevents Replay Attacks.
     4. Verifies the ECDSA Digital Signature.
     """
-    misurator = db.query(models.Misurator).filter(models.Misurator.id == misuration.misurator_id).first()
-    if not misurator or not misurator.active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sensor unauthorized")
+    sensor = db.query(models.Sensor).filter(models.Sensor.id == reading.sensor_id).first()
+    if not sensor or not sensor.active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication failed")
 
     # Check Replay Attack
-    if abs(time.time() - misuration.device_timestamp) > 60:
+    if abs(time.time() - reading.device_timestamp) > 60:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Replay Attack Detected: Timestamp invalid")
 
     # Verify Signature
-    message = f"{misuration.value}:{int(misuration.device_timestamp)}"
+    message = f"{reading.value}:{int(reading.device_timestamp)}"
     loop = asyncio.get_running_loop()
-    is_valid = await loop.run_in_executor(None, verify_device_signature, misurator.public_key_hex, message, misuration.signature_hex)
+    is_valid = await loop.run_in_executor(None, verify_device_signature, sensor.public_key_hex, message, reading.signature_hex)
 
     if not is_valid:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid digital signature")
 
     # If everything is valid, return the data so the endpoint can use it!
-    return {"misurator": misurator, "misuration": misuration}
+    return {"sensor": sensor, "reading": reading}

@@ -42,7 +42,7 @@ constexpr int I2C_CLOCK_SPEED = 100000;
   #define SERVER_PORT 8000
 #endif
 #ifndef SERVER_PATH
-  #define SERVER_PATH "/misurations/"
+  #define SERVER_PATH "/readings/"
 #endif
 #ifndef SERVER_REGISTER_PATH
   #define SERVER_REGISTER_PATH "/devices/register"
@@ -322,7 +322,7 @@ void networkTask(void *pvParameters) {
 
             JsonDocument doc;
             doc["value"] = val; 
-            doc["misurator_id"] = globalSensorID; 
+            doc["sensor_id"] = globalSensorID; 
             doc["device_timestamp"] = evt_time; 
             doc["signature_hex"] = sig;
             

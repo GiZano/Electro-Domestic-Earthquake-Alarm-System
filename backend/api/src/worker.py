@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 import redis
 from sqlalchemy.orm import Session
 from src.database import SessionLocal, engine
-from src.models import Misuration
+from src.models import Reading
 
 # Redis Config
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
@@ -40,9 +40,9 @@ def process_event(event: dict, db: Session):
     """Inserts a single sensor measurement into PostGIS and triggers alerts with deduplication."""
     
     # 1. Save to Database
-    new_entry = Misuration(
+    new_entry = Reading(
         value=event.get("value"),
-        misurator_id=event.get("misurator_id")
+        sensor_id=event.get("sensor_id")
     )
     db.add(new_entry)
     db.commit()
@@ -68,7 +68,7 @@ def process_event(event: dict, db: Session):
             "type": "CRITICAL",
             "zone_id": zone_id,
             "magnitude": magnitude,
-            "message": f"High seismic activity detected (Sensor {event.get('misurator_id')})!",
+            "message": f"High seismic activity detected (Sensor {event.get('sensor_id')})!",
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
@@ -93,7 +93,7 @@ def run_worker():
                 
                 try:
                     process_event(event, db)
-                    print(f"✅ Processed sensor {event.get('misurator_id')} -> {event.get('value')} (Mag: {estimate_magnitude(event.get('value', 0))})", flush=True)
+                    print(f"✅ Processed sensor {event.get('sensor_id')} -> {event.get('value')} (Mag: {estimate_magnitude(event.get('value', 0))})", flush=True)
                 except Exception as e:
                     print(f"❌ DB Error: {e}. Moving to DLQ.", flush=True)
                     db.rollback()

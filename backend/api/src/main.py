@@ -15,7 +15,9 @@ import os
 from typing import List
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
+import asyncpg
 from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -25,7 +27,7 @@ from redis import asyncio as aioredis
 from geoalchemy2.elements import WKTElement
 
 # --- LOCAL MODULES ---
-from src.database import get_db, engine, SessionLocal
+from src.database import get_db, engine, SessionLocal, DATABASE_URL
 import src.models as models
 import src.schemas as schemas
 from src.security import verify_api_key, validate_iot_payload
@@ -35,12 +37,12 @@ from src.seed import seed_zones
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 
 MOBILE_WS_TOKEN = os.getenv("MOBILE_WS_TOKEN")
-if not MOBILE_WS_TOKEN:
-    raise RuntimeError("🚨 CRITICAL STARTUP ERROR: 'MOBILE_WS_TOKEN' environment variable is not set!")
+if not MOBILE_WS_TOKEN or len(MOBILE_WS_TOKEN) < 8:
+    raise RuntimeError("🚨 CRITICAL STARTUP ERROR: 'MOBILE_WS_TOKEN' environment variable is not set or too short (min 8 chars)!")
 
 ENROLLMENT_TOKEN = os.getenv("ENROLLMENT_TOKEN")
-if not ENROLLMENT_TOKEN:
-    raise RuntimeError("🚨 CRITICAL STARTUP ERROR: 'ENROLLMENT_TOKEN' environment variable is not set!")
+if not ENROLLMENT_TOKEN or len(ENROLLMENT_TOKEN) < 8:
+    raise RuntimeError("🚨 CRITICAL STARTUP ERROR: 'ENROLLMENT_TOKEN' environment variable is not set or too short (min 8 chars)!")
 
 # ==========================================
 # INFRASTRUCTURE INITIALIZATION
@@ -129,14 +131,19 @@ app = FastAPI(title="QuakeGuard Backend", version="2.2.0", lifespan=lifespan)
 # ==========================================
 
 async def rate_limiter(request: Request):
-    """Fixed-window rate limiter using Redis."""
-    client_ip = request.client.host
-    current_second = int(time.time())
-    key = f"rate_limit:{client_ip}:{current_second}"
+    """Sliding-window rate limiter using Redis sorted sets. Uses X-Forwarded-For if behind proxy."""
+    forwarded = request.headers.get("X-Forwarded-For")
+    client_ip = forwarded.split(",")[0].strip() if forwarded else request.client.host
+    now = time.time()
+    window = 1.0
+    key = f"rate_limit:{client_ip}"
     
-    request_count = await redis_client.incr(key)
-    if request_count == 1:
-        await redis_client.expire(key, 5) 
+    # Remove entries outside the window and add current timestamp
+    await redis_client.zremrangebyscore(key, 0, now - window)
+    await redis_client.zadd(key, {str(now): now})
+    await redis_client.expire(key, 60)
+    
+    request_count = await redis_client.zcard(key)
         
     if request_count > 50:
         raise HTTPException(
@@ -144,12 +151,16 @@ async def rate_limiter(request: Request):
             detail="Rate limit exceeded. Too many requests from this IP."
         )
 
-def resolve_zone(db: Session, latitude: float, longitude: float) -> int:
+def resolve_zone(db: Session, latitude: float | None, longitude: float | None) -> int:
     """
     Spatial auto-assignment helper.
     Finds the smallest containing polygon for given GPS coordinates.
-    Falls back to 'Unknown Region' if no match is found.
+    Falls back to 'Unknown Region' if no match is found or coordinates are null.
     """
+    if latitude is None or longitude is None:
+        fallback = db.query(models.Zone).filter(models.Zone.city == "Unknown Region").first()
+        return fallback.id if fallback else 1
+
     point = WKTElement(f"POINT({longitude} {latitude})", srid=4326)
     
     # Query PostGIS to find the containing polygon, ordered by smallest area first
@@ -199,12 +210,20 @@ async def health_check():
         "redis": "connected"
     }
     http_status_code = status.HTTP_200_OK
-    loop = asyncio.get_running_loop()
 
     # 1. Define discrete async checks with error logging
     async def check_postgres():
         try:
-            await loop.run_in_executor(None, ping_db)
+            parsed = urlparse(DATABASE_URL)
+            conn = await asyncpg.connect(
+                host=parsed.hostname or "localhost",
+                port=parsed.port or 5432,
+                user=parsed.username,
+                password=parsed.password,
+                database=parsed.path.lstrip("/"),
+            )
+            await conn.execute("SELECT 1")
+            await conn.close()
             return True
         except Exception as e:
             print(f"❌ Health Check - Postgres Error: {e}", flush=True)
@@ -277,31 +296,36 @@ def create_zone(zone: schemas.ZoneCreate, db: Session = Depends(get_db), api_key
     return db_zone
 
 @app.get("/zones/", response_model=List[schemas.Zone], tags=["Data Retrieval"])
-def get_zones(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+def get_zones(skip: int = 0, limit: int = 20, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+    if skip < 0:
+        skip = 0
+    limit = min(limit, 1000)
     return db.query(models.Zone).offset(skip).limit(limit).all()
 
-@app.post("/misurators/", response_model=schemas.Misurator, status_code=status.HTTP_201_CREATED, tags=["Registration"])
-def create_misurator(misurator: schemas.MisuratorCreate, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
-    existing = db.query(models.Misurator).filter(models.Misurator.public_key_hex == misurator.public_key_hex).first()
+def _create_sensor(db: Session, active: bool, zone_id: int | None, latitude: float | None, longitude: float | None, public_key_hex: str, mac_address: str | None = None) -> models.Sensor:
+    """Create and persist a Sensor with spatial zone auto-assignment."""
+    assigned_zone_id = zone_id or resolve_zone(db, latitude, longitude)
+    point = WKTElement(f"POINT({longitude} {latitude})", srid=4326)
+    db_sensor = models.Sensor(
+        active=active,
+        zone_id=assigned_zone_id,
+        latitude=latitude,
+        longitude=longitude,
+        location=point,
+        public_key_hex=public_key_hex,
+        mac_address=mac_address,
+    )
+    db.add(db_sensor)
+    db.commit()
+    db.refresh(db_sensor)
+    return db_sensor
+
+@app.post("/sensors/", response_model=schemas.Sensor, status_code=status.HTTP_201_CREATED, tags=["Registration"])
+def create_sensor(sensor: schemas.SensorCreate, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+    existing = db.query(models.Sensor).filter(models.Sensor.public_key_hex == sensor.public_key_hex).first()
     if existing:
         return existing
-
-    # 🌍 SPATIAL AUTO-ASSIGNMENT LOGIC (Refactored)
-    assigned_zone_id = misurator.zone_id or resolve_zone(db, misurator.latitude, misurator.longitude)
-
-    gps_point = f"POINT({misurator.longitude} {misurator.latitude})"
-    db_misurator = models.Misurator(
-        active=misurator.active, 
-        zone_id=assigned_zone_id,
-        latitude=misurator.latitude, 
-        longitude=misurator.longitude,
-        location=WKTElement(gps_point, srid=4326), 
-        public_key_hex=misurator.public_key_hex
-    )
-    db.add(db_misurator)
-    db.commit()
-    db.refresh(db_misurator)
-    return db_misurator
+    return _create_sensor(db, sensor.active, sensor.zone_id, sensor.latitude, sensor.longitude, sensor.public_key_hex)
 
 @app.post("/devices/register", status_code=status.HTTP_201_CREATED, tags=["Provisioning"])
 def register_device(payload: schemas.DeviceRegisterRequest, db: Session = Depends(get_db)):
@@ -309,50 +333,36 @@ def register_device(payload: schemas.DeviceRegisterRequest, db: Session = Depend
     if payload.enrollment_token != ENROLLMENT_TOKEN:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid enrollment token")
 
-    existing = db.query(models.Misurator).filter(
-        (models.Misurator.mac_address == payload.mac_address) |
-        (models.Misurator.public_key_hex == payload.public_key_hex)
+    existing = db.query(models.Sensor).filter(
+        (models.Sensor.mac_address == payload.mac_address) |
+        (models.Sensor.public_key_hex == payload.public_key_hex)
     ).first()
 
     if existing:
         return {"sensor_id": existing.id}
 
-    # 🌍 SPATIAL AUTO-ASSIGNMENT LOGIC (Refactored)
-    assigned_zone_id = resolve_zone(db, payload.latitude, payload.longitude)
-    point = WKTElement(f"POINT({payload.longitude} {payload.latitude})", srid=4326)
-
-    new_device = models.Misurator(
-        active=True,
-        zone_id=assigned_zone_id,
-        latitude=payload.latitude, 
-        longitude=payload.longitude, 
-        location=point,
-        public_key_hex=payload.public_key_hex,
-        mac_address=payload.mac_address
-    )
-    
-    db.add(new_device)
-    db.commit()
-    db.refresh(new_device)
-
+    new_device = _create_sensor(db, True, None, payload.latitude, payload.longitude, payload.public_key_hex, payload.mac_address)
     return {"sensor_id": new_device.id}
 
-@app.get("/misurators/", response_model=List[schemas.Misurator], tags=["Data Retrieval"])
-def get_misurators(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
-    return db.query(models.Misurator).offset(skip).limit(limit).all()
+@app.get("/sensors/", response_model=List[schemas.Sensor], tags=["Data Retrieval"])
+def get_sensors(skip: int = 0, limit: int = 20, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+    if skip < 0:
+        skip = 0
+    limit = min(limit, 1000)
+    return db.query(models.Sensor).offset(skip).limit(limit).all()
 
-@app.post("/misurations/", status_code=status.HTTP_202_ACCEPTED, tags=["Ingestion"], dependencies=[Depends(rate_limiter)])
-async def create_misuration_async(
+@app.post("/readings/", status_code=status.HTTP_202_ACCEPTED, tags=["Ingestion"], dependencies=[Depends(rate_limiter)])
+async def create_reading_async(
     # 💡 MAGIC HAPPENS HERE: validate_iot_payload handles all cryptography, replay checks, and API Key checks!
     valid_data: dict = Depends(validate_iot_payload)
 ):
     # Extract the validated objects returned from our security module
-    misuration = valid_data["misuration"]
-    misurator = valid_data["misurator"]
+    reading = valid_data["reading"]
+    sensor = valid_data["sensor"]
     
     # Enqueue for Worker
-    payload = misuration.model_dump()
-    payload['zone_id'] = misurator.zone_id
+    payload = reading.model_dump()
+    payload['zone_id'] = sensor.zone_id
     
     # Offload to the Redis queue
     await redis_client.lpush("seismic_events", json.dumps(payload))
@@ -360,16 +370,19 @@ async def create_misuration_async(
 
 @app.get("/sensors/{id}/statistics", tags=["Data Retrieval"])
 def get_sensor_statistics(id: int, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
-    count = db.query(models.Misuration).filter(models.Misuration.misurator_id == id).count()
+    count = db.query(models.Reading).filter(models.Reading.sensor_id == id).count()
     return {
         "sensor_id": id,
         "total_readings": count
     }
 
-@app.get("/misurations/", response_model=List[schemas.Misuration], tags=["Data Retrieval"])
-def get_misurations(skip: int = 0, limit: int = 50, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+@app.get("/readings/", response_model=List[schemas.Reading], tags=["Data Retrieval"])
+def get_readings(skip: int = 0, limit: int = 20, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
     """
     Fetch recent sensor readings. 
     Used primarily by the frontend dashboard to render the live seismograph.
     """
-    return db.query(models.Misuration).order_by(models.Misuration.recorded_at.desc()).offset(skip).limit(limit).all()
+    if skip < 0:
+        skip = 0
+    limit = min(limit, 1000)
+    return db.query(models.Reading).order_by(models.Reading.recorded_at.desc()).offset(skip).limit(limit).all()
