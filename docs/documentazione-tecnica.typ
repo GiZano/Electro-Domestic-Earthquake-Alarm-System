@@ -378,12 +378,12 @@ per zona (cooldown Redis di 60 secondi).
   [GET], [/health], [Health check (PostgreSQL + Redis ping)],
   [POST], [/zones/], [Crea zona geografica],
   [GET], [/zones/], [Lista zone],
-  [POST], [/misurators/], [Registra sensore con chiave pubblica],
+  [POST], [/sensors/], [Registra sensore con chiave pubblica],
   [POST], [/devices/register], [Handshake automatico ESP32],
-  [GET], [/misurators/], [Lista sensori registrati],
-  [POST], [/misurations/], [Ingress dati (con validazione ECDSA)],
+  [GET], [/sensors/], [Lista sensori registrati],
+  [POST], [/readings/], [Ingress dati (con validazione ECDSA)],
   [GET], [/sensors/{id}/statistics], [Statistiche sensore],
-  [GET], [/misurations/], [Ultime 50 letture],
+  [GET], [/readings/], [Ultime 50 letture],
   [POST], [/demo/trigger-earthquake], [Simula terremoto (demo)],
 )
 
@@ -683,7 +683,7 @@ I test unitari (`tests/unit/`) si eseguono senza Docker e coprono:
 
 I test di integrazione (`tests/integration/`) richiedono Docker e testano gli
 endpoint FastAPI con `TestClient`:
-- 10 test su health, CRUD zone/misuratori/misurazioni, statistiche, provisioning
+- 10 test su health, CRUD zone/sensors/readings, statistiche, provisioning
 - Verifica risposte HTTP (401, 403, 201, 202, 503)
 
 Il test di carico esistente (`tests/stress_test.py`) completa la suite con 150+

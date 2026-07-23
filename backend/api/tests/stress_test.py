@@ -102,7 +102,7 @@ async def register_sensor(session, sensor, sem):
     async with sem:
         payload = { "active": True, "latitude": sensor.lat, "longitude": sensor.lon, "public_key_hex": sensor.public_key_hex }
         try:
-            async with session.post(f"{API_URL}/misurators/", json=payload) as resp:
+            async with session.post(f"{API_URL}/sensors/", json=payload) as resp:
                 if resp.status in [200, 201]:
                     data = await resp.json()
                     sensor.sensor_id = data['id']
@@ -146,7 +146,7 @@ async def publish_measurement(mqtt_client, sensor, sem, is_malicious=None) -> Tu
     else:
         signature = sensor.sign_message(message)
 
-    payload = { "value": value, "misurator_id": sensor.sensor_id, "device_timestamp": timestamp, "signature_hex": signature }
+    payload = { "value": value, "sensor_id": sensor.sensor_id, "device_timestamp": timestamp, "signature_hex": signature }
 
     start_t = time.perf_counter()
     async with sem:

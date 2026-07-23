@@ -41,7 +41,7 @@ ESP32-C3 + ADXL345
        │
        │  MQTT (signed payload)
        ▼
-MQTT Bridge ──► POST /misurations/ ──► ECDSA Verification
+MQTT Bridge ──► POST /readings/ ──► ECDSA Verification
                                               │
                                               ▼
                                         Redis Queue
