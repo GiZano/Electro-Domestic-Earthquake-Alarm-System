@@ -93,8 +93,7 @@ async def validate_iot_payload(
     if not sensor or not sensor.active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication failed")
 
-    # Check Replay Attack
-    if abs(time.time() - reading.device_timestamp) > 60:
+    if abs(time.time() - reading.device_timestamp) > 300:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Replay Attack Detected: Timestamp invalid")
 
     # Verify Signature
