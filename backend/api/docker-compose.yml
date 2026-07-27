@@ -65,31 +65,19 @@ services:
       redis:
         condition: service_started
 
-  # --- MQTT BROKER ---
-  mosquitto:
-    image: eclipse-mosquitto:2
-    ports:
-      - "${MQTT_PORT}:1883"
-    volumes:
-      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "mosquitto_sub", "-t", "$$SYS/#", "-C", "1"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
   # --- MQTT BRIDGE ---
   mqtt-bridge:
     build: .
     restart: always
     command: python src/mqtt_subscriber.py
     environment:
-      - MQTT_BROKER=mosquitto
+      - MQTT_BROKER=2f61232d3ca7488ba060851440bd6b96.s1.eu.hivemq.cloud
+      - MQTT_PORT=8883
+      - MQTT_USERNAME=quakeguard_esp32
+      - MQTT_PASSWORD=x*x55b6Wm6
       - IOT_API_KEY=${IOT_API_KEY}
+      - PYTHONUNBUFFERED=1
     depends_on:
-      mosquitto:
-        condition: service_healthy
       fastapi-app:
         condition: service_healthy
 

@@ -1,5 +1,6 @@
 import os
 import time
+import ssl
 import requests
 import paho.mqtt.client as mqtt
 
@@ -8,13 +9,14 @@ if not IOT_API_KEY:
     raise RuntimeError("🚨 CRITICAL: IOT_API_KEY not set!")
 
 MQTT_BROKER = os.getenv("MQTT_BROKER", "mosquitto")
-MQTT_PORT = int(os.getenv("MQTT_PORT", 1883)) 
+MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
+MQTT_USERNAME = os.getenv("MQTT_USERNAME")
+MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
 MQTT_TOPIC = "quakeguard/telemetry"
 API_INGESTION_URL = "http://fastapi-app:8000/readings/"
 API_HEALTH_URL = "http://fastapi-app:8000/health"
 
 def wait_for_api(retries=10, delay=3):
-    """💡 FIX: Deterministic wait for the API to be ready to accept data."""
     print("Checking API connection...")
     for i in range(retries):
         try:
@@ -28,8 +30,8 @@ def wait_for_api(retries=10, delay=3):
         time.sleep(delay)
     raise RuntimeError("❌ API never became healthy")
 
-def on_connect(client, userdata, flags, rc):
-    print(f"📡 MQTT Bridge connected with result code {rc}")
+def on_connect(client, userdata, flags, reason_code, properties):
+    print(f"📡 MQTT Bridge connected with result code {reason_code}")
     client.subscribe(MQTT_TOPIC)
 
 def on_message(client, userdata, msg):
@@ -48,9 +50,14 @@ def on_message(client, userdata, msg):
 if __name__ == "__main__":
     wait_for_api()
     
-    client = mqtt.Client()
+    client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
     client.on_connect = on_connect
     client.on_message = on_message
+    
+    if MQTT_USERNAME and MQTT_PASSWORD:
+        client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
+    
+    client.tls_set(cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLS)
     
     print(f"🔌 Connecting to MQTT Broker at {MQTT_BROKER}:{MQTT_PORT}...")
     client.connect(MQTT_BROKER, MQTT_PORT, 60)
