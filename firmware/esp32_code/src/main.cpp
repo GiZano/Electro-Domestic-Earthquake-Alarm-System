@@ -50,6 +50,18 @@ constexpr int I2C_CLOCK_SPEED = 100000;
 #ifndef MQTT_PORT
   #define MQTT_PORT 1883
 #endif
+#ifndef MQTT_BROKER_HOST
+  #define MQTT_BROKER_HOST "2f61232d3ca7488ba060851440bd6b96.s1.eu.hivemq.cloud"
+#endif
+#ifndef MQTT_BROKER_PORT
+  #define MQTT_BROKER_PORT 8883
+#endif
+#ifndef MQTT_USERNAME
+  #define MQTT_USERNAME "quakeguard_esp32"
+#endif
+#ifndef MQTT_PASSWORD
+  #define MQTT_PASSWORD "x*x55b6Wm6"
+#endif
 
 #ifndef ENROLLMENT_TOKEN
   #ifndef __INTELLISENSE__ 
@@ -163,12 +175,27 @@ bool performProvisioning() {
         return false;
     }
 
+#ifdef SENSOR_ID
+    if (SENSOR_ID > 0) {
+        Serial.printf("[PROV] Using compile-time SENSOR_ID: %d\n", SENSOR_ID);
+        preferences.begin("quake-config", false);
+        preferences.putInt("sensor_id", SENSOR_ID);
+        preferences.end();
+        globalSensorID = SENSOR_ID;
+        Serial.printf("[PROV] SUCCESS! Assigned Sensor ID: %d\n", globalSensorID);
+        Serial.printf("[PROV] Public key: %s\n", getPublicKeyHex().c_str());
+        return true;
+    }
+#endif
+
     HTTPClient http;
-    String url = String("http://") + SERVER_HOST + ":" + SERVER_PORT + SERVER_REGISTER_PATH;
-    
+    String url = String("https://") + SERVER_HOST + SERVER_REGISTER_PATH;
+
     Serial.printf("[PROV] Connecting to: %s\n", url.c_str());
     http.begin(url);
     http.addHeader("Content-Type", "application/json");
+    http.addHeader("ngrok-skip-browser-warning", "true");
+    http.setTimeout(15000);
 
     JsonDocument doc;
     doc["public_key_hex"] = getPublicKeyHex();
@@ -273,11 +300,11 @@ void sensorTask(void *pvParameters) {
 // TASK 2: NETWORK DISPATCH (MQTT REFACTOR)
 // --------------------------------------------------------------------------
 void networkTask(void *pvParameters) {
-    WiFiClient espClient;
+    WiFiClientSecure espClient;
+    espClient.setInsecure();
     PubSubClient mqttClient(espClient);
     
-    // Configure MQTT Broker (Using same SERVER_HOST IP)
-    mqttClient.setServer(SERVER_HOST, MQTT_PORT);
+    mqttClient.setServer(MQTT_BROKER_HOST, MQTT_BROKER_PORT);
 
     while (WiFi.status() != WL_CONNECTED) {
         vTaskDelay(pdMS_TO_TICKS(1000));
@@ -292,7 +319,7 @@ void networkTask(void *pvParameters) {
             Serial.print("[NET] Reconnecting to MQTT Broker...");
             // Use MAC address as unique client ID
             String clientId = "QuakeGuard-" + WiFi.macAddress();
-            if (mqttClient.connect(clientId.c_str())) {
+            if (mqttClient.connect(clientId.c_str(), MQTT_USERNAME, MQTT_PASSWORD)) {
                 Serial.println(" Connected!");
             } else {
                 vTaskDelay(pdMS_TO_TICKS(2000));
@@ -367,6 +394,7 @@ void setup() {
     if (!wm.autoConnect("QuakeGuard-Setup")) {
         Serial.println("[NET] WiFi Failed. Offline Mode.");
     } else {
+        WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, IPAddress(8,8,4,4));
         Serial.println("[NET] WiFi Connected.");
         if (globalSensorID == 0) {
             performProvisioning();
