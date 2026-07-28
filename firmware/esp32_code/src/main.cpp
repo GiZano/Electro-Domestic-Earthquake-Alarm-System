@@ -36,19 +36,16 @@ constexpr int I2C_SCL_PIN = 8;
 constexpr int I2C_CLOCK_SPEED = 100000;
 
 #ifndef SERVER_HOST
-  #define SERVER_HOST "10.228.201.82"
+  #define SERVER_HOST "your-tunnel-id.ngrok-free.app"
 #endif
 #ifndef SERVER_PORT
-  #define SERVER_PORT 8000
+  #define SERVER_PORT 80
 #endif
 #ifndef SERVER_PATH
   #define SERVER_PATH "/readings/"
 #endif
 #ifndef SERVER_REGISTER_PATH
   #define SERVER_REGISTER_PATH "/devices/register"
-#endif
-#ifndef MQTT_PORT
-  #define MQTT_PORT 1883
 #endif
 #ifndef MQTT_BROKER_HOST
   #define MQTT_BROKER_HOST "2f61232d3ca7488ba060851440bd6b96.s1.eu.hivemq.cloud"

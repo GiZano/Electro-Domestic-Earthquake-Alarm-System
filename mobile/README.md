@@ -15,7 +15,7 @@
 
 ### 1. 🛡️ Monitor Dashboard (Home)
 
-- **Real-time Polling:** Automatically queries the backend (`GET /zones/1/alerts`) every 2 seconds.
+- **Live Data:** Real-time readings via WebSocket push + REST polling (`GET /readings/`).
 - **Visual Status:** Displays a "System Secure" (Green) or "Seismic Alert" (Red) status based on recent data.
 - **Haptic Feedback:** Triggers device vibration when the system state transitions from Secure to Alert.
 - **Animations:** Uses `react-native-reanimated` for a pulsing shield effect during active alerts.
