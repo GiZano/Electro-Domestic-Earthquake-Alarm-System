@@ -20,7 +20,10 @@
 ![CI Frontend](https://github.com/GiZano/QuakeGuard/actions/workflows/frontend-ci.yml/badge.svg)
 ![CI IoT](https://github.com/GiZano/QuakeGuard/actions/workflows/iot-ci.yml/badge.svg)
 
+> 📚 **Technical Specification:** A comprehensive architecture whitepaper is available in the `docs/` directory, compiled via Typst.
+
 ![QuakeGuard Logo](docs/assets/logo/png/github-banner.png)
+
 
 </div>
 
@@ -162,13 +165,22 @@ cp .env.example .env
 Edit `.env` and set the required secrets:
 
 ```env
+# --- Application Secrets ---
 IOT_API_KEY=your_secret_key
 MOBILE_WS_TOKEN=your_ws_token
 ENROLLMENT_TOKEN=your_enrollment_token
+
+# --- Database ---
 POSTGRES_DB=quakeguard_db
 POSTGRES_USER=developer
 POSTGRES_PASSWORD=your_db_password
 API_PORT=8000
+
+# --- Cloud MQTT (HiveMQ) ---
+MQTT_BROKER=your-cluster-id.s1.eu.hivemq.cloud
+MQTT_PORT=8883
+MQTT_USERNAME=your_mqtt_username
+MQTT_PASSWORD=your_mqtt_password
 ```
 
 > ⚠️ The backend will refuse to start if any of these are missing — this is intentional fail-fast behavior.
@@ -332,24 +344,31 @@ QuakeGuard/
 │   │       ├── index.tsx            # Monitor / Dashboard
 │   │       ├── map.tsx              # Sensor Network Map
 │   │       └── settings.tsx         # User Preferences
-│   ├── api/                     # Axios client + TanStack Query hooks
-│   ├── components/              # Shared UI components
-│   ├── store/                   # Zustand state slices
+│   ├── api/                         # Axios client + TanStack Query hooks
+│   ├── components/                  # Shared UI components
+│   ├── store/                       # Zustand state slices
 │   ├── context/
 │   │   └── WebSocketContext.tsx     # Real-time alert context
 │   └── constants/
 │       └── config.ts                # Centralized configuration
-└── firmware/
-    └── esp32_code/
-        ├── src/
-        │   ├── main.cpp             # FreeRTOS tasks, STA/LTA, MQTT, provisioning
-        │   └── RingBuffer.h         # Statically allocated circular buffer
-        ├── test/                    # Test scripts to insert into the ESP32
-        ├── key_generator/
-        │   └── key_gen.py           # ECDSA key generator for backend testing
-        ├── esp32_config.env.example
-        ├── extra_script.py          # ENV variables injector
-        └── platformio.ini
+├── firmware/
+│   └── esp32_code/
+│       ├── src/
+│       │   ├── main.cpp             # FreeRTOS tasks, STA/LTA, MQTT, provisioning
+│       │   └── RingBuffer.h         # Statically allocated circular buffer
+│       ├── test/                    # Test scripts to insert into the ESP32
+│       ├── key-generator/           # ECDSA key generator for backend testing
+│       ├── esp32_config.env.example
+│       ├── extra_script.py          # ENV variables injector
+│       └── platformio.ini
+└── docs/                            # Technical Documentation
+    ├── main.typ                     # Typst Whitepaper Entrypoint
+    ├── 01-architecture.typ          # System Architecture & Overview
+    ├── 02-hardware.typ              # Hardware & Edge Computing (ESP32-C3)
+    ├── 03-security.typ              # Cryptographic Security & Provisioning
+    ├── 04-broker.typ                # Data Plane & Message Broker (MQTT)
+    ├── 05-backend.typ               # Backend Services & Event Processing
+    └── 06-mobile.typ                # Mobile Client & Live Telemetry
 ```
 
 ---
