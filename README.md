@@ -358,9 +358,11 @@ QuakeGuard/
 
 | Version | Focus |
 |---------|-------|
-| **v1.0** | ✅ Current — full E2E pipeline, mobile app, CI/CD |
-| **v1.1** | Documentation wiki, Alembic migrations, cloud MQTT broker |
-| **v2.0** | AI-powered seismic intelligence assistant (Ollama + natural language queries) |
+| **v1.0** | ✅ Released — edge seismic detection on ESP32, local alerts |
+| **v1.1** | ✅ Current — HiveMQ Cloud MQTT (TLS), ngrok HTTPS tunnel, security hardening |
+| **v1.2** | AI Cloud — LLM backend for emergency report generation from MQTT telemetry |
+| **v1.3** | GNSS sync — accurate node timestamps, GPS coordinate resolution, ADXL345 calibration |
+| **v2.0** | Triangulation — multi-node spatial correlation + AI reports for epicenter calculation |
 
 ---
 
