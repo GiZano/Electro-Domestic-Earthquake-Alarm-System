@@ -12,5 +12,6 @@ __pycache__
 codebase_context.txt
 MEMORIA.md
 PROBLEMI.md
+ROADMAP.md
 node_modules/
 *.pdf
