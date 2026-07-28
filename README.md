@@ -5,7 +5,7 @@
 
 **Full-Stack IoT Architecture for Real-Time Earthquake Detection**
 
-![Version](https://img.shields.io/badge/Version-1.0.0-red?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-1.1.0-red?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge)
 ![C++](https://img.shields.io/badge/C++-Hardware_Logic-00599C?style=for-the-badge&logo=c%2B%2B&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-FastAPI-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
@@ -13,6 +13,8 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-PostGIS-316192?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-Message_Broker-DC382D?style=for-the-badge&logo=redis&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Containerization-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![HiveMQ](https://img.shields.io/badge/HiveMQ-Cloud_MQTT-FFC107?style=for-the-badge&logo=mqtt&logoColor=black)
+![ngrok](https://img.shields.io/badge/ngrok-HTTPS_Tunnel-1F1E37?style=for-the-badge&logo=ngrok&logoColor=white)
 
 ![CI Backend](https://github.com/GiZano/QuakeGuard/actions/workflows/backend-ci.yml/badge.svg)
 ![CI Frontend](https://github.com/GiZano/QuakeGuard/actions/workflows/frontend-ci.yml/badge.svg)
