@@ -33,6 +33,8 @@ import src.schemas as schemas
 from src.security import verify_api_key, validate_iot_payload
 from src.seed import seed_zones
 
+PING_QUERY = "SELECT 1"
+
 # --- SECURE CONFIGURATION ---
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 
@@ -53,7 +55,7 @@ def wait_for_db(retries: int = 10, delay: int = 3) -> None:
     for i in range(retries):
         try:
             with engine.connect() as connection:
-                connection.execute(text("SELECT 1"))
+                connection.execute(text(PING_QUERY))
             print("✅ Database is up and running!")
             return
         except OperationalError:
@@ -64,7 +66,7 @@ def wait_for_db(retries: int = 10, delay: int = 3) -> None:
 def ping_db() -> None:
     """Synchronous helper to ping the PostgreSQL database."""
     with engine.connect() as connection:
-        connection.execute(text("SELECT 1"))
+        connection.execute(text(PING_QUERY))
 
 redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
 
@@ -222,7 +224,7 @@ async def health_check():
                 password=parsed.password,
                 database=parsed.path.lstrip("/"),
             )
-            await conn.execute("SELECT 1")
+            await conn.execute(PING_QUERY)
             await conn.close()
             return True
         except Exception as e:
