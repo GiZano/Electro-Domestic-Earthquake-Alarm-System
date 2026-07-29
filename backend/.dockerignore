@@ -1,0 +1,17 @@
+.env
+.env.example
+.git
+.gitignore
+.gitattributes
+node_modules/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
+README.md
+docker-compose.yml
+mosquitto.conf
+init-scripts/

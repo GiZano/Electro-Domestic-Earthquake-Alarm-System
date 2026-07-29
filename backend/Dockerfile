@@ -12,8 +12,6 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
-
 # Set PYTHONPATH to include both /app and /app/src
 ENV PYTHONPATH="/app:/app/src"
 
