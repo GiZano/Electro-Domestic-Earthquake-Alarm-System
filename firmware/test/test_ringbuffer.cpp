@@ -54,7 +54,7 @@ int main() {
     }
 
     if (testFailures() > 0) {
-        std::print(stderr, "\n{} test(s) FAILED\n", testFailures());
+        fprintf(stderr, "\n%d test(s) FAILED\n", testFailures()); // NOSONAR(cpp:S6494)
         return 1;
     }
     printf("All RingBuffer tests PASSED\n");
