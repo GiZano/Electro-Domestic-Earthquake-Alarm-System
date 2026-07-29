@@ -53,3 +53,4 @@
 #include "04-broker.typ"
 #include "05-backend.typ"
 #include "06-mobile.typ"
+#include "07-deployment.typ"
