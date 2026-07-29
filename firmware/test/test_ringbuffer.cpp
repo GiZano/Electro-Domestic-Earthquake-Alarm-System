@@ -1,23 +1,8 @@
 #include <cassert>
 #include <cmath>
 #include <cstdio>
+#include "test_helpers.h"
 #include "../src/RingBuffer.h"
-
-static int failures = 0;
-
-#define CHECK(cond, msg) do { \
-    if (!(cond)) { \
-        fprintf(stderr, "FAIL: %s (%s)\n", msg, #cond); \
-        failures++; \
-    } \
-} while(0)
-
-#define CHECK_FLOAT(a, op, b, msg) do { \
-    if (!((a) op (b))) { \
-        fprintf(stderr, "FAIL: %s -- expected %f %s %f\n", msg, (double)(a), #op, (double)(b)); \
-        failures++; \
-    } \
-} while(0)
 
 int main() {
     // New buffer is empty
@@ -68,8 +53,8 @@ int main() {
         CHECK_FLOAT(buf.average(), ==, 10.0f, "overwrite average");
     }
 
-    if (failures > 0) {
-        fprintf(stderr, "\n%d test(s) FAILED\n", failures);
+    if (testFailures() > 0) {
+        fprintf(stderr, "\n%d test(s) FAILED\n", testFailures()); // NOSONAR(cpp:S6494)
         return 1;
     }
     printf("All RingBuffer tests PASSED\n");

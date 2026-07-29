@@ -1,22 +1,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdio>
-
-static int failures = 0;
-
-#define CHECK(cond, msg) do { \
-    if (!(cond)) { \
-        fprintf(stderr, "FAIL: %s (%s)\n", msg, #cond); \
-        failures++; \
-    } \
-} while(0)
-
-#define CHECK_FLOAT(a, op, b, msg) do { \
-    if (!((a) op (b))) { \
-        fprintf(stderr, "FAIL: %s -- expected %f %s %f\n", msg, (double)(a), #op, (double)(b)); \
-        failures++; \
-    } \
-} while(0)
+#include "test_helpers.h"
 
 static const float HPF_ALPHA = 0.9f;
 static const float TRIGGER_RATIO = 1.8f;
@@ -80,8 +65,8 @@ int main() {
         CHECK(!std::isinf(ratio), "LTA floor no infinity");
     }
 
-    if (failures > 0) {
-        fprintf(stderr, "\n%d test(s) FAILED\n", failures);
+    if (testFailures() > 0) {
+        fprintf(stderr, "\n%d test(s) FAILED\n", testFailures()); // NOSONAR(cpp:S6494)
         return 1;
     }
     printf("All detection tests PASSED\n");
