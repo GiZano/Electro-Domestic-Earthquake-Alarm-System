@@ -105,15 +105,18 @@ public:
     String signMessage(const String& message);
 };
 
-static CryptoContext crypto;
+CryptoContext& crypto() {
+    static CryptoContext c;
+    return c;
+}
 
 void CryptoContext::init() {
     mbedtls_entropy_init(&entropy_);
     mbedtls_ctr_drbg_init(&ctr_drbg_);
     mbedtls_pk_init(&pk_context_);
 
-    const char *pers = "quake_guard_signer";
-    mbedtls_ctr_drbg_seed(&ctr_drbg_, mbedtls_entropy_func, &entropy_, (const unsigned char *)pers, strlen(pers));
+    constexpr const char pers[] = "quake_guard_signer";
+    mbedtls_ctr_drbg_seed(&ctr_drbg_, mbedtls_entropy_func, &entropy_, (const unsigned char*)pers, sizeof(pers) - 1);
 
     preferences.begin("quake-keys", false);
 
@@ -143,7 +146,7 @@ String CryptoContext::getPublicKeyHex() {
     String hexKey = "";
     for(int i = start_index; i < sizeof(pub_buf); i++) {
         char buf[3];
-        snprintf(buf, sizeof(buf), "%02x", pub_buf[i]);
+        snprintf(buf, sizeof(buf), "%02x", pub_buf[i]); // NOSONAR(cpp:S6494) - std::format unavailable on ESP32
         hexKey += buf;
     }
     return hexKey;
@@ -165,7 +168,7 @@ String CryptoContext::signMessage(const String& message) {
     String hexSig = "";
     for(size_t i = 0; i < sig_len; i++) { 
         char buf[3]; 
-        snprintf(buf, sizeof(buf), "%02x", sig[i]); 
+        snprintf(buf, sizeof(buf), "%02x", sig[i]); // NOSONAR(cpp:S6494)
         hexSig += buf; 
     }
     return hexSig;
@@ -189,7 +192,7 @@ bool performProvisioning() {
         preferences.end();
         globalSensorID = SENSOR_ID;
         Serial.printf("[PROV] SUCCESS! Assigned Sensor ID: %d\n", globalSensorID);
-        Serial.printf("[PROV] Public key: %s\n", crypto.getPublicKeyHex().c_str());
+        Serial.printf("[PROV] Public key: %s\n", crypto().getPublicKeyHex().c_str());
         return true;
     }
 #endif
@@ -204,7 +207,7 @@ bool performProvisioning() {
     http.setTimeout(15000);
 
     JsonDocument doc;
-    doc["public_key_hex"] = crypto.getPublicKeyHex();
+    doc["public_key_hex"] = crypto().getPublicKeyHex();
     doc["mac_address"] = WiFi.macAddress();
     doc["enrollment_token"] = ENROLLMENT_TOKEN;
     
@@ -351,7 +354,7 @@ void networkTask(void *pvParameters) { // NOSONAR
             
             int val = (int)(receivedEvt.magnitude * 100);
             String payload = String(val) + ":" + String(evt_time);
-            String sig = crypto.signMessage(payload);
+            String sig = crypto().signMessage(payload);
 
             JsonDocument doc;
             doc["value"] = val; 
@@ -381,7 +384,7 @@ void setup() {
 
     Serial.println("\n\n[BOOT] QuakeGuard v3.3 PROV-REFACTORED");
     
-    crypto.init();
+    crypto().init();
     
     preferences.begin("quake-config", false);
     globalSensorID = preferences.getInt("sensor_id", 0);
