@@ -30,7 +30,7 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 # --- CONFIGURATION ---
 API_URL = os.getenv("API_URL", "http://localhost:8000")
-IOT_API_KEY = os.getenv("IOT_API_KEY", "SuperSecretIoTKey2024")
+IOT_API_KEY = os.getenv("IOT_API_KEY", "change-me-in-production")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))

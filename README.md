@@ -19,6 +19,7 @@
 ![CI Backend](https://github.com/GiZano/QuakeGuard/actions/workflows/backend-ci.yml/badge.svg)
 ![CI Frontend](https://github.com/GiZano/QuakeGuard/actions/workflows/frontend-ci.yml/badge.svg)
 ![CI IoT](https://github.com/GiZano/QuakeGuard/actions/workflows/iot-ci.yml/badge.svg)
+[![Quality gate status](https://sonarcloud.io/api/project_badges/measure?project=GiZano_QuakeGuard&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=GiZano_QuakeGuard)
 
 > 📚 **Technical Specification:** A comprehensive architecture whitepaper is available in the `docs/` directory, compiled via Typst.
 
@@ -158,7 +159,7 @@ Payload accepted → Redis Queue
 ### 1. Configure Environment Variables
 
 ```bash
-cd backend/api
+cd backend
 cp .env.example .env
 ```
 
@@ -188,7 +189,7 @@ MQTT_PASSWORD=your_mqtt_password
 ### 2. Launch the Backend Stack
 
 ```bash
-cd backend/api
+cd backend
 docker compose up --build -d
 ```
 
@@ -201,7 +202,7 @@ docker compose up --build -d
 ### 3. Configure and Flash the IoT Firmware
 
 ```bash
-cd firmware/esp32_code
+cd firmware
 cp esp32_config.env.example esp32_config.env
 # Edit esp32_config.env with your network IP and ENROLLMENT_TOKEN
 ```
@@ -246,7 +247,7 @@ Scan the QR code with Expo Go. Ensure your phone is on the **same WiFi network**
 Validates the full pipeline: ingestion → Redis → worker → PostGIS → WebSocket alerts.
 
 ```bash
-cd backend/api
+cd backend
 export API_URL="http://localhost:8000"
 export NUM_SENSORS=150
 export CONCURRENCY_LIMIT=50
@@ -320,24 +321,24 @@ The database is pre-seeded with 8 global macro-regions. Sensors are automaticall
 ```
 QuakeGuard/
 ├── backend/
-│   └── api/
-│       ├── src/
-│       │   ├── main.py              # FastAPI gateway + REST endpoints
-│       │   ├── security.py          # ECDSA, API Key, Anti-Replay
-│       │   ├── worker.py            # Redis consumer + magnitude + alert engine
-│       │   ├── mqtt_subscriber.py   # MQTT to HTTP bridge
-│       │   ├── seed.py              # Geographic zone seeder
-│       │   ├── models.py            # SQLAlchemy ORM models
-│       │   ├── schemas.py           # Pydantic request/response schemas
-│       │   └── database.py          # DB engine and session factory
-│       ├── tests/
-│       │   └── stress_test.py       # Critical E2E stress test suite
-│       ├── build.ps1                # Automatic container publish
-│       ├── docker-compose.yml
-│       ├── Dockerfile
-│       ├── mosquitto.conf
-│       ├── requirements.txt         # Python requirements for backend development
-│       └── .env.example
+│   ├── src/
+│   │   ├── main.py              # FastAPI gateway + REST endpoints
+│   │   ├── security.py          # ECDSA, API Key, Anti-Replay
+│   │   ├── worker.py            # Redis consumer + magnitude + alert engine
+│   │   ├── mqtt_subscriber.py   # MQTT to HTTP bridge
+│   │   ├── seed.py              # Geographic zone seeder
+│   │   ├── models.py            # SQLAlchemy ORM models
+│   │   ├── schemas.py           # Pydantic request/response schemas
+│   │   └── database.py          # DB engine and session factory
+│   ├── tests/
+│   │   └── stress_test.py       # Critical E2E stress test suite
+│   ├── init-scripts/
+│   ├── build.ps1                # Automatic container publish
+│   ├── docker-compose.yml
+│   ├── Dockerfile
+│   ├── mosquitto.conf
+│   ├── requirements.txt         # Python requirements for backend development
+│   └── .env.example
 ├── mobile/
 │   ├── app/                         # Expo Router screens
 │   │   └── (tabs)/
@@ -352,15 +353,14 @@ QuakeGuard/
 │   └── constants/
 │       └── config.ts                # Centralized configuration
 ├── firmware/
-│   └── esp32_code/
-│       ├── src/
-│       │   ├── main.cpp             # FreeRTOS tasks, STA/LTA, MQTT, provisioning
-│       │   └── RingBuffer.h         # Statically allocated circular buffer
-│       ├── test/                    # Test scripts to insert into the ESP32
-│       ├── key-generator/           # ECDSA key generator for backend testing
-│       ├── esp32_config.env.example
-│       ├── extra_script.py          # ENV variables injector
-│       └── platformio.ini
+│   ├── src/
+│   │   ├── main.cpp             # FreeRTOS tasks, STA/LTA, MQTT, provisioning
+│   │   └── RingBuffer.h         # Statically allocated circular buffer
+│   ├── test/                    # Test scripts to insert into the ESP32
+│   ├── key-generator/           # ECDSA key generator for backend testing
+│   ├── esp32_config.env.example
+│   ├── extra_script.py          # ENV variables injector
+│   └── platformio.ini
 └── docs/                            # Technical Documentation
     ├── main.typ                     # Typst Whitepaper Entrypoint
     ├── 01-architecture.typ          # System Architecture & Overview

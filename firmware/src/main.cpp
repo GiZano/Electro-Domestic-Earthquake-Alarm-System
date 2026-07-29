@@ -48,16 +48,16 @@ constexpr int I2C_CLOCK_SPEED = 100000;
   #define SERVER_REGISTER_PATH "/devices/register"
 #endif
 #ifndef MQTT_BROKER_HOST
-  #define MQTT_BROKER_HOST "2f61232d3ca7488ba060851440bd6b96.s1.eu.hivemq.cloud"
+  #error "MQTT_BROKER_HOST is missing! Add it to esp32_config.env"
 #endif
 #ifndef MQTT_BROKER_PORT
   #define MQTT_BROKER_PORT 8883
 #endif
 #ifndef MQTT_USERNAME
-  #define MQTT_USERNAME "quakeguard_esp32"
+  #error "MQTT_USERNAME is missing! Add it to esp32_config.env"
 #endif
 #ifndef MQTT_PASSWORD
-  #define MQTT_PASSWORD "x*x55b6Wm6"
+  #error "MQTT_PASSWORD is missing! Add it to esp32_config.env"
 #endif
 
 #ifndef ENROLLMENT_TOKEN

@@ -33,7 +33,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('backend/api/requirements.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
 
@@ -41,14 +41,14 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install bandit safety aiohttp cryptography redis sqlalchemy psycopg2-binary geoalchemy2 aiomqtt pytest httpx pytest-asyncio
-        if [ -f backend/api/requirements.txt ]; then pip install -r backend/api/requirements.txt; fi
+        if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
 
     - name: Run Bandit (Static Security Linter)
-      run: bandit -r backend/api/src
+      run: bandit -r backend/src
 
     - name: Run Pytest Unit Tests (standalone)
       run: |
-        cd backend/api
+        cd backend
         export PYTHONPATH=$PYTHONPATH:.
         python -m pytest tests/unit/ -v --tb=short -x
 
@@ -57,8 +57,8 @@ jobs:
       env:
         SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
       run: |
-        if [ -f backend/api/requirements.txt ]; then 
-          safety scan -r backend/api/requirements.txt
+        if [ -f backend/requirements.txt ]; then 
+          safety scan -r backend/requirements.txt
         fi
 
     - name: Initialize Docker Infrastructure
@@ -72,7 +72,7 @@ jobs:
         API_PORT: 8000
         MQTT_PORT: 1883  # 1. FIXED: Added so docker-compose can map the broker port outwards
       run: |
-        cd backend/api
+        cd backend
         docker compose up -d --build
         
         echo "Waiting for database readiness..."
@@ -85,7 +85,7 @@ jobs:
 
     - name: Run Pytest Integration Tests (with Docker)
       run: |
-        cd backend/api
+        cd backend
         export PYTHONPATH=$PYTHONPATH:.
         python -m pytest tests/integration/ -v --tb=short -x || echo "No integration tests found"
 
@@ -98,12 +98,12 @@ jobs:
         MQTT_BROKER: "localhost" # 3. FIXED: Explicitly forces aiomqtt to target the host pipeline
         MQTT_PORT: 1883          # 4. FIXED: Explicitly passes port to stress test runtime
       run: |
-        cd backend/api
+        cd backend
         export PYTHONPATH=$PYTHONPATH:.
         python -m tests.stress_test
 
     - name: Retrieve System Logs on Failure
       if: failure()
       run: |
-        cd backend/api
+        cd backend
         docker compose logs
