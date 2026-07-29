@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use this software or its architecture in your academic research, please cite it as below."
+type: "software"
+authors:
+  - family-names: "Zanotti"
+    given-names: "Giovanni"
+    alias: "GiZano"
+    orcid: "https://orcid.org/0009-0000-8900-9586" # Inserisci il tuo ORCID reale qui
+  - family-names: "Dilecce"
+    given-names: "Riccardo"
+    alias: "riccardo0731"
+title: "QuakeGuard"
+version: 1.1.0
+date-released: 2026-07-28
+url: "https://giovanni-zanotti.is-a.dev/Pages/Works/quakeguard/"
+repository-code: "https://github.com/GiZano/QuakeGuard"
+license: "AGPL-3.0"
+abstract: >-
+  QuakeGuard is a distributed, high-throughput IoT architecture for real-time 
+  seismic event detection and early warning. It utilizes ESP32-C3 microcontrollers 
+  with ADXL345 accelerometers running on-device STA/LTA digital signal processing. 
+  The backend features a Zero-Trust cryptographic provisioning model (ECDSA), 
+  mitigates the "Thundering Herd" concurrency problem via Redis asynchronous queues, 
+  and delivers real-time haptic alerts to a React Native mobile client via WebSockets.
+keywords:
+  - earthquake-early-warning
+  - iot
+  - esp32
+  - digital-signal-processing
+  - edge-computing
+  - zero-trust
+  - microservices
