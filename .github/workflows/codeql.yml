@@ -24,10 +24,10 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
+      uses: github/codeql-action/init@4187e74d05793876e9989daffde9c3e66b4acd07
       with:
         languages: ${{ matrix.language }}
 
@@ -47,4 +47,4 @@ jobs:
       working-directory: firmware
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+      uses: github/codeql-action/analyze@4187e74d05793876e9989daffde9c3e66b4acd07
