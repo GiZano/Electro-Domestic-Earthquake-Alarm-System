@@ -63,7 +63,7 @@ constexpr int I2C_CLOCK_SPEED = 100000;
 #ifndef ENROLLMENT_TOKEN
   #ifndef __INTELLISENSE__ 
     // 1. If the REAL compiler doesn't see the token, crash the build to protect us!
-    #error "🚨 CRITICAL BUILD ERROR: ENROLLMENT_TOKEN is missing! Add it to esp32_config.env"
+    #error "CRITICAL BUILD ERROR: ENROLLMENT_TOKEN is missing! Add it to esp32_config.env"
   #else 
     // 2. If VSCode's UI is looking at the file, give it a fake token so it stops crying on line 168!
     #define ENROLLMENT_TOKEN "vscode_dummy_token"
@@ -365,7 +365,7 @@ void networkTask(void *pvParameters) { // NOSONAR
             String json; 
             serializeJson(doc, json);
 
-            // 🚀 FIRE AND FORGET! Milliseconds instead of HTTP round-trips!
+            // FIRE AND FORGET! Milliseconds instead of HTTP round-trips!
             if (mqttClient.publish("quakeguard/telemetry", json.c_str())) {
                 Serial.println("[NET] MQTT Publish OK.");
             } else {
