@@ -37,21 +37,21 @@ jobs:
     - name: Install PlatformIO CLI
       run: |
         python -m pip install --upgrade pip
-        pip install platformio
+        pip install --only-binary :all: platformio==6.1.19
 
     - name: Inject CI Environment Variables
       run: |
-        cd firmware/esp32_code
+        cd firmware
         cp esp32_config.env.example esp32_config.env
 
     - name: Validate Firmware Compilation
       run: |
-        cd firmware/esp32_code
+        cd firmware
         pio run
 
     - name: Run Native Unit Tests
       run: |
-        cd firmware/esp32_code
+        cd firmware
         g++ -std=c++11 -I src test/test_ringbuffer.cpp -o /tmp/test_ringbuffer
         /tmp/test_ringbuffer
         g++ -std=c++11 -I src test/test_detection.cpp -lm -o /tmp/test_detection

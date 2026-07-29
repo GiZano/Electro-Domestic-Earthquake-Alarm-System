@@ -15,7 +15,7 @@ The backend services (PostgreSQL, Redis, FastAPI, Worker, and MQTT Bridge) are f
 
 + Navigate to the backend directory:
   ```bash
-  cd backend/api
+  cd backend
   ```
 + Clone the environment template and configure the secrets:
   ```bash
@@ -34,7 +34,7 @@ The firmware strictly requires compile-time secret injection to operate.
 
 + Navigate to the firmware directory:
   ```bash
-  cd firmware/esp32_code
+  cd firmware
   ```
 + Clone the configuration template:
   ```bash
@@ -69,7 +69,7 @@ The React Native client must point to the backend's IP address.
 
 To validate the deployment, the system includes an End-to-End (E2E) stress test that simulates a massive seismic event.
 
-From the `backend/api` directory, execute:
+From the \`backend\` directory, execute:
 ```bash
 export API_URL="http://localhost:8000"
 export NUM_SENSORS=150
