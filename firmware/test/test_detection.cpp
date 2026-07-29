@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdio>
+#include <print>
 
 static int& testFailures() {
     static int count = 0;
@@ -9,14 +10,14 @@ static int& testFailures() {
 
 #define CHECK(cond, msg) do { \
     if (!(cond)) { \
-        fprintf(stderr, "FAIL: %s (%s)\n", msg, #cond); \
+        std::print(stderr, "FAIL: {} ({})\n", msg, #cond); \
         testFailures()++; \
     } \
 } while(0)
 
 #define CHECK_FLOAT(a, op, b, msg) do { \
     if (!((a) op (b))) { \
-        fprintf(stderr, "FAIL: %s -- expected %f %s %f\n", msg, (double)(a), #op, (double)(b)); \
+        std::print(stderr, "FAIL: {} -- expected {} {} {}\n", msg, (double)(a), #op, (double)(b)); \
         testFailures()++; \
     } \
 } while(0)
@@ -84,7 +85,7 @@ int main() {
     }
 
     if (testFailures() > 0) {
-        fprintf(stderr, "\n%d test(s) FAILED\n", testFailures());
+        std::print(stderr, "\n{} test(s) FAILED\n", testFailures());
         return 1;
     }
     printf("All detection tests PASSED\n");
