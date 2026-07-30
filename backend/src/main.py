@@ -61,7 +61,7 @@ def wait_for_db(retries: int = 10, delay: int = 3) -> None:
         except OperationalError:
             print(f"⏳ Waiting for DB... ({i+1}/{retries})")
             time.sleep(delay)
-    raise Exception("❌ DB Connection Failed after multiple retries.")
+    raise ConnectionError("❌ DB Connection Failed after multiple retries.")
 
 def ping_db() -> None:
     """Synchronous helper to ping the PostgreSQL database."""
