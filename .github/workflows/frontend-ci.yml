@@ -26,7 +26,7 @@ jobs:
     - name: Setup Node.js Environment
       uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
       with:
-        node-version: '18'
+        node-version: 'lts/*'
 
     - name: Cache Node Modules
       uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
@@ -39,7 +39,7 @@ jobs:
     - name: Install JS Dependencies
       run: |
         cd mobile
-        npm install --ignore-scripts --no-audit --no-fund
+        npm ci --ignore-scripts --no-audit --no-fund
 
     - name: NPM Security Audit (informational)
       continue-on-error: true
