@@ -10,7 +10,7 @@ interface Props {
 export function ErrorBanner({ 
   title = "Connection Error", 
   message = "Unable to reach the server. Please check your connection and try again." 
-}: Props) {
+}: Readonly<Props>) {
   return (
     <View style={styles.container}>
       <ServerCrash size={48} color="#dc2626" />
