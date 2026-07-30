@@ -78,9 +78,9 @@ export const useQuakeStore = create<QuakeState>((set, get) => ({
 
         if (alerts.length > 0) {
           // Alerts are assumed to be sorted or we take the last pushed
-          const latestAlert = alerts[alerts.length - 1];
+          const latestAlert = alerts.at(-1)!;
           const alertTime = new Date(latestAlert.timestamp).getTime();
-          const now = new Date().getTime();
+          const now = Date.now();
           const diffSeconds = (now - alertTime) / 1000;
 
           // Threshold: Alert is considered active if less than 60 seconds old
