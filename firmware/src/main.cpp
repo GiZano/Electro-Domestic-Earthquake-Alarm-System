@@ -26,6 +26,9 @@
 #include "mbedtls/ecdsa.h"
 #include "mbedtls/pk.h"
 #include "mbedtls/error.h"
+#include <array>
+#include <vector>
+#include <chrono>
 #include "RingBuffer.h"
 
 // --------------------------------------------------------------------------
@@ -124,52 +127,52 @@ void CryptoContext::init() {
         Serial.println("[SEC] Generating New ECDSA Key Pair...");
         mbedtls_pk_setup(&pk_context_, mbedtls_pk_info_from_type(MBEDTLS_PK_ECKEY));
         mbedtls_ecp_gen_key(MBEDTLS_ECP_DP_SECP256R1, mbedtls_pk_ec(pk_context_), mbedtls_ctr_drbg_random, &ctr_drbg_);
-        unsigned char priv_buf[128];
-        int ret = mbedtls_pk_write_key_der(&pk_context_, priv_buf, sizeof(priv_buf));
-        preferences.putBytes("priv_key", priv_buf + sizeof(priv_buf) - ret, ret);
+        std::array<unsigned char, 128> priv_buf;
+        int ret = mbedtls_pk_write_key_der(&pk_context_, priv_buf.data(), priv_buf.size());
+        preferences.putBytes("priv_key", priv_buf.data() + priv_buf.size() - ret, ret);
         Serial.println("[SEC] Keys Generated.");
     } else {
         Serial.println("[SEC] Loading Existing Keys...");
         size_t len = preferences.getBytesLength("priv_key");
-        uint8_t buf[len];
-        preferences.getBytes("priv_key", buf, len);
-        mbedtls_pk_parse_key(&pk_context_, buf, len, NULL, 0);
+        std::vector<uint8_t> buf(len);
+        preferences.getBytes("priv_key", buf.data(), len);
+        mbedtls_pk_parse_key(&pk_context_, buf.data(), len, NULL, 0);
     }
 }
 
 String CryptoContext::getPublicKeyHex() {
-    unsigned char pub_buf[128];
-    int ret = mbedtls_pk_write_pubkey_der(&pk_context_, pub_buf, sizeof(pub_buf));
+    std::array<unsigned char, 128> pub_buf;
+    int ret = mbedtls_pk_write_pubkey_der(&pk_context_, pub_buf.data(), pub_buf.size());
     int len = ret;
-    int start_index = sizeof(pub_buf) - len;
+    int start_index = pub_buf.size() - len;
 
     String hexKey = "";
-    for(int i = start_index; i < sizeof(pub_buf); i++) {
-        char buf[3];
-        snprintf(buf, sizeof(buf), "%02x", pub_buf[i]); // NOSONAR(cpp:S6494) - std::format unavailable on ESP32
-        hexKey += buf;
+    for(int i = start_index; i < static_cast<int>(pub_buf.size()); i++) {
+        std::array<char, 3> buf;
+        snprintf(buf.data(), buf.size(), "%02x", pub_buf[i]); // NOSONAR(cpp:S6494) - std::format unavailable on ESP32
+        hexKey += buf.data();
     }
     return hexKey;
 }
 
 String CryptoContext::signMessage(const String& message) {
-    unsigned char hash[32];
-    unsigned char sig[MBEDTLS_ECDSA_MAX_LEN];
+    std::array<unsigned char, 32> hash;
+    std::array<unsigned char, MBEDTLS_ECDSA_MAX_LEN> sig;
     size_t sig_len = 0;
     mbedtls_md_context_t ctx;
     mbedtls_md_init(&ctx);
     mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(MBEDTLS_MD_SHA256), 0);
     mbedtls_md_starts(&ctx);
     mbedtls_md_update(&ctx, (const unsigned char*)message.c_str(), message.length());
-    mbedtls_md_finish(&ctx, hash);
+    mbedtls_md_finish(&ctx, hash.data());
     mbedtls_md_free(&ctx);
-    mbedtls_pk_sign(&pk_context_, MBEDTLS_MD_SHA256, hash, 0, sig, &sig_len, mbedtls_ctr_drbg_random, &ctr_drbg_);
+    mbedtls_pk_sign(&pk_context_, MBEDTLS_MD_SHA256, hash.data(), 0, sig.data(), &sig_len, mbedtls_ctr_drbg_random, &ctr_drbg_);
     
     String hexSig = "";
     for(size_t i = 0; i < sig_len; i++) { 
-        char buf[3]; 
-        snprintf(buf, sizeof(buf), "%02x", sig[i]); // NOSONAR(cpp:S6494)
-        hexSig += buf; 
+        std::array<char, 3> buf; 
+        snprintf(buf.data(), buf.size(), "%02x", sig[i]); // NOSONAR(cpp:S6494)
+        hexSig += buf.data(); 
     }
     return hexSig;
 }
@@ -348,11 +351,11 @@ void networkTask(void *pvParameters) { // NOSONAR
             
             if (globalSensorID == 0) continue; // Unregistered
 
-            time_t now_unix; time(&now_unix);
+            auto now_chrono = std::chrono::system_clock::now();
             unsigned long age_ms = millis() - receivedEvt.event_millis;
-            time_t evt_time = now_unix - (age_ms / 1000);
+            time_t evt_time = std::chrono::system_clock::to_time_t(now_chrono - std::chrono::milliseconds(age_ms));
             
-            int val = (int)(receivedEvt.magnitude * 100);
+            auto val = static_cast<int>(receivedEvt.magnitude * 100);
             String payload = String(val) + ":" + String(evt_time);
             String sig = crypto().signMessage(payload);
 
@@ -417,7 +420,7 @@ void setup() {
 
     if(!accel.begin(0x53) && !accel.begin(0x1D)) {
         Serial.println("[FATAL] Sensor Hardware Error.");
-        while(1) vTaskDelay(100);
+        while(true) vTaskDelay(100);
     }
     
     accel.setDataRate(ADXL345_DATARATE_100_HZ);
