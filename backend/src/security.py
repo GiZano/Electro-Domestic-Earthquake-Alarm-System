@@ -89,7 +89,7 @@ def verify_device_signature(public_key_hex: str, message: str, signature_hex: st
 
 async def validate_iot_payload(
     reading: schemas.ReadingCreate,
-    api_key: str = Depends(verify_api_key),
+    _: str = Depends(verify_api_key),
     db: Session = Depends(get_db)
 ):
     """
