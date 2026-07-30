@@ -11,6 +11,10 @@ authors:
     alias: "riccardo0731"
 title: "QuakeGuard"
 version: 1.1.0
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.21710406"
+    description: "Software archive (v1.1.1)"
 date-released: 2026-07-28
 identifiers:
   - type: doi
