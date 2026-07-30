@@ -5,7 +5,7 @@ interface Props {
   message?: string;
 }
 
-export function LoadingSkeleton({ message = "Loading data..." }: Props) {
+export function LoadingSkeleton({ message = "Loading data..." }: Readonly<Props>) {
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color="#dc2626" />
