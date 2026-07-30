@@ -19,7 +19,7 @@ abstract: >-
   QuakeGuard is a distributed, high-throughput IoT architecture for real-time 
   seismic event detection and early warning. It utilizes ESP32-C3 microcontrollers 
   with ADXL345 accelerometers running on-device STA/LTA digital signal processing. 
-  The backend features a Zero-Trust cryptographic provisioning model (ECDSA), 
+  The backend features a cryptographically-authenticated provisioning model (ECDSA), 
   mitigates the "Thundering Herd" concurrency problem via Redis asynchronous queues, 
   and delivers real-time haptic alerts to a React Native mobile client via WebSockets.
 keywords:
