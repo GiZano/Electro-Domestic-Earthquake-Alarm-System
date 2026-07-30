@@ -5,7 +5,7 @@
 
 **Full-Stack IoT Architecture for Real-Time Earthquake Detection**
 
-![Version](https://img.shields.io/badge/Version-1.1.0-red?style=for-the-badge)
+![Version](https://img.shields.io/github/v/tag/GiZano/QuakeGuard?style=for-the-badge&color=red)
 ![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge)
 ![C++](https://img.shields.io/badge/C++-Hardware_Logic-00599C?style=for-the-badge&logo=c%2B%2B&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-FastAPI-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
