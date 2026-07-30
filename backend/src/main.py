@@ -258,10 +258,9 @@ async def health_check():
         
     return health_status
 
-@app.post("/demo/trigger-earthquake", status_code=status.HTTP_200_OK, tags=["Demo"])
+@app.post("/demo/trigger-earthquake", status_code=status.HTTP_200_OK, tags=["Demo"], dependencies=[Depends(verify_api_key)])
 async def trigger_demo_earthquake(
     payload: schemas.DemoAlertRequest,
-    api_key: str = Depends(verify_api_key)
 ):
     """
     Instantly triggers a simulated CRITICAL earthquake alert.
@@ -285,8 +284,8 @@ async def trigger_demo_earthquake(
         "payload": alert_data
     }
 
-@app.post("/zones/", response_model=schemas.Zone, status_code=status.HTTP_201_CREATED, tags=["Registration"])
-def create_zone(zone: schemas.ZoneCreate, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+@app.post("/zones/", response_model=schemas.Zone, status_code=status.HTTP_201_CREATED, tags=["Registration"], dependencies=[Depends(verify_api_key)])
+def create_zone(zone: schemas.ZoneCreate, db: Session = Depends(get_db)):
     existing = db.query(models.Zone).filter(models.Zone.city == zone.city).first()
     if existing:
         return existing 
@@ -297,8 +296,8 @@ def create_zone(zone: schemas.ZoneCreate, db: Session = Depends(get_db), api_key
     db.refresh(db_zone)
     return db_zone
 
-@app.get("/zones/", response_model=List[schemas.Zone], tags=["Data Retrieval"])
-def get_zones(skip: int = 0, limit: int = 20, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+@app.get("/zones/", response_model=List[schemas.Zone], tags=["Data Retrieval"], dependencies=[Depends(verify_api_key)])
+def get_zones(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
     if skip < 0:
         skip = 0
     limit = min(limit, 1000)
@@ -322,8 +321,8 @@ def _create_sensor(db: Session, active: bool, zone_id: int | None, latitude: flo
     db.refresh(db_sensor)
     return db_sensor
 
-@app.post("/sensors/", response_model=schemas.Sensor, status_code=status.HTTP_201_CREATED, tags=["Registration"])
-def create_sensor(sensor: schemas.SensorCreate, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+@app.post("/sensors/", response_model=schemas.Sensor, status_code=status.HTTP_201_CREATED, tags=["Registration"], dependencies=[Depends(verify_api_key)])
+def create_sensor(sensor: schemas.SensorCreate, db: Session = Depends(get_db)):
     existing = db.query(models.Sensor).filter(models.Sensor.public_key_hex == sensor.public_key_hex).first()
     if existing:
         return existing
@@ -346,8 +345,8 @@ def register_device(payload: schemas.DeviceRegisterRequest, db: Session = Depend
     new_device = _create_sensor(db, True, None, payload.latitude, payload.longitude, payload.public_key_hex, payload.mac_address)
     return {"sensor_id": new_device.id}
 
-@app.get("/sensors/", response_model=List[schemas.Sensor], tags=["Data Retrieval"])
-def get_sensors(skip: int = 0, limit: int = 20, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+@app.get("/sensors/", response_model=List[schemas.Sensor], tags=["Data Retrieval"], dependencies=[Depends(verify_api_key)])
+def get_sensors(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
     if skip < 0:
         skip = 0
     limit = min(limit, 1000)
@@ -370,16 +369,16 @@ async def create_reading_async(
     await redis_client.lpush("seismic_events", json.dumps(payload))
     return {"status": "accepted"}
 
-@app.get("/sensors/{id}/statistics", tags=["Data Retrieval"])
-def get_sensor_statistics(id: int, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+@app.get("/sensors/{id}/statistics", tags=["Data Retrieval"], dependencies=[Depends(verify_api_key)])
+def get_sensor_statistics(id: int, db: Session = Depends(get_db)):
     count = db.query(models.Reading).filter(models.Reading.sensor_id == id).count()
     return {
         "sensor_id": id,
         "total_readings": count
     }
 
-@app.get("/readings/", response_model=List[schemas.Reading], tags=["Data Retrieval"])
-def get_readings(skip: int = 0, limit: int = 20, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+@app.get("/readings/", response_model=List[schemas.Reading], tags=["Data Retrieval"], dependencies=[Depends(verify_api_key)])
+def get_readings(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
     """
     Fetch recent sensor readings. 
     Used primarily by the frontend dashboard to render the live seismograph.
