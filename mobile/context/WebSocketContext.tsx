@@ -3,6 +3,7 @@ import React, {
   ReactNode,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useCallback,
@@ -188,7 +189,7 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
   // 💡 IL SECONDO useEffect(() => { connect() }) È STATO ELIMINATO COMPLETAMENTE!
 
   return (
-    <WebSocketContext.Provider value={{ isConnected, lastAlert }}>
+    <WebSocketContext.Provider value={useMemo(() => ({ isConnected, lastAlert }), [isConnected, lastAlert])}>
       {children}
     </WebSocketContext.Provider>
   );
