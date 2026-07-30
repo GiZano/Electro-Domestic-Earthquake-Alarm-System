@@ -38,7 +38,7 @@ if ($Push) {
         $GitHubToken = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
     }
     
-    echo $GitHubToken | docker login ghcr.io -u $GitHubUsername --password-stdin
+    Write-Output $GitHubToken | docker login ghcr.io -u $GitHubUsername --password-stdin
     
     if ($LASTEXITCODE -eq 0) {
         docker push "$ImageName`:$Version"
