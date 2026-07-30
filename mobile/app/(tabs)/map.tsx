@@ -7,8 +7,26 @@ import { useSensorStatistics } from "../../api/hooks/useSensors";
 import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 import { ErrorBanner } from "../../components/ErrorBanner";
 
+const CalloutStats = ({ stats }: { stats: any }) => {
+  return (
+    <View style={styles.statsRow}>
+      <Text style={styles.statsLabel}>Total Readings:</Text>
+      <Text style={styles.statsValue}>{stats?.total_readings || 0}</Text>
+    </View>
+  );
+};
+
 const SensorCalloutDetails = ({ sensor }: { sensor: any }) => {
   const { data: stats, isLoading, isError } = useSensorStatistics(sensor.id);
+
+  let content: React.JSX.Element;
+  if (isLoading) {
+    content = <ActivityIndicator size="small" color="#4f46e5" style={{ marginTop: 5 }} />;
+  } else if (isError) {
+    content = <Text style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Data unavailable</Text>;
+  } else {
+    content = <CalloutStats stats={stats} />;
+  }
 
   return (
     <View style={styles.calloutContainer}>
@@ -23,16 +41,7 @@ const SensorCalloutDetails = ({ sensor }: { sensor: any }) => {
 
       <View style={styles.statsDivider} />
 
-      {isLoading ? (
-        <ActivityIndicator size="small" color="#4f46e5" style={{ marginTop: 5 }} />
-      ) : isError ? (
-        <Text style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Data unavailable</Text>
-      ) : (
-        <View style={styles.statsRow}>
-          <Text style={styles.statsLabel}>Total Readings:</Text>
-          <Text style={styles.statsValue}>{stats?.total_readings || 0}</Text>
-        </View>
-      )}
+      {content}
     </View>
   );
 };
