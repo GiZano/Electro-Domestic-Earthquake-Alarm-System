@@ -1,9 +1,11 @@
 #pragma once
 
+#include <array>
+
 template <size_t S>
 class RingBuffer {
 private:
-    float buffer[S] = {0};
+    std::array<float, S> buffer{};
     size_t head = 0;
     size_t count = 0;
     float sum = 0;
