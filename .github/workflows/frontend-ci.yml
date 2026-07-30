@@ -39,7 +39,7 @@ jobs:
     - name: Install JS Dependencies
       run: |
         cd mobile
-        npm install
+        npm install --ignore-scripts --no-audit --no-fund
 
     - name: NPM Security Audit (informational)
       continue-on-error: true
@@ -50,9 +50,9 @@ jobs:
     - name: ESLint Code Quality Check
       run: |
         cd mobile
-        npx eslint . --ext .js,.jsx,.ts,.tsx
+        npx --no-install eslint . --ext .js,.jsx,.ts,.tsx
 
     - name: Run Jest Unit Tests
       run: |
         cd mobile
-        npx jest --passWithNoTests
+        npx --no-install jest --passWithNoTests
