@@ -17,6 +17,112 @@ import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 import { ErrorBanner } from "../../components/ErrorBanner";
 import { AlertHistoryList } from "../../components/AlertHistoryList";
 
+function TopBar({ isConnected }: { isConnected: boolean }) {
+  return (
+    <View style={styles.topBar}>
+      <Text style={styles.headerTitle}>Network Status</Text>
+      <View style={styles.connectionBadge}>
+        {isConnected ? <Wifi size={16} color="#16a34a" /> : <WifiOff size={16} color="#dc2626" />}
+        <Text style={[styles.connectionText, { color: isConnected ? "#16a34a" : "#dc2626" }]}>
+          {isConnected ? "LIVE" : "OFFLINE"}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function HeroSection({ isAlertActive, animatedStyle, textColor }: {
+  isAlertActive: boolean;
+  animatedStyle: any;
+  textColor: string;
+}) {
+  return (
+    <View style={styles.heroSection}>
+      <Animated.View style={[styles.iconContainer, animatedStyle]}>
+        {isAlertActive ? (
+          <ShieldAlert size={100} color="#dc2626" />
+        ) : (
+          <ShieldCheck size={100} color="#16a34a" />
+        )}
+      </Animated.View>
+      <Text style={[styles.statusText, { color: textColor }]}>
+        {isAlertActive ? "⚠️ SEISMIC ALERT ⚠️" : "SYSTEM SECURE"}
+      </Text>
+    </View>
+  );
+}
+
+function AlertBanner({ lastAlert }: { lastAlert: any }) {
+  return (
+    <View style={styles.alertDetails}>
+      <Text style={styles.alertValue}>Mag: {lastAlert.magnitude.toFixed(1)}</Text>
+      <Text style={styles.alertMessage}>{`"${lastAlert.message}"`}</Text>
+    </View>
+  );
+}
+
+function NetworkChart({ readings, isAlertActive }: { readings: any[]; isAlertActive: boolean }) {
+  if (!readings || readings.length === 0) {
+    return <Text style={{ textAlign: 'center', color: "#6b7280" }}>Awaiting telemetry...</Text>;
+  }
+
+  return (
+    <VictoryChart
+      theme={VictoryTheme.material}
+      height={isAlertActive ? 150 : 220}
+      padding={{ top: 10, bottom: 30, left: 40, right: 10 }}
+    >
+      <VictoryLine
+        style={{
+          data: { stroke: isAlertActive ? "#dc2626" : "#4f46e5", strokeWidth: 2 }
+        }}
+        data={readings}
+        x="device_timestamp"
+        y="value"
+      />
+    </VictoryChart>
+  );
+}
+
+function DashboardContent({ errorSensors, errorReadings, loadingSensors, loadingReadings, activeSensors, totalSensors, readings, isAlertActive }: {
+  errorSensors: boolean;
+  errorReadings: boolean;
+  loadingSensors: boolean;
+  loadingReadings: boolean;
+  activeSensors: number;
+  totalSensors: number;
+  readings: any[];
+  isAlertActive: boolean;
+}) {
+  if (errorSensors || errorReadings) return <ErrorBanner />;
+  if (loadingSensors || loadingReadings) return <LoadingSkeleton />;
+
+  return (
+    <>
+      <View style={styles.summaryRow}>
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryLabel}>Active Nodes</Text>
+          <Text style={styles.summaryValue}>{activeSensors} / {totalSensors}</Text>
+        </View>
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryLabel}>Signal Status</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Activity size={18} color="#16a34a" />
+            <Text style={[styles.summaryValue, { color: "#16a34a" }]}>Stable</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.chartContainer}>
+        <Text style={styles.chartTitle}>Live Network Seismograph</Text>
+        <NetworkChart readings={readings} isAlertActive={isAlertActive} />
+      </View>
+
+      <AlertHistoryList />
+    </>
+  );
+}
+
 export default function MonitorScreen() {
   const { isConnected, lastAlert } = useWebSocket();
   const [isAlertActive, setIsAlertActive] = useState(false);
@@ -67,90 +173,27 @@ export default function MonitorScreen() {
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor }]} edges={['top']}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent} 
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Top Bar */}
-        <View style={styles.topBar}>
-          <Text style={styles.headerTitle}>Network Status</Text>
-          <View style={styles.connectionBadge}>
-            {isConnected ? <Wifi size={16} color="#16a34a" /> : <WifiOff size={16} color="#dc2626" />}
-            <Text style={[styles.connectionText, { color: isConnected ? "#16a34a" : "#dc2626" }]}>
-              {isConnected ? "LIVE" : "OFFLINE"}
-            </Text>
-          </View>
-        </View>
+        <TopBar isConnected={isConnected} />
 
-        {/* Hero Section */}
-        <View style={styles.heroSection}>
-          <Animated.View style={[styles.iconContainer, animatedStyle]}>
-            {isAlertActive ? (
-              <ShieldAlert size={100} color="#dc2626" />
-            ) : (
-              <ShieldCheck size={100} color="#16a34a" />
-            )}
-          </Animated.View>
-          <Text style={[styles.statusText, { color: textColor }]}>
-            {isAlertActive ? "⚠️ SEISMIC ALERT ⚠️" : "SYSTEM SECURE"}
-          </Text>
-        </View>
+        <HeroSection isAlertActive={isAlertActive} animatedStyle={animatedStyle} textColor={textColor} />
 
-        {/* Alert Banner */}
-        {isAlertActive && lastAlert && (
-          <View style={styles.alertDetails}>
-            <Text style={styles.alertValue}>Mag: {lastAlert.magnitude.toFixed(1)}</Text>
-            <Text style={styles.alertMessage}>{`"${lastAlert.message}"`}</Text>
-          </View>
-        )}
+        {isAlertActive && lastAlert && <AlertBanner lastAlert={lastAlert} />}
 
-        {/* Dashboard Card */}
         <View style={styles.dashboardCard}>
-          {errorSensors || errorReadings ? (
-            <ErrorBanner />
-          ) : loadingSensors || loadingReadings ? (
-            <LoadingSkeleton />
-          ) : (
-            <>
-              <View style={styles.summaryRow}>
-                <View style={styles.summaryItem}>
-                  <Text style={styles.summaryLabel}>Active Nodes</Text>
-                  <Text style={styles.summaryValue}>{activeSensors} / {totalSensors}</Text>
-                </View>
-                <View style={styles.summaryItem}>
-                  <Text style={styles.summaryLabel}>Signal Status</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Activity size={18} color="#16a34a" />
-                    <Text style={[styles.summaryValue, { color: "#16a34a" }]}>Stable</Text>
-                  </View>
-                </View>
-              </View>
-
-              <View style={styles.chartContainer}>
-                <Text style={styles.chartTitle}>Live Network Seismograph</Text>
-                {readings && readings.length > 0 ? (
-                  <VictoryChart 
-                    theme={VictoryTheme.material} 
-                    height={isAlertActive ? 150 : 220} // Adattamento dinamico
-                    padding={{ top: 10, bottom: 30, left: 40, right: 10 }}
-                  >
-                    <VictoryLine
-                      style={{
-                        data: { stroke: isAlertActive ? "#dc2626" : "#4f46e5", strokeWidth: 2 }
-                      }}
-                      data={readings}
-                      x="device_timestamp"
-                      y="value"
-                    />
-                  </VictoryChart>
-                ) : (
-                  <Text style={{ textAlign: 'center', color: "#6b7280" }}>Awaiting telemetry...</Text>
-                )}
-              </View>
-              
-              <AlertHistoryList />
-            </>
-          )}
+          <DashboardContent
+            errorSensors={errorSensors}
+            errorReadings={errorReadings}
+            loadingSensors={loadingSensors}
+            loadingReadings={loadingReadings}
+            activeSensors={activeSensors}
+            totalSensors={totalSensors}
+            readings={readings || []}
+            isAlertActive={isAlertActive}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -167,21 +210,21 @@ const styles = StyleSheet.create({
   heroSection: { alignItems: 'center', marginVertical: 10 },
   iconContainer: { marginBottom: 10 },
   statusText: { fontSize: 26, fontWeight: "900", textAlign: "center" },
-  dashboardCard: { 
-    backgroundColor: "white", 
-    borderRadius: 20, 
-    padding: 20, 
-    elevation: 3, 
-    marginTop: 10 
+  dashboardCard: {
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 20,
+    elevation: 3,
+    marginTop: 10
   },
-  summaryRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    borderBottomWidth: 1, 
-    borderBottomColor: "#f3f4f6", 
-    paddingBottom: 15, 
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+    paddingBottom: 15,
     marginBottom: 10,
-    flexShrink: 0 
+    flexShrink: 0
   },
   summaryItem: { alignItems: 'flex-start' },
   summaryLabel: { fontSize: 12, color: "#6b7280", fontWeight: "600", textTransform: "uppercase" },
