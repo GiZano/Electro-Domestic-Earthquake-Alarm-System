@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 import asyncpg
-from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, Request
+from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func
@@ -192,7 +192,7 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             await websocket.receive_text()
-    except (WebSocketDisconnect, Exception):
+    except Exception:
         manager.disconnect(websocket)
 
 # ==========================================
