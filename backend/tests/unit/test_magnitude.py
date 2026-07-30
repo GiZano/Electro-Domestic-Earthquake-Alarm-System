@@ -36,7 +36,7 @@ class TestEstimateMagnitude:
         assert mag < 4.5
 
     def test_consistency(self):
-        assert estimate_magnitude(1000) == estimate_magnitude(1000)
+        assert estimate_magnitude(1000) == pytest.approx(3.7959, abs=0.01)
 
     def test_rounding(self):
         mag = estimate_magnitude(555)
