@@ -21,6 +21,7 @@
 ![CI IoT](https://github.com/GiZano/QuakeGuard/actions/workflows/iot-ci.yml/badge.svg)
 
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=GiZano_QuakeGuard&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=GiZano_QuakeGuard)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=GiZano_QuakeGuard&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=GiZano_QuakeGuard)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=GiZano_QuakeGuard&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=GiZano_QuakeGuard)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=GiZano_QuakeGuard&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=GiZano_QuakeGuard)
 
