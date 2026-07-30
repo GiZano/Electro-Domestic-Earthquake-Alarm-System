@@ -17,7 +17,7 @@ import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 import { ErrorBanner } from "../../components/ErrorBanner";
 import { AlertHistoryList } from "../../components/AlertHistoryList";
 
-function TopBar({ isConnected }: { isConnected: boolean }) {
+function TopBar({ isConnected }: Readonly<{ isConnected: boolean }>) {
   return (
     <View style={styles.topBar}>
       <Text style={styles.headerTitle}>Network Status</Text>
@@ -31,11 +31,11 @@ function TopBar({ isConnected }: { isConnected: boolean }) {
   );
 }
 
-function HeroSection({ isAlertActive, animatedStyle, textColor }: {
+function HeroSection({ isAlertActive, animatedStyle, textColor }: Readonly<{
   isAlertActive: boolean;
   animatedStyle: any;
   textColor: string;
-}) {
+}>) {
   return (
     <View style={styles.heroSection}>
       <Animated.View style={[styles.iconContainer, animatedStyle]}>
@@ -52,7 +52,7 @@ function HeroSection({ isAlertActive, animatedStyle, textColor }: {
   );
 }
 
-function AlertBanner({ lastAlert }: { lastAlert: any }) {
+function AlertBanner({ lastAlert }: Readonly<{ lastAlert: any }>) {
   return (
     <View style={styles.alertDetails}>
       <Text style={styles.alertValue}>Mag: {lastAlert.magnitude.toFixed(1)}</Text>
@@ -61,7 +61,7 @@ function AlertBanner({ lastAlert }: { lastAlert: any }) {
   );
 }
 
-function NetworkChart({ readings, isAlertActive }: { readings: any[]; isAlertActive: boolean }) {
+function NetworkChart({ readings, isAlertActive }: Readonly<{ readings: any[]; isAlertActive: boolean }>) {
   if (!readings || readings.length === 0) {
     return <Text style={{ textAlign: 'center', color: "#6b7280" }}>Awaiting telemetry...</Text>;
   }
@@ -84,7 +84,7 @@ function NetworkChart({ readings, isAlertActive }: { readings: any[]; isAlertAct
   );
 }
 
-function DashboardContent({ errorSensors, errorReadings, loadingSensors, loadingReadings, activeSensors, totalSensors, readings, isAlertActive }: {
+function DashboardContent({ errorSensors, errorReadings, loadingSensors, loadingReadings, activeSensors, totalSensors, readings, isAlertActive }: Readonly<{
   errorSensors: boolean;
   errorReadings: boolean;
   loadingSensors: boolean;
@@ -93,7 +93,7 @@ function DashboardContent({ errorSensors, errorReadings, loadingSensors, loading
   totalSensors: number;
   readings: any[];
   isAlertActive: boolean;
-}) {
+}>) {
   if (errorSensors || errorReadings) return <ErrorBanner />;
   if (loadingSensors || loadingReadings) return <LoadingSkeleton />;
 
