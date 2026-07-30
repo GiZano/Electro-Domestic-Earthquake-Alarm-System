@@ -390,6 +390,7 @@ QuakeGuard/
 | **v1.2** | AI Cloud — LLM backend for emergency report generation from MQTT telemetry |
 | **v1.3** | GNSS sync — accurate node timestamps, GPS coordinate resolution, ADXL345 calibration |
 | **v2.0** | Triangulation — multi-node spatial correlation + AI reports for epicenter calculation |
+| **v2.1** | Data Dashboards — Grafana dashboards for real-time visualization of seismic telemetry |
 
 ---
 
