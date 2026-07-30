@@ -248,7 +248,8 @@ bool performProvisioning() {
 // TASK 1: SENSOR ACQUISITION
 // --------------------------------------------------------------------------
 void sensorTask(void *pvParameters) { // NOSONAR
-    float prev_raw_mag = 9.81f, filtered_mag = 0.0f;
+    float prev_raw_mag = 9.81f;
+    float filtered_mag = 0.0f;
     sensors_event_t event;
 
     // Instantiate our strict rolling window buffers!
