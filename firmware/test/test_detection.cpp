@@ -14,7 +14,8 @@ static float high_pass_filter(float prev_filtered, float prev_raw, float raw) {
 int main() {
     // HPF removes gravity bias
     {
-        float filtered = 0.0f, prev_raw = 9.81f;
+        float filtered = 0.0f;
+        float prev_raw = 9.81f;
         for (int i = 0; i < 100; i++) {
             filtered = high_pass_filter(filtered, prev_raw, 9.81f);
             prev_raw = 9.81f;
@@ -24,7 +25,8 @@ int main() {
 
     // HPF passes transients
     {
-        float filtered = 0.0f, prev_raw = 9.81f;
+        float filtered = 0.0f;
+        float prev_raw = 9.81f;
         filtered = high_pass_filter(filtered, prev_raw, 12.0f);
         CHECK(filtered > 1.0f, "HPF passes transient");
     }
@@ -42,7 +44,8 @@ int main() {
 
     // Trigger ratio detects earthquake
     {
-        float sta = 0.13f, lta = 0.07f;
+        float sta = 0.13f;
+        float lta = 0.07f;
         if (lta < 0.01f) lta = 0.01f;
         float ratio = sta / lta;
         CHECK(ratio >= TRIGGER_RATIO, "STA/LTA triggers on quake");
@@ -50,7 +53,8 @@ int main() {
 
     // Trigger ratio suppresses noise
     {
-        float sta = 0.04f, lta = 0.04f;
+        float sta = 0.04f;
+        float lta = 0.04f;
         if (lta < 0.01f) lta = 0.01f;
         float ratio = sta / lta;
         CHECK(ratio < TRIGGER_RATIO, "STA/LTA suppresses noise");
@@ -69,6 +73,6 @@ int main() {
         fprintf(stderr, "\n%d test(s) FAILED\n", testFailures()); // NOSONAR(cpp:S6494)
         return 1;
     }
-    printf("All detection tests PASSED\n");
+    printf("All detection tests PASSED\n"); // NOSONAR(cpp:S6494) - std::print unavailable on ESP32
     return 0;
 }
