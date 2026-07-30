@@ -83,7 +83,7 @@ class TestValidateIoTPayload:
         mock_db = MagicMock()
         mock_db.query.return_value.filter.return_value.first.return_value = mock_sensor
 
-        result = await validate_iot_payload(reading, api_key="valid", db=mock_db)
+        result = await validate_iot_payload(reading, db=mock_db)
         assert result["sensor"] == mock_sensor
         assert result["reading"] == reading
 
@@ -108,7 +108,7 @@ class TestValidateIoTPayload:
         mock_db.query.return_value.filter.return_value.first.return_value = mock_sensor
 
         with pytest.raises(HTTPException) as exc:
-            await validate_iot_payload(reading, api_key="valid", db=mock_db)
+            await validate_iot_payload(reading, db=mock_db)
         assert exc.value.status_code == 401
 
     @pytest.mark.asyncio
@@ -134,7 +134,7 @@ class TestValidateIoTPayload:
         mock_db.query.return_value.filter.return_value.first.return_value = mock_sensor
 
         with pytest.raises(HTTPException) as exc:
-            await validate_iot_payload(reading, api_key="valid", db=mock_db)
+            await validate_iot_payload(reading, db=mock_db)
         assert exc.value.status_code == 403
         assert "Replay" in exc.value.detail
 
@@ -152,5 +152,5 @@ class TestValidateIoTPayload:
         mock_db.query.return_value.filter.return_value.first.return_value = None
 
         with pytest.raises(HTTPException) as exc:
-            await validate_iot_payload(reading, api_key="valid", db=mock_db)
+            await validate_iot_payload(reading, db=mock_db)
         assert exc.value.status_code == 401
