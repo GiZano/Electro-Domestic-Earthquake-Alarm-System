@@ -39,26 +39,6 @@ Integrazione AI Cloud (LLM on-premise nel backend per la generazione di report d
 
 ---
 
-## #Research — Validazione Scientifica (SIL)
-
-Cross-validazione Software-in-the-Loop (SIL): nessuna duplicazione di logica. Si usa il **100% del codice C++ di produzione** sia sul firmware che sull'host, garantendo l'equivalenza numerica per il paper IEEE.
-
-### R1 — Cross-validazione del rilevamento STA/LTA (Alta priorità)
-
-- ✅ Isolamento del core algoritmico STA/LTA in C++ puro, disaccoppiato totalmente dall'hardware ESP32 (nessuna chiamata I2C/WiFi/FreeRTOS nel nucleo algoritmico)
-- ✅ Compilazione nativa del core C++ sull'host (stessa sorgente del firmware)
-- ✅ Python come **solo orchestratore**: lettura del dataset publico INGV (accelerogrammi), passaggio dei dati al binario C++ via `ctypes`/`subprocess`/`pybind11`, raccolta dei trigger point e tracciamento delle curve ROC
-- ✅ Metriche: Sensitivity/Rocheron, False-Alarm Rate, latenza di risposta
-- ✅ Calibrazione dei parametri di trigger (`TRIGGER_RATIO`, `NOISE_FLOOR`, `HPF_ALPHA`) contro ground-truth INGV
-
-### R2 — AI Benchmarking (Claim of novelty)
-
-- Benchmark latency P50/P99 del worker AI async locale (Ollama)
-- Misura del tasso di allucinazione dei report generati
-- Quantificazione del vantaggio privacy/latency vs baseline Cloud
-
----
-
 ## v1.3.0 — GNSS Sincronizzato
 
 Sincronizzazione GNSS avanzata dei nodi per timestamp esatti.
@@ -78,3 +58,25 @@ Algoritmo di Triangolazione. Correlazione spaziale multi-nodo unita ai report AI
 - Correlazione spaziale e temporale multi-nodo
 - Calcolo epicentro interno
 - Unione dati AI + triangolazione per alert precisi
+
+---
+
+## #Research — Validazione Scientifica (SIL)
+
+Nodo parallelo (non semantico): avviato dopo il raggiungimento di **v2.1** come minimo.
+
+Cross-validazione Software-in-the-Loop (SIL): nessuna duplicazione di logica. Si usa il **100% del codice C++ di produzione** sia sul firmware che sull'host, garantendo l'equivalenza numerica per il paper IEEE.
+
+### R1 — Cross-validazione del rilevamento STA/LTA (Alta priorità)
+
+- ✅ Isolamento del core algoritmico STA/LTA in C++ puro, disaccoppiato totalmente dall'hardware ESP32 (nessuna chiamata I2C/WiFi/FreeRTOS nel nucleo algoritmico)
+- ✅ Compilazione nativa del core C++ sull'host (stessa sorgente del firmware)
+- ✅ Python come **solo orchestratore**: lettura del dataset publico INGV (accelerogrammi), passaggio dei dati al binario C++ via `ctypes`/`subprocess`/`pybind11`, raccolta dei trigger point e tracciamento delle curve ROC
+- ✅ Metriche: Sensitivity/Rocheron, False-Alarm Rate, latenza di risposta
+- ✅ Calibrazione dei parametri di trigger (`TRIGGER_RATIO`, `NOISE_FLOOR`, `HPF_ALPHA`) contro ground-truth INGV
+
+### R2 — AI Benchmarking (Claim of novelty)
+
+- Benchmark latency P50/P99 del worker AI async locale (Ollama)
+- Misura del tasso di allucinazione dei report generati
+- Quantificazione del vantaggio privacy/latency vs baseline Cloud
