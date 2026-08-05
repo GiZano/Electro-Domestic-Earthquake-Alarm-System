@@ -32,7 +32,7 @@
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=GiZano_QuakeGuard&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=GiZano_QuakeGuard)
 [![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=GiZano_QuakeGuard&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=GiZano_QuakeGuard)
 
-> 📚 **Technical Specification:** A comprehensive architecture whitepaper is available in the `docs/` directory, compiled via Typst.
+> 📚 **Technical Specification:** A comprehensive architecture whitepaper is available in the `docs/` directory, compiled via Typst. For a browsable, topic-by-topic reference, check out the [project Wiki](https://github.com/GiZano/QuakeGuard/wiki).
 
 ![QuakeGuard Logo](docs/assets/logo/png/github-banner.png)
 
