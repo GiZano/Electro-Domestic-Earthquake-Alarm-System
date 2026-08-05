@@ -18,10 +18,17 @@ import random
 import os
 import json
 import hashlib
+import ssl
 import redis.asyncio as aioredis
 import aiomqtt
+from dotenv import load_dotenv
 from typing import Tuple
 from dataclasses import dataclass
+
+# Load backend/.env (e.g. IOT_API_KEY, MQTT_BROKER, MQTT_*) without overriding
+# environment variables already set by the CI runner or the shell.
+_ENV_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+load_dotenv(_ENV_PATH, override=False)
 
 # --- NEW CRYPTOGRAPHY IMPORTS ---
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -35,6 +42,8 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
 MQTT_TOPIC = "quakeguard/telemetry"
+MQTT_USERNAME = os.getenv("MQTT_USERNAME", None)
+MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", None)
 
 NUM_SENSORS = int(os.getenv("NUM_SENSORS", 200)) 
 CONCURRENCY_LIMIT = int(os.getenv("CONCURRENCY_LIMIT", 50)) 
@@ -321,7 +330,13 @@ async def main():
     redis = await aioredis.from_url(REDIS_URL, decode_responses=True)
 
     async with aiohttp.ClientSession(headers=headers) as session:
-        async with aiomqtt.Client(hostname=MQTT_BROKER, port=MQTT_PORT) as mqtt_client:
+        async with aiomqtt.Client(
+            hostname=MQTT_BROKER,
+            port=MQTT_PORT,
+            username=MQTT_USERNAME or None,
+            password=MQTT_PASSWORD or None,
+            tls_context=ssl.create_default_context() if MQTT_PORT == 8883 else None,
+        ) as mqtt_client:
             
             # Setup
             try:

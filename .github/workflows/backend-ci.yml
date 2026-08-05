@@ -69,6 +69,7 @@ jobs:
         IOT_API_KEY: "ci-test-key-123"
         MOBILE_WS_TOKEN: "ci-ws-token-456"
         ENROLLMENT_TOKEN: "ci-enroll-token-789"
+        AI_REPORT_ENABLED: "false"
         API_PORT: 8000
         MQTT_PORT: 1883  # 1. FIXED: Added so docker-compose can map the broker port outwards
       run: |
