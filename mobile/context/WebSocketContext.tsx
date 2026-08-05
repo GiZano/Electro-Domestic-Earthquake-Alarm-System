@@ -107,8 +107,8 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
   const connect = useCallback(() => {
     if (usePreferencesStore.getState().isOfflineMode) return;
     
-    // FIX: Dobbiamo bloccare anche se il socket è in stato "CONNECTING" (0), 
-    // altrimenti React ne crea due quasi contemporaneamente.
+    // FIX: Also block when the socket is in "CONNECTING" (0) state,
+    // otherwise React creates two nearly simultaneously.
     if (ws.current?.readyState === WebSocket.OPEN || ws.current?.readyState === WebSocket.CONNECTING) {
       return;
     }
@@ -140,7 +140,7 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
           if (notificationsEnabled) {
             Notifications.scheduleNotificationAsync({
               content: {
-                title: report.status === "COMPLETED" ? "🤖 AI Emergency Report" : "🤖 AI Report non disponibile",
+                title: report.status === "COMPLETED" ? "🤖 AI Emergency Report" : "🤖 AI Report Unavailable",
                 body:
                   report.status === "COMPLETED"
                     ? report.summary ?? "Emergency report generated."
@@ -216,7 +216,7 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
       connect();
     }
 
-    // Cleanup function per quando l'app viene chiusa
+    // Cleanup function for when the app is closed
     return () => {
       if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
       if (ws.current) {
@@ -226,7 +226,7 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
     };
   }, [isOfflineMode, connect]);
   
-  // 💡 IL SECONDO useEffect(() => { connect() }) È STATO ELIMINATO COMPLETAMENTE!
+  // 💡 THE SECOND useEffect(() => { connect() }) HAS BEEN COMPLETELY REMOVED!
 
   return (
     <WebSocketContext.Provider

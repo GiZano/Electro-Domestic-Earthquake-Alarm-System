@@ -393,7 +393,7 @@ def get_emergency_report(alert_id: int, db: Session = Depends(get_db)):
     """
     Fetch the AI-generated emergency report attached to a confirmed alert.
     Exposes the status state machine (PENDING / COMPLETED / FAILED) so clients can
-    render an explicit "Report non disponibile" badge instead of hanging.
+    render an explicit "AI Report Unavailable" badge instead of hanging.
     """
     report = db.query(models.EmergencyReport).filter(models.EmergencyReport.alert_id == alert_id).first()
     if not report:

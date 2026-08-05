@@ -67,7 +67,7 @@ function AiReportCard({ lastReport }: Readonly<{ lastReport: any }>) {
   if (lastReport.status === "FAILED") {
     return (
       <View style={styles.reportCardFailed}>
-        <Text style={styles.reportCardTitle}>🤖 AI Report non disponibile</Text>
+        <Text style={styles.reportCardTitle}>🤖 AI Report Unavailable</Text>
         <Text style={styles.reportCardBody}>The AI report could not be generated. Verify with local authorities.</Text>
       </View>
     );
