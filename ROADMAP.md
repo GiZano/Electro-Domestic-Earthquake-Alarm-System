@@ -85,7 +85,7 @@ Software-in-the-Loop (SIL) cross-validation: no logic duplication. It uses **100
 
 ### R3 — Dissemination & Output
 
-> R1 + R2 confluiscono qui: i risultati vengono pubblicati come artefatti separati dal software.
+> R1 + R2 converge here: results are published as artifacts separate from the software.
 
 - [ ] Publish open validation dataset (Zenodo DOI, separate from software)
 - [ ] Draft technical paper / preprint (arXiv)
