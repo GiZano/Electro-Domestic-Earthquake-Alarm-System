@@ -23,7 +23,9 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "permissions": ["VIBRATE"]
+      "permissions": [
+        "VIBRATE"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -32,7 +34,8 @@
     },
     "plugins": [
       "expo-router",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
