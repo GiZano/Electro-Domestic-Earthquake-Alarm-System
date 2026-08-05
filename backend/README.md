@@ -14,15 +14,19 @@ The project is organized as a modular microservice architecture:
 backend/
 └── api/
     ├── init-scripts/       # SQL initialization scripts (PostGIS)
+    │   └── ollama-entrypoint.sh  # Auto-pulls the Ollama model on startup
     ├── src/                # Source Code
     │   ├── main.py         # FastAPI Gateway & REST Endpoints
     │   ├── worker.py       # Async Background Event Processor
+    │   ├── ai_report_worker.py  # Dedicated AI report consumer (Ollama + state machine)
+    │   ├── ollama_client.py     # Deterministic LLM client (anti-hallucination)
     │   ├── database.py     # SQLAlchemy Connection & Pool config
-    │   ├── models.py       # ORM Models (GeoAlchemy2 enabled)
+    │   ├── models.py       # ORM Models (GeoAlchemy2 + EmergencyReport)
     │   └── schemas.py      # Pydantic DTOs
     ├── tests/              # Testing Suite
     │   ├── __init__.py
-    │   └── stress_test.py  # Load testing & ECDSA simulation tool
+    │   ├── stress_test.py  # Load testing & ECDSA simulation tool
+    │   └── unit/           # Unit tests (worker, ollama, AI worker, models)
     ├── .venv/              # Local Python Environment
     ├── build.ps1           # Build helper script
     ├── docker-compose.yml  # Container orchestration
@@ -69,6 +73,12 @@ The system relies on environment variables. Ensure your `.env` or Docker configu
 ```env
 DATABASE_URL=postgresql://developer:development_pass@db:5432/monitoraggio_db
 REDIS_URL=redis://redis:6379/0
+
+# --- Optional: AI Emergency Reports ---
+# Enables report enqueueing from the alert engine (default: false)
+AI_REPORT_ENABLED=true
+OLLAMA_HOST=http://ollama:11434
+OLLAMA_MODEL=llama3.2:1b
 ```
 
 ### 2. Build and Deployment
@@ -81,7 +91,17 @@ docker-compose up -d --build
 
 The API will be accessible at: `http://localhost:8000`
 
-### 3. API Documentation
+### 3. Optional — Enable AI Emergency Reports
+To run the on-premise AI report pipeline (local Ollama + dedicated worker), start the stack with the `ai` profile:
+
+```bash
+cd api
+docker-compose --profile ai up -d --build
+```
+
+The Ollama service auto-pulls the configured model (`OLLAMA_MODEL`, default `llama3.2:1b`) on first startup. Reports are generated entirely on the host — telemetry never leaves your machine.
+
+### 4. API Documentation
 Interactive Swagger UI is available at:
 `http://localhost:8000/docs`
 
@@ -106,6 +126,9 @@ Endpoints for provisioning the infrastructure.
 ### 📊 Data Retrieval & Analytics
 * **GET** `/zones/{zone_id}/alerts` - Retrieve confirmed seismic alerts for a specific area.
 * **GET** `/sensors/{sensor_id}/statistics` - Get aggregated metrics (Count, Avg, Max, Min) for sensor diagnostics.
+
+### 🤖 AI Emergency Reports (v1.2.0)
+* **GET** `/reports/{alert_id}` - Retrieve the AI-generated emergency report for a confirmed alert (persisted; useful after a WebSocket reconnect).
 
 ### 🟢 System
 * **GET** `/health` - Detailed status check of API, Database, and Redis connectivity.

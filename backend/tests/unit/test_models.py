@@ -1,5 +1,5 @@
 from datetime import datetime
-from src.models import Zone, Sensor, Reading, Alert
+from src.models import Zone, Sensor, Reading, Alert, EmergencyReport
 
 
 class TestZoneModel:
@@ -52,3 +52,23 @@ class TestAlertModel:
     def test_alert_defaults(self):
         a = Alert(zone_id=1, magnitude=5.0)
         assert a.message is None
+
+
+class TestEmergencyReportModel:
+    def test_create_report_defaults_to_pending(self):
+        r = EmergencyReport(alert_id=1, zone_id=1, magnitude=5.0)
+        assert r.status == "PENDING"
+        assert r.summary is None
+
+    def test_completed_report_holds_fields(self):
+        r = EmergencyReport(
+            alert_id=1,
+            zone_id=1,
+            magnitude=5.0,
+            status="COMPLETED",
+            summary="Event detected.",
+            recommendations="- Stay safe.",
+            model_used="llama3.2:1b",
+        )
+        assert r.status == "COMPLETED"
+        assert r.model_used == "llama3.2:1b"

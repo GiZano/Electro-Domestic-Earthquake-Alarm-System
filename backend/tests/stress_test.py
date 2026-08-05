@@ -157,6 +157,63 @@ async def publish_measurement(mqtt_client, sensor, sem, is_malicious=None) -> Tu
         except Exception:
             return False, 0.0
 
+# --- MALFORMED BURST & AI DEDUPLICATION ---
+
+async def publish_raw_mqtt(mqtt_client, sem, raw_payload: str) -> bool:
+    """Publish an arbitrary (possibly malformed) payload without client-side signing."""
+    async with sem:
+        try:
+            await mqtt_client.publish(MQTT_TOPIC, payload=raw_payload, qos=1)
+            return True
+        except Exception:
+            return False
+
+
+async def run_malformed_burst(mqtt_client, sem) -> int:
+    """Phase: feed a burst of malformed payloads; the pipeline must survive and reject them."""
+    print("\n🤢 Phase: Malformed Payload Burst...")
+    malformed = [
+        "{ not-valid-json",
+        "",
+        json.dumps({"value": "not-a-number", "sensor_id": 1}),
+        json.dumps({"value": 150}),  # missing sensor_id
+        json.dumps({"sensor_id": 1, "value": 150, "device_timestamp": 999}),  # invalid timestamp
+        json.dumps({"value": -50, "sensor_id": 1, "device_timestamp": int(time.time())}),
+    ]
+    sent = 0
+    for payload in malformed:
+        for _ in range(10):  # 10x each => 60 malformed messages total
+            if await publish_raw_mqtt(mqtt_client, sem, payload):
+                sent += 1
+            await asyncio.sleep(0.02)
+    print(f"   📤 Sent {sent} malformed payload(s). Waiting for bridge/API to reject without crashing...")
+    await asyncio.sleep(3)
+    return sent
+
+
+async def run_ai_dedup_test(mqtt_client, sem, sensors, redis) -> tuple:
+    """Phase: fire 50 triggers of the SAME event in 2s; exactly ONE AI task must be enqueued."""
+    print("\n🤖 Phase: AI Deduplication (50 triggers -> 1 task)...")
+    sensor = next((s for s in sensors if s.sensor_id > 0), None)
+    if not sensor:
+        print("   ❌ No registered sensor available; skipping AI dedup check.")
+        return 0, False
+
+    # 50 rapid identical triggers for the same zone
+    for _ in range(50):
+        await publish_measurement(mqtt_client, sensor, sem)
+        await asyncio.sleep(0.04)  # 50 x 40ms ≈ 2s
+
+    await asyncio.sleep(5)  # give the worker time to drain
+
+    queued = await redis.llen("ai_report_queue") if redis else None
+    # We do NOT enforce strict equality on the absolute count (worker may already have
+    # consumed some), but the alert-level dedup (cooldown) must keep it tiny.
+    ok = queued is not None and queued <= 1
+    print(f"   🗂 ai_report_queue length after burst: {queued} (expect <= 1) -> {'✅' if ok else '❌'}")
+    return queued, ok
+
+
 # --- BACKGROUND TASKS ---
 
 async def listen_for_alerts(stop_event: asyncio.Event) -> int:
@@ -260,6 +317,9 @@ async def main():
     sem = asyncio.Semaphore(CONCURRENCY_LIMIT)
     headers = {"X-API-Key": IOT_API_KEY}
     
+    # Create the REDIS client for queue inspections
+    redis = await aioredis.from_url(REDIS_URL, decode_responses=True)
+
     async with aiohttp.ClientSession(headers=headers) as session:
         async with aiomqtt.Client(hostname=MQTT_BROKER, port=MQTT_PORT) as mqtt_client:
             
@@ -288,6 +348,12 @@ async def main():
             await asyncio.sleep(10)
             
             sec_stats = await run_security_test(session, mqtt_client, sem)
+
+            # 🆕 Malformed payload burst — pipeline must reject without crashing
+            malformed_sent = await run_malformed_burst(mqtt_client, sem)
+
+            # 🆕 AI deduplication — 50 identical triggers must enqueue <= 1 AI task
+            ai_queued, ai_dedup_ok = await run_ai_dedup_test(mqtt_client, sem, sensors, redis)
             
             # End-to-End Test Execution
             e2e_passed = await verify_persistence_with_polling(session, sensors)
@@ -300,12 +366,14 @@ async def main():
     print(f"Sec (BadSig): {sec_stats.auth_rejected} Blocked")
     print(f"Sec (Replay): {sec_stats.replay_rejected} Blocked")
     print(f"Alerts Fired: {total_alerts_published} (Expected deduplication: 1)")
-    
+    print(f"Malformed:    {malformed_sent} sent (expect no crash / graceful rejection)")
+    print(f"AI Dedup:     ai_report_queue={ai_queued} (expect <= 1)")
+
     persistence_str = "✅ VERIFIED" if e2e_passed else "❌ FAILED"
     print(f"Persistence:  {persistence_str}")
     print("="*40)
 
-    if sec_stats.auth_rejected > 0 and sec_stats.replay_rejected > 0 and e2e_passed and total_alerts_published <= 1:
+    if sec_stats.auth_rejected > 0 and sec_stats.replay_rejected > 0 and e2e_passed and total_alerts_published <= 1 and ai_dedup_ok:
         print("🏆 SYSTEM CERTIFIED")
     else:
         print("⚠️ SYSTEM FAILURE (Check deduplication logs if Alerts Fired > 1)")

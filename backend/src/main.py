@@ -104,8 +104,8 @@ manager = ConnectionManager()
 
 async def redis_alert_listener() -> None:
     pubsub = redis_client.pubsub()
-    await pubsub.subscribe("quake_alerts")
-    print("🎧 Redis Pub/Sub Listener active on channel: 'quake_alerts'")
+    await pubsub.subscribe("quake_alerts", "ai_reports")
+    print("🎧 Redis Pub/Sub Listener active on channels: 'quake_alerts', 'ai_reports'")
 
     async for message in pubsub.listen():
         if message["type"] == "message":
@@ -387,3 +387,15 @@ def get_readings(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
         skip = 0
     limit = min(limit, 1000)
     return db.query(models.Reading).order_by(models.Reading.recorded_at.desc()).offset(skip).limit(limit).all()
+
+@app.get("/reports/{alert_id}", response_model=schemas.EmergencyReport, tags=["Data Retrieval"], dependencies=[Depends(verify_api_key)])
+def get_emergency_report(alert_id: int, db: Session = Depends(get_db)):
+    """
+    Fetch the AI-generated emergency report attached to a confirmed alert.
+    Exposes the status state machine (PENDING / COMPLETED / FAILED) so clients can
+    render an explicit "Report non disponibile" badge instead of hanging.
+    """
+    report = db.query(models.EmergencyReport).filter(models.EmergencyReport.alert_id == alert_id).first()
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No emergency report found for this alert")
+    return report

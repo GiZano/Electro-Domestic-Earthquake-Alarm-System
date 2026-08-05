@@ -5,11 +5,13 @@ Defines the SQLAlchemy ORM models.
 Updated to support Device Provisioning (MAC Address & Firmware Version).
 """
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float, Text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from geoalchemy2 import Geometry
 from src.database import Base
+
+ZONE_FK = "zones.id"
 
 class Zone(Base):
     __tablename__ = "zones"
@@ -38,7 +40,7 @@ class Sensor(Base):
     active = Column(Boolean, default=True, nullable=False)
     
     # Foreign Key
-    zone_id = Column(Integer, ForeignKey("zones.id"), nullable=False)
+    zone_id = Column(Integer, ForeignKey(ZONE_FK), nullable=False)
 
     # --- GPS Configuration ---
     latitude = Column(Float, nullable=True)
@@ -72,9 +74,44 @@ class Alert(Base):
     __tablename__ = "alerts"
 
     id = Column(Integer, primary_key=True, index=True)
-    zone_id = Column(Integer, ForeignKey("zones.id"), nullable=False)
+    zone_id = Column(Integer, ForeignKey(ZONE_FK), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     magnitude = Column(Float, nullable=False) 
     message = Column(String(255), nullable=True)
 
     zone = relationship("Zone")
+
+
+class EmergencyReport(Base):
+    """
+    AI-generated emergency report for a confirmed Alert.
+
+    `status` is an explicit state machine (PENDING -> COMPLETED | FAILED) so the
+    mobile client can render a "Report non disponibile" badge on FAILED instead of
+    hanging indefinitely on a pending job.
+    """
+    __tablename__ = "emergency_reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    alert_id = Column(Integer, ForeignKey("alerts.id"), nullable=False, unique=True, index=True)
+    zone_id = Column(Integer, ForeignKey(ZONE_FK), nullable=False)
+    magnitude = Column(Float, nullable=False)
+
+    # State machine: PENDING / COMPLETED / FAILED
+    status = Column(String(16), nullable=False, default="PENDING", server_default="PENDING", index=True)
+
+    summary = Column(Text, nullable=True)
+    recommendations = Column(Text, nullable=True)
+    model_used = Column(String(64), nullable=True)
+    error = Column(String(255), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    alert = relationship("Alert", backref="emergency_report")
+
+    def __init__(self, **kwargs):
+        """Apply the PENDING default at construction time so the state machine is
+        observable before the row is flushed to the database."""
+        kwargs.setdefault("status", "PENDING")
+        super().__init__(**kwargs)

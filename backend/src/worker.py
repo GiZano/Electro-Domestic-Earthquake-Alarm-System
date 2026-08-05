@@ -6,11 +6,17 @@ from datetime import datetime, timezone
 import redis
 from sqlalchemy.orm import Session
 from src.database import SessionLocal, engine
-from src.models import Reading, Alert
+from src.models import Reading, Alert, EmergencyReport, Zone
 
 # Redis Config
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 redis_sync = redis.from_url(REDIS_URL, decode_responses=True)
+
+# AI Report integration
+AI_REPORT_QUEUE = os.getenv("AI_REPORT_QUEUE", "ai_report_queue")
+# Gate: when False (or unset), the worker skips AI report creation/enqueue entirely.
+# The Ollama + ai-worker containers run behind the `ai` compose profile.
+AI_REPORT_ENABLED = os.getenv("AI_REPORT_ENABLED", "false").strip().lower() in ("1", "true", "yes", "on")
 
 # Seismic Calibration Constants (Tunable via Environment)
 K_CALIBRATION = float(os.getenv("K_CALIBRATION", "1.6"))  # MyShake-style MEMS calibration factor
@@ -51,6 +57,7 @@ def process_event(event: dict, db: Session):
     magnitude = estimate_magnitude(sensor_value)
     zone_id = event.get("zone_id", 0)
     alert_published = False
+    alert_entry = None
     
     # Trigger a CRITICAL alert if physical magnitude is 4.5 or higher
     if magnitude >= 4.5:
@@ -68,13 +75,16 @@ def process_event(event: dict, db: Session):
         else:
             print(f"🚫 ALERT SUPPRESSED: Zone {zone_id} is in 60s cooldown.", flush=True)
 
-    # 3. Commit atomically: Reading (+ Alert if triggered)
+    # 3. Commit atomically: Reading (+ Alert) — flush to obtain IDs before enqueue
     db.commit()
+    if alert_published and alert_entry is not None:
+        db.refresh(alert_entry)
 
     # 4. Publish alert to Redis (best-effort after DB commit — outbox pattern)
-    if alert_published:
+    if alert_published and alert_entry is not None:
         alert_payload = {
             "type": "CRITICAL",
+            "alert_id": alert_entry.id,
             "zone_id": zone_id,
             "magnitude": round(magnitude, 1),
             "message": f"High seismic activity detected (Sensor {event.get('sensor_id')})!",
@@ -82,6 +92,45 @@ def process_event(event: dict, db: Session):
         }
         redis_sync.publish("quake_alerts", json.dumps(alert_payload))
         print(f"🚨 ALERT PUBLISHED: Zone {zone_id} - Mag {round(magnitude, 1)}", flush=True)
+
+        # 5. 🤖 AI REPORT: enqueue context for the dedicated worker (non-blocking)
+        if AI_REPORT_ENABLED:
+            enqueue_ai_report(db, event, alert_entry.id, zone_id, magnitude)
+
+def enqueue_ai_report(db: Session, event: dict, alert_id: int, zone_id: int, magnitude: float) -> None:
+    """Create a PENDING EmergencyReport and enqueue the AI report job.
+
+    The DB row is written first so the state machine is observable (PENDING) even
+    before the dedicated AI worker processes the job. The AI worker transitions it
+    to COMPLETED or FAILED and broadcasts the result over WebSocket.
+    """
+    zone_name = "Unknown Region"
+    zone = db.query(Zone).filter(Zone.id == zone_id).first() if zone_id else None
+    if zone is not None:
+        zone_name = zone.city
+
+    report = EmergencyReport(
+        alert_id=alert_id,
+        zone_id=zone_id,
+        magnitude=magnitude,
+        status="PENDING",
+    )
+    db.add(report)
+    db.commit()
+    db.refresh(report)
+
+    ai_payload = {
+        "report_id": report.id,
+        "alert_id": alert_id,
+        "zone_id": zone_id,
+        "zone_name": zone_name,
+        "magnitude": round(magnitude, 1),
+        "sensor_id": event.get("sensor_id"),
+        "value": event.get("value"),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    redis_sync.lpush(AI_REPORT_QUEUE, json.dumps(ai_payload))
+    print(f"🤖 AI Report enqueued (report_id={report.id})", flush=True)
 
 def run_worker():
     print("👷 Worker started. Listening for 'seismic_events'...")
