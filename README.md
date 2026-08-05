@@ -13,6 +13,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-PostGIS-316192?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-Message_Broker-DC382D?style=for-the-badge&logo=redis&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Containerization-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Local AI](https://img.shields.io/badge/Local_AI-Ollama_%7C_Llama_3.2-000000?style=for-the-badge&logo=meta&logoColor=white)
 ![HiveMQ](https://img.shields.io/badge/HiveMQ-Cloud_MQTT-FFC107?style=for-the-badge&logo=mqtt&logoColor=black)
 ![ngrok](https://img.shields.io/badge/ngrok-HTTPS_Tunnel-1F1E37?style=for-the-badge&logo=ngrok&logoColor=white)
 
@@ -46,8 +47,6 @@
 
 Intelligent edge sensors (ESP32-C3 + ADXL345) analyze vibrations locally using professional-grade algorithms and transmit cryptographically signed data to an asynchronous cloud backend. The backend is engineered to handle the massive traffic spikes — the **Thundering Herd** effect — typical during widespread seismic events, ensuring reliable alarm delivery without bottlenecking. A React Native mobile app receives real-time haptic and visual alerts via WebSocket.
 
-> 🎓 Developed as a school contest project for **Hackersgen** by Sorint.lab and the **GF Marilli** competition.
-
 ---
 
 ## 🏗️ System Architecture
@@ -63,11 +62,11 @@ MQTT Bridge ──► POST /readings/ ──► ECDSA Verification
                                         Redis Queue
                                               │
                                               ▼
-                                     Background Worker
-                                      │           │
-                                      ▼           ▼
-                               PostgreSQL    Redis Pub/Sub
-                               + PostGIS          │
+                                    Background Worker ────►┌───────────┐
+                                     │           │ (Queue)  │ AI Worker │
+                                     ▼           ▼          │ (Ollama)  │
+                              PostgreSQL    Redis Pub/Sub ◄─└─────┬─────┘
+                                                  │
                                                   ▼
                                            WebSocket Broadcast
                                                   │
@@ -112,7 +111,7 @@ The project follows **Microservices** and **Event-Driven Design** principles acr
 | Observability | `GET /health` — concurrent PostgreSQL + Redis ping |
 | Secrets | Fail-fast `RuntimeError` on missing env vars at startup |
 | MQTT Bridge | `mqtt_subscriber.py` — forwards MQTT payloads to the secure HTTP pipeline |
-| AI Reports | Local Ollama LLM (`llama3.2:1b`) — on-premise `ai_report_worker.py` generates deterministic emergency reports (anti-hallucination) from confirmed alerts, pushed via `ai_reports` WS channel |
+| Edge AI | Asynchronous emergency report generation via local Ollama (Llama 3.2) |
 
 ---
 
@@ -415,6 +414,16 @@ QuakeGuard/
 
 This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
 See the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🏆 Awards & Recognition
+
+QuakeGuard's architecture and real-world applicability have been recognized in the following academic and industrial contexts:
+
+* 🥇 **1st Place Overall - Institute Project Day (2025):** Awarded best technical project out of ~20 prototypes across four engineering disciplines (Computer Science, Automation, Mechanics, Chemistry). The full-stack architecture was evaluated and awarded by an industrial jury featuring technical representatives from **Siemens, ABB, SORINT.lab, SAME, Ferrero, and Confindustria**.
+* 🎓 **Academic Origin & Consultation:** The system's conceptualization originated during the 2025 CQIIA-MatNet Summer School (Università di Bergamo). The distributed network logic and spatial deployment strategy were subsequently refined following technical consultations with Prof. F. Finazzi.
+* 🏅 **GF Marilli Competition:** [Currently competing - Pending evaluation].
 
 ---
 
