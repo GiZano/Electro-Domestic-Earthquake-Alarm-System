@@ -101,8 +101,8 @@ def mark_failed(report_id) -> None:
                 db.commit()
         finally:
             db.close()
-    except Exception:  # noqa: BLE001 - best effort only
-        pass
+    except Exception as e:  # noqa: BLE001 - best effort only
+        print(f"⚠️ mark_failed: could not mark report {report_id} as FAILED: {e}", flush=True)
 
 
 def run_ai_worker() -> None:
