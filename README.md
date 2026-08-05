@@ -112,6 +112,7 @@ The project follows **Microservices** and **Event-Driven Design** principles acr
 | Observability | `GET /health` — concurrent PostgreSQL + Redis ping |
 | Secrets | Fail-fast `RuntimeError` on missing env vars at startup |
 | MQTT Bridge | `mqtt_subscriber.py` — forwards MQTT payloads to the secure HTTP pipeline |
+| AI Reports | Local Ollama LLM (`llama3.2:1b`) — on-premise `ai_report_worker.py` generates deterministic emergency reports (anti-hallucination) from confirmed alerts, pushed via `ai_reports` WS channel |
 
 ---
 
@@ -126,6 +127,7 @@ The project follows **Microservices** and **Event-Driven Design** principles acr
 | Real-Time | WebSocket context with exponential backoff reconnection |
 | Alert Delivery | SOS haptic vibration pattern + OS push notification via `expo-notifications` |
 | Alert History | In-session feed of last 10 critical events |
+| AI Report Banner | Inline AI-generated emergency report (summary + recommendations) for the latest alert, with "Report non disponibile" badge on failures |
 | Offline Mode | Toggle silences WebSocket, halts all TanStack Query polling |
 | Notifications | `notificationsEnabled` toggle gates haptics and push notifications |
 | Safe Areas | `react-native-safe-area-context` — Dynamic Island and punch-hole compatible |
@@ -192,9 +194,16 @@ MQTT_BROKER=your-cluster-id.s1.eu.hivemq.cloud
 MQTT_PORT=8883
 MQTT_USERNAME=your_mqtt_username
 MQTT_PASSWORD=your_mqtt_password
+
+# --- AI Emergency Reports (optional, local Ollama) ---
+AI_REPORT_ENABLED=true
+OLLAMA_HOST=http://ollama:11434
+OLLAMA_MODEL=llama3.2:1b
 ```
 
 > ⚠️ The backend will refuse to start if any of these are missing — this is intentional fail-fast behavior.
+
+> 💡 **Optional:** to enable on-premise AI emergency reports, start the stack with the `ai` profile — `docker compose --profile ai up --build -d`. This launches the local Ollama service (auto-pulls `llama3.2:1b` on first boot) plus the dedicated `ai-worker`. Reports are generated entirely on your machine: telemetry never leaves the host.
 
 ### 2. Launch the Backend Stack
 
@@ -334,15 +343,19 @@ QuakeGuard/
 │   ├── src/
 │   │   ├── main.py              # FastAPI gateway + REST endpoints
 │   │   ├── security.py          # ECDSA, API Key, Anti-Replay
-│   │   ├── worker.py            # Redis consumer + magnitude + alert engine
+│   │   ├── worker.py            # Redis consumer + magnitude + alert engine + AI enqueue
+│   │   ├── ai_report_worker.py  # Dedicated AI report consumer (Ollama + state machine)
+│   │   ├── ollama_client.py     # Deterministic LLM client (anti-hallucination)
 │   │   ├── mqtt_subscriber.py   # MQTT to HTTP bridge
 │   │   ├── seed.py              # Geographic zone seeder
-│   │   ├── models.py            # SQLAlchemy ORM models
+│   │   ├── models.py            # SQLAlchemy ORM models (+ EmergencyReport)
 │   │   ├── schemas.py           # Pydantic request/response schemas
 │   │   └── database.py          # DB engine and session factory
 │   ├── tests/
-│   │   └── stress_test.py       # Critical E2E stress test suite
+│   │   ├── stress_test.py       # Critical E2E stress test suite
+│   │   └── unit/                # Unit tests (worker, ollama client, AI worker, models, ...)
 │   ├── init-scripts/
+│   │   └── ollama-entrypoint.sh # Auto-pulls the Ollama model on startup
 │   ├── build.ps1                # Automatic container publish
 │   ├── docker-compose.yml
 │   ├── Dockerfile
@@ -378,7 +391,9 @@ QuakeGuard/
     ├── 03-security.typ              # Cryptographic Security & Provisioning
     ├── 04-broker.typ                # Data Plane & Message Broker (MQTT)
     ├── 05-backend.typ               # Backend Services & Event Processing
-    └── 06-mobile.typ                # Mobile Client & Live Telemetry
+    ├── 06-mobile.typ                # Mobile Client & Live Telemetry
+    ├── 07-deployment.typ            # Deployment & CI/CD
+    └── 08-ai.typ                    # AI Emergency Report Service (v1.2.0)
 ```
 
 ---
@@ -388,8 +403,8 @@ QuakeGuard/
 | Version | Focus |
 |---------|-------|
 | **v1.0** | ✅ Released — edge seismic detection on ESP32, local alerts |
-| **v1.1** | ✅ Current — HiveMQ Cloud MQTT (TLS), ngrok HTTPS tunnel, security hardening |
-| **v1.2** | AI Cloud — LLM backend for emergency report generation from MQTT telemetry |
+| **v1.1** | ✅ Released — HiveMQ Cloud MQTT (TLS), ngrok HTTPS tunnel, security hardening |
+| **v1.2** | ⚠️  In Progress — Edge AI Worker (Local Ollama / Llama 3.2) for privacy-preserving emergency reports |
 | **v1.3** | GNSS sync — accurate node timestamps, GPS coordinate resolution, ADXL345 calibration |
 | **v2.0** | Triangulation — multi-node spatial correlation + AI reports for epicenter calculation |
 | **v2.1** | Data Dashboards — Grafana dashboards for real-time visualization of seismic telemetry |

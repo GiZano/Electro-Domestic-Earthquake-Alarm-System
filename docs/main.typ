@@ -9,7 +9,7 @@
   header: context {
     // Utilizza la nuova sintassi context nativa di Typst
     if counter(page).get().first() > 1 {
-      align(right)[_QuakeGuard v1.1.0 - Technical Architecture_]
+      align(right)[_QuakeGuard v1.2.0 - Technical Architecture_]
     }
   },
   numbering: "1",
@@ -29,7 +29,7 @@
   #v(0.2cm)
   #text(size: 14pt)[Technical Architecture & Protocol Specification]\
   #v(2cm)
-  #text(size: 12pt)[Release: *v1.1.0* (Cloud MQTT & TLS Security)]\
+  #text(size: 12pt)[Release: *v1.2.0* (AI Emergency Reports)]\
   #v(0.5cm)
   #text(size: 12pt)[Core Maintainers: \@GiZano, \@riccardo0731]\
   #v(3cm)
@@ -54,3 +54,4 @@
 #include "05-backend.typ"
 #include "06-mobile.typ"
 #include "07-deployment.typ"
+#include "08-ai.typ"

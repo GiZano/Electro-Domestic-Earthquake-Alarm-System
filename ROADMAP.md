@@ -27,13 +27,15 @@ Migrazione Data Plane su MQTT Cloud (HiveMQ), Control Plane REST (HTTPS) e sicur
 
 ---
 
-## v1.2.0 — AI Cloud
+## v1.2.0 — AI Cloud (Attuale)
 
-Integrazione AI Cloud (LLM nel backend per la generazione di report di emergenza testuali partendo dai dati MQTT).
+Integrazione AI Cloud (LLM on-premise nel backend per la generazione di report di emergenza testuali partendo dai dati MQTT).
 
-- LLM backend (Ollama / API esterna) che consuma `quakeguard/telemetry`
-- Generazione automatica report emergenza: magnitudo, zona, timestamp, raccomandazioni
-- WebSocket push del report AI alla mobile app
+- ✅ LLM on-premise via Ollama (`llama3.2:1b`) che consuma gli alert confermati — telemetry mai esposta
+- ✅ Generazione automatica report emergenza: magnitudo, zona, timestamp, raccomandazioni (deterministico, anti-allucinazione)
+- ✅ WebSocket push del report AI alla mobile app (banner + card storico)
+- ✅ Stato `PENDING → COMPLETED | FAILED` con DLQ e fallback esplicito
+- ✅ Endpoint REST `GET /reports/{alert_id}`
 
 ---
 
