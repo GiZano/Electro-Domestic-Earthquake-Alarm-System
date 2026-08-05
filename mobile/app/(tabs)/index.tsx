@@ -61,6 +61,33 @@ function AlertBanner({ lastAlert }: Readonly<{ lastAlert: any }>) {
   );
 }
 
+function AiReportCard({ lastReport }: Readonly<{ lastReport: any }>) {
+  if (!lastReport) return null;
+
+  if (lastReport.status === "FAILED") {
+    return (
+      <View style={styles.reportCardFailed}>
+        <Text style={styles.reportCardTitle}>🤖 AI Report non disponibile</Text>
+        <Text style={styles.reportCardBody}>The AI report could not be generated. Verify with local authorities.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.reportCard}>
+      <Text style={styles.reportCardTitle}>🤖 AI Emergency Report</Text>
+      <Text style={styles.reportCardBody}>{lastReport.summary}</Text>
+      {lastReport.recommendations && lastReport.recommendations.length > 0 && (
+        <View style={styles.reportRecommendations}>
+          {lastReport.recommendations.map((r: string, idx: number) => (
+            <Text key={idx} style={styles.reportRecommendationItem}>{`• ${r}`}</Text>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
 function NetworkChart({ readings, isAlertActive }: Readonly<{ readings: any[]; isAlertActive: boolean }>) {
   if (!readings || readings.length === 0) {
     return <Text style={{ textAlign: 'center', color: "#6b7280" }}>Awaiting telemetry...</Text>;
@@ -124,7 +151,7 @@ function DashboardContent({ errorSensors, errorReadings, loadingSensors, loading
 }
 
 export default function MonitorScreen() {
-  const { isConnected, lastAlert } = useWebSocket();
+  const { isConnected, lastAlert, lastReport } = useWebSocket();
   const [isAlertActive, setIsAlertActive] = useState(false);
   const pulse = useSharedValue(1);
   const alertTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -183,6 +210,8 @@ export default function MonitorScreen() {
 
         {isAlertActive && lastAlert && <AlertBanner lastAlert={lastAlert} />}
 
+        <AiReportCard lastReport={lastReport} />
+
         <View style={styles.dashboardCard}>
           <DashboardContent
             errorSensors={errorSensors}
@@ -233,5 +262,11 @@ const styles = StyleSheet.create({
   chartTitle: { fontSize: 16, fontWeight: "700", color: "#374151" },
   alertDetails: { marginBottom: 10, padding: 10, backgroundColor: "#fee2e2", borderRadius: 12, alignItems: 'center' },
   alertValue: { fontSize: 18, fontWeight: "800", color: "#b91c1c" },
-  alertMessage: { fontSize: 14, fontStyle: "italic", color: "#991b1b" }
+  alertMessage: { fontSize: 14, fontStyle: "italic", color: "#991b1b" },
+  reportCard: { marginBottom: 10, padding: 12, backgroundColor: "#f5f3ff", borderRadius: 12 },
+  reportCardFailed: { marginBottom: 10, padding: 12, backgroundColor: "#fef3c7", borderRadius: 12 },
+  reportCardTitle: { fontSize: 14, fontWeight: "800", color: "#7c3aed", marginBottom: 6 },
+  reportCardBody: { fontSize: 13, color: "#4c1d95", lineHeight: 18 },
+  reportRecommendations: { marginTop: 8 },
+  reportRecommendationItem: { fontSize: 12, color: "#6d28d9", lineHeight: 16 }
 });
