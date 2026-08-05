@@ -79,8 +79,8 @@ function AiReportCard({ lastReport }: Readonly<{ lastReport: any }>) {
       <Text style={styles.reportCardBody}>{lastReport.summary}</Text>
       {lastReport.recommendations && lastReport.recommendations.length > 0 && (
         <View style={styles.reportRecommendations}>
-          {lastReport.recommendations.map((r: string, idx: number) => (
-            <Text key={`recommendation-${idx}`} style={styles.reportRecommendationItem}>{`• ${r}`}</Text>
+          {[...new Set(lastReport.recommendations)].map((r: string) => (
+            <Text key={r} style={styles.reportRecommendationItem}>{`• ${r}`}</Text>
           ))}
         </View>
       )}
