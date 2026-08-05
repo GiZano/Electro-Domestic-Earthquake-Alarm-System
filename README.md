@@ -410,13 +410,6 @@ QuakeGuard/
 
 ---
 
-## 📄 License
-
-This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
-See the [LICENSE](LICENSE) file for details.
-
----
-
 ## 🏆 Awards & Recognition
 
 QuakeGuard's architecture and real-world applicability have been recognized in the following academic and industrial contexts:
@@ -424,6 +417,13 @@ QuakeGuard's architecture and real-world applicability have been recognized in t
 * 🥇 **1st Place Overall - Institute Project Day (2025):** Awarded best technical project out of ~20 prototypes across four engineering disciplines (Computer Science, Automation, Mechanics, Chemistry). The full-stack architecture was evaluated and awarded by an industrial jury featuring technical representatives from **Siemens, ABB, SORINT.lab, SAME, Ferrero, and Confindustria**.
 * 🎓 **Academic Origin & Consultation:** The system's conceptualization originated during the 2025 CQIIA-MatNet Summer School (Università di Bergamo). The distributed network logic and spatial deployment strategy were subsequently refined following technical consultations with Prof. F. Finazzi.
 * 🏅 **GF Marilli Competition:** [Currently competing - Pending evaluation].
+
+---
+
+## 📄 License
+
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+See the [LICENSE](LICENSE) file for details.
 
 ---
 
