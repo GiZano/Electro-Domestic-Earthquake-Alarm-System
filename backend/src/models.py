@@ -87,7 +87,7 @@ class EmergencyReport(Base):
     AI-generated emergency report for a confirmed Alert.
 
     `status` is an explicit state machine (PENDING -> COMPLETED | FAILED) so the
-    mobile client can render a "Report non disponibile" badge on FAILED instead of
+    mobile client can render a "AI Report Unavailable" badge on FAILED instead of
     hanging indefinitely on a pending job.
     """
     __tablename__ = "emergency_reports"

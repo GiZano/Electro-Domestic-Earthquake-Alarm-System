@@ -40,7 +40,7 @@ export function AlertHistoryList() {
                       )}
                     </>
                   ) : (
-                    <Text style={styles.reportUnavailable}>Report non disponibile</Text>
+                    <Text style={styles.reportUnavailable}>AI Report Unavailable</Text>
                   )}
                 </View>
               )}

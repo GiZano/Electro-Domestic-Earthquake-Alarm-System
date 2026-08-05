@@ -7,7 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - (Target: v1.2.0)
 ### Added
-- Groundwork for AI-generated emergency reports via LLM integration.
+- **On-Premise AI Emergency Reports:** New AI layer generates human-readable emergency reports from confirmed seismic alerts via a local Ollama LLM (`llama3.2:1b` default), keeping telemetry on the host.
+- **`ollama_client.py`:** Deterministic report generation (`temperature 0.0`, `top_k 1`, streaming disabled) with a strict system prompt ("Only use the provided JSON telemetry. Do not invent data.") and explicit `"AI report unavailable."` fallback on failure.
+- **`EmergencyReport` Model & State Machine:** `PENDING → COMPLETED | FAILED` lifecycle, persisted in PostgreSQL alongside alerts.
+- **`ai_report_worker.py`:** Dedicated consumer of the `ai_report_queue`; publishes `EMERGENCY_REPORT` to the `ai_reports` Redis channel, routes failures to `ai_report_queue_dlq`, and handles graceful shutdown.
+- **Worker Integration:** Alert engine now enqueues report jobs non-blocking (gated by `AI_REPORT_ENABLED`, default `false`); alert payloads carry `alert_id`.
+- **`GET /reports/{alert_id}`:** REST endpoint for report retrieval after WebSocket reconnect.
+- **Docker Compose `ai` profile:** `ollama` and `ai-worker` services behind a profile; `init-scripts/ollama-entrypoint.sh` auto-pulls the model on startup.
+- **Mobile Report UI:** Inline AI report banner + history cards (summary + recommendations; "Report unavailable" badge on `FAILED`), driven by the `ai_reports` WebSocket channel.
+- **Unit Tests:** Coverage for the Ollama client, AI worker state machine, worker enqueue path, and EmergencyReport model (68 backend tests; mobile store tests for report handling).
+
+### Changed
+- WebSocket broadcaster subscribes to the `ai_reports` channel in addition to `quake_alerts`.
+- Mobile `WebSocketContext` handles `EMERGENCY_REPORT` messages and stores the latest report; `useAlertStore` keeps a `reports` map keyed by `alert_id`.
 
 ## [1.1.0] - 2026-07-29
 ### Added

@@ -13,6 +13,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-PostGIS-316192?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-Message_Broker-DC382D?style=for-the-badge&logo=redis&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Containerization-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Local AI](https://img.shields.io/badge/Local_AI-Ollama_%7C_Llama_3.2-000000?style=for-the-badge&logo=meta&logoColor=white)
 ![HiveMQ](https://img.shields.io/badge/HiveMQ-Cloud_MQTT-FFC107?style=for-the-badge&logo=mqtt&logoColor=black)
 ![ngrok](https://img.shields.io/badge/ngrok-HTTPS_Tunnel-1F1E37?style=for-the-badge&logo=ngrok&logoColor=white)
 
@@ -31,7 +32,7 @@
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=GiZano_QuakeGuard&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=GiZano_QuakeGuard)
 [![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=GiZano_QuakeGuard&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=GiZano_QuakeGuard)
 
-> 📚 **Technical Specification:** A comprehensive architecture whitepaper is available in the `docs/` directory, compiled via Typst.
+> 📚 **Technical Specification:** A comprehensive architecture whitepaper is available in the `docs/` directory, compiled via Typst. For a browsable, topic-by-topic reference, check out the [project Wiki](https://github.com/GiZano/QuakeGuard/wiki).
 
 ![QuakeGuard Logo](docs/assets/logo/png/github-banner.png)
 
@@ -45,8 +46,6 @@
 **QuakeGuard** is a full-stack IoT architecture for real-time detection, analysis, and reporting of seismic events. The system transforms everyday household appliances — washing machines, TVs, refrigerators — into a distributed seismic sensor network, each node capable of detecting and reporting earthquake activity autonomously.
 
 Intelligent edge sensors (ESP32-C3 + ADXL345) analyze vibrations locally using professional-grade algorithms and transmit cryptographically signed data to an asynchronous cloud backend. The backend is engineered to handle the massive traffic spikes — the **Thundering Herd** effect — typical during widespread seismic events, ensuring reliable alarm delivery without bottlenecking. A React Native mobile app receives real-time haptic and visual alerts via WebSocket.
-
-> 🎓 Developed as a school contest project for **Hackersgen** by Sorint.lab and the **GF Marilli** competition.
 
 ---
 
@@ -63,13 +62,13 @@ MQTT Bridge ──► POST /readings/ ──► ECDSA Verification
                                         Redis Queue
                                               │
                                               ▼
-                                     Background Worker
-                                      │           │
-                                      ▼           ▼
-                               PostgreSQL    Redis Pub/Sub
-                               + PostGIS          │
-                                                  ▼
-                                           WebSocket Broadcast
+                                     Background Worker ────►┌───────────┐
+                                      │           │ (Queue)  │ AI Worker │
+                                      ▼           ▼          │ (Ollama)  │
+                               PostgreSQL    Redis Pub/Sub ◄─└─────┬─────┘
+                               + PostGIS               │
+                                                   ▼
+                                            WebSocket Broadcast
                                                   │
                                                   ▼
                                         React Native Mobile App
@@ -112,6 +111,7 @@ The project follows **Microservices** and **Event-Driven Design** principles acr
 | Observability | `GET /health` — concurrent PostgreSQL + Redis ping |
 | Secrets | Fail-fast `RuntimeError` on missing env vars at startup |
 | MQTT Bridge | `mqtt_subscriber.py` — forwards MQTT payloads to the secure HTTP pipeline |
+| Edge AI | Asynchronous emergency report generation via local Ollama (Llama 3.2) |
 
 ---
 
@@ -126,6 +126,7 @@ The project follows **Microservices** and **Event-Driven Design** principles acr
 | Real-Time | WebSocket context with exponential backoff reconnection |
 | Alert Delivery | SOS haptic vibration pattern + OS push notification via `expo-notifications` |
 | Alert History | In-session feed of last 10 critical events |
+| AI Report Banner | Inline AI-generated emergency report (summary + recommendations) for the latest alert, with "Report unavailable" badge on failures |
 | Offline Mode | Toggle silences WebSocket, halts all TanStack Query polling |
 | Notifications | `notificationsEnabled` toggle gates haptics and push notifications |
 | Safe Areas | `react-native-safe-area-context` — Dynamic Island and punch-hole compatible |
@@ -192,9 +193,16 @@ MQTT_BROKER=your-cluster-id.s1.eu.hivemq.cloud
 MQTT_PORT=8883
 MQTT_USERNAME=your_mqtt_username
 MQTT_PASSWORD=your_mqtt_password
+
+# --- AI Emergency Reports (optional, local Ollama) ---
+AI_REPORT_ENABLED=true
+OLLAMA_HOST=http://ollama:11434
+OLLAMA_MODEL=llama3.2:1b
 ```
 
 > ⚠️ The backend will refuse to start if any of these are missing — this is intentional fail-fast behavior.
+
+> 💡 **Optional:** to enable on-premise AI emergency reports, start the stack with the `ai` profile — `docker compose --profile ai up --build -d`. This launches the local Ollama service (auto-pulls `llama3.2:1b` on first boot) plus the dedicated `ai-worker`. Reports are generated entirely on your machine: telemetry never leaves the host.
 
 ### 2. Launch the Backend Stack
 
@@ -334,15 +342,19 @@ QuakeGuard/
 │   ├── src/
 │   │   ├── main.py              # FastAPI gateway + REST endpoints
 │   │   ├── security.py          # ECDSA, API Key, Anti-Replay
-│   │   ├── worker.py            # Redis consumer + magnitude + alert engine
+│   │   ├── worker.py            # Redis consumer + magnitude + alert engine + AI enqueue
+│   │   ├── ai_report_worker.py  # Dedicated AI report consumer (Ollama + state machine)
+│   │   ├── ollama_client.py     # Deterministic LLM client (anti-hallucination)
 │   │   ├── mqtt_subscriber.py   # MQTT to HTTP bridge
 │   │   ├── seed.py              # Geographic zone seeder
-│   │   ├── models.py            # SQLAlchemy ORM models
+│   │   ├── models.py            # SQLAlchemy ORM models (+ EmergencyReport)
 │   │   ├── schemas.py           # Pydantic request/response schemas
 │   │   └── database.py          # DB engine and session factory
 │   ├── tests/
-│   │   └── stress_test.py       # Critical E2E stress test suite
+│   │   ├── stress_test.py       # Critical E2E stress test suite
+│   │   └── unit/                # Unit tests (worker, ollama client, AI worker, models, ...)
 │   ├── init-scripts/
+│   │   └── ollama-entrypoint.sh # Auto-pulls the Ollama model on startup
 │   ├── build.ps1                # Automatic container publish
 │   ├── docker-compose.yml
 │   ├── Dockerfile
@@ -378,7 +390,9 @@ QuakeGuard/
     ├── 03-security.typ              # Cryptographic Security & Provisioning
     ├── 04-broker.typ                # Data Plane & Message Broker (MQTT)
     ├── 05-backend.typ               # Backend Services & Event Processing
-    └── 06-mobile.typ                # Mobile Client & Live Telemetry
+    ├── 06-mobile.typ                # Mobile Client & Live Telemetry
+    ├── 07-deployment.typ            # Deployment & CI/CD
+    └── 08-ai.typ                    # AI Emergency Report Service (v1.2.0)
 ```
 
 ---
@@ -388,11 +402,22 @@ QuakeGuard/
 | Version | Focus |
 |---------|-------|
 | **v1.0** | ✅ Released — edge seismic detection on ESP32, local alerts |
-| **v1.1** | ✅ Current — HiveMQ Cloud MQTT (TLS), ngrok HTTPS tunnel, security hardening |
-| **v1.2** | AI Cloud — LLM backend for emergency report generation from MQTT telemetry |
+| **v1.1** | ✅ Released — HiveMQ Cloud MQTT (TLS), ngrok HTTPS tunnel, security hardening |
+| **v1.2** | ✅ Current — Edge AI Worker (Local Ollama / Llama 3.2) for privacy-preserving emergency reports |
+| **#Research** | Parallel node (starts after v2.1) — SIL cross-validation: ground-truth INGV replay of the exact production C++ STA/LTA core, Python-only as orchestrator, ROC metrics + AI benchmarking (latency P50/P99, hallucination rate). See [ROADMAP.md](ROADMAP.md) |
 | **v1.3** | GNSS sync — accurate node timestamps, GPS coordinate resolution, ADXL345 calibration |
 | **v2.0** | Triangulation — multi-node spatial correlation + AI reports for epicenter calculation |
 | **v2.1** | Data Dashboards — Grafana dashboards for real-time visualization of seismic telemetry |
+
+---
+
+## 🏆 Awards & Recognition
+
+QuakeGuard's architecture and real-world applicability have been recognized in the following academic and industrial contexts:
+
+* 🥇 **1st Place Overall - Institute Project Day (2025):** Awarded best technical project out of ~20 prototypes across four engineering disciplines (Computer Science, Automation, Mechanics, Chemistry). The full-stack architecture was evaluated and awarded by an industrial jury featuring technical representatives from **Siemens, ABB, SORINT.lab, SAME, Ferrero, and Confindustria**.
+* 🎓 **Academic Origin & Consultation:** The system's conceptualization originated during the 2025 CQIIA-MatNet Summer School (Università di Bergamo). The distributed network logic and spatial deployment strategy were subsequently refined following technical consultations with Prof. F. Finazzi.
+* 🏅 **GF Marilli Competition:** [Currently competing - Pending evaluation].
 
 ---
 
