@@ -11,6 +11,8 @@ from sqlalchemy.orm import relationship
 from geoalchemy2 import Geometry
 from src.database import Base
 
+ZONE_FK = "zones.id"
+
 class Zone(Base):
     __tablename__ = "zones"
 
@@ -38,7 +40,7 @@ class Sensor(Base):
     active = Column(Boolean, default=True, nullable=False)
     
     # Foreign Key
-    zone_id = Column(Integer, ForeignKey("zones.id"), nullable=False)
+    zone_id = Column(Integer, ForeignKey(ZONE_FK), nullable=False)
 
     # --- GPS Configuration ---
     latitude = Column(Float, nullable=True)
@@ -72,7 +74,7 @@ class Alert(Base):
     __tablename__ = "alerts"
 
     id = Column(Integer, primary_key=True, index=True)
-    zone_id = Column(Integer, ForeignKey("zones.id"), nullable=False)
+    zone_id = Column(Integer, ForeignKey(ZONE_FK), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     magnitude = Column(Float, nullable=False) 
     message = Column(String(255), nullable=True)
@@ -92,7 +94,7 @@ class EmergencyReport(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     alert_id = Column(Integer, ForeignKey("alerts.id"), nullable=False, unique=True, index=True)
-    zone_id = Column(Integer, ForeignKey("zones.id"), nullable=False)
+    zone_id = Column(Integer, ForeignKey(ZONE_FK), nullable=False)
     magnitude = Column(Float, nullable=False)
 
     # State machine: PENDING / COMPLETED / FAILED
