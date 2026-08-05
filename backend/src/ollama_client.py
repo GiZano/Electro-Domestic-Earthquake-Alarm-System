@@ -23,7 +23,7 @@ import requests
 
 # --- CONFIGURATION ---
 # Local on-premise Ollama: HTTP confined to the private Docker network, so plain HTTP is intentional here.
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://ollama:11434")  # NOSONAR:S5332
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://ollama:11434")  # NOSONAR
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:1b")
 OLLAMA_TIMEOUT = float(os.getenv("OLLAMA_TIMEOUT", "30"))
 
