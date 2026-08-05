@@ -93,6 +93,25 @@ class DeviceRegisterRequest(BaseModel):
     longitude: float = Field(default=None, ge=-180, le=180)
 
 # ==========================================
+# EMERGENCY REPORT SCHEMAS (AI / Ollama)
+# ==========================================
+class EmergencyReport(BaseModel):
+    """AI-generated emergency report attached to a confirmed Alert."""
+    id: int
+    alert_id: int
+    zone_id: int
+    magnitude: float
+    status: str
+    summary: Optional[str] = None
+    recommendations: Optional[str] = None
+    model_used: Optional[str] = None
+    error: Optional[str] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+# ==========================================
 # DEMO SCHEMAS
 # ==========================================
 class DemoAlertRequest(BaseModel):
