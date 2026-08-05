@@ -19,6 +19,7 @@
 - **Visual Status:** Displays a "System Secure" (Green) or "Seismic Alert" (Red) status based on recent data.
 - **Haptic Feedback:** Triggers device vibration when the system state transitions from Secure to Alert.
 - **Animations:** Uses `react-native-reanimated` for a pulsing shield effect during active alerts.
+- **AI Emergency Reports (v1.2.0):** When an alert is confirmed, the backend generates a report via a local Ollama LLM and pushes it over the `ai_reports` WebSocket channel. The app displays an inline banner for the latest report and a card in the alert history feed (summary + recommendations), with a "Report non disponibile" badge if generation failed. Reports can be re-fetched via `GET /reports/{alert_id}` after a reconnect.
 
 ### 2. 🗺️ Sensor Map (WIP)
 

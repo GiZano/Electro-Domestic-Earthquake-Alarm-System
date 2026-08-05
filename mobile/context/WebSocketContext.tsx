@@ -27,15 +27,29 @@ Notifications.setNotificationHandler({
 // --- TYPES & INTERFACES ---
 export interface AlertMessage {
   type: string;
+  alert_id?: number;
   zone_id: number;
   magnitude: number;
   message: string;
   timestamp: string;
 }
 
+export interface EmergencyReportMessage {
+  type: "EMERGENCY_REPORT";
+  alert_id: number;
+  report_id: number;
+  zone_id: number;
+  magnitude: number;
+  status: "COMPLETED" | "FAILED";
+  summary?: string;
+  recommendations?: string[];
+  timestamp: string;
+}
+
 interface WebSocketContextType {
   isConnected: boolean;
   lastAlert: AlertMessage | null;
+  lastReport: EmergencyReportMessage | null;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
@@ -52,6 +66,7 @@ const MAX_RECONNECT_DELAY = 30000;
 export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [lastAlert, setLastAlert] = useState<AlertMessage | null>(null);
+  const [lastReport, setLastReport] = useState<EmergencyReportMessage | null>(null);
   
   // Bring in the offline mode flag
   const isOfflineMode = usePreferencesStore((state) => state.isOfflineMode);
@@ -112,20 +127,45 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
 
     ws.current.onmessage = (event: WebSocketMessageEvent) => {
       try {
-        const message: AlertMessage = JSON.parse(event.data);
-        console.log("⚡ ALERT RECEIVED:", message);
-
-        setLastAlert(message);
-        useAlertStore.getState().addAlert(message); 
-
+        const message: any = JSON.parse(event.data);
         const { notificationsEnabled } = usePreferencesStore.getState();
 
-        if (message.type === "CRITICAL" && notificationsEnabled) {
+        // 🤖 AI Emergency Report (generated asynchronously by the local Ollama worker)
+        if (message.type === "EMERGENCY_REPORT") {
+          const report: EmergencyReportMessage = message;
+          console.log("🤖 AI REPORT RECEIVED:", report);
+          setLastReport(report);
+          useAlertStore.getState().addReport(report);
+
+          if (notificationsEnabled) {
+            Notifications.scheduleNotificationAsync({
+              content: {
+                title: report.status === "COMPLETED" ? "🤖 AI Emergency Report" : "🤖 AI Report non disponibile",
+                body:
+                  report.status === "COMPLETED"
+                    ? report.summary ?? "Emergency report generated."
+                    : "The AI report could not be generated. Contact local authorities.",
+                sound: true,
+                priority: Notifications.AndroidNotificationPriority.MAX,
+              },
+              trigger: null,
+            });
+          }
+          return;
+        }
+
+        const alert: AlertMessage = message;
+        console.log("⚡ ALERT RECEIVED:", alert);
+
+        setLastAlert(alert);
+        useAlertStore.getState().addAlert(alert);
+
+        if (alert.type === "CRITICAL" && notificationsEnabled) {
           Vibration.vibrate(SOS_VIBRATION_PATTERN);
           Notifications.scheduleNotificationAsync({
             content: {
               title: "⚠️ CRITICAL SEISMIC ALERT",
-              body: `Magnitude ${message.magnitude.toFixed(1)} detected. ${message.message}`,
+              body: `Magnitude ${alert.magnitude.toFixed(1)} detected. ${alert.message}`,
               sound: true,
               priority: Notifications.AndroidNotificationPriority.MAX,
             },
@@ -189,7 +229,12 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
   // 💡 IL SECONDO useEffect(() => { connect() }) È STATO ELIMINATO COMPLETAMENTE!
 
   return (
-    <WebSocketContext.Provider value={useMemo(() => ({ isConnected, lastAlert }), [isConnected, lastAlert])}>
+    <WebSocketContext.Provider
+      value={useMemo(
+        () => ({ isConnected, lastAlert, lastReport }),
+        [isConnected, lastAlert, lastReport]
+      )}
+    >
       {children}
     </WebSocketContext.Provider>
   );

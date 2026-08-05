@@ -37,7 +37,7 @@ interface QuakeState {
 // ------------------------------------------------------------------
 
 // External reference for the interval timer to manage lifecycle outside the hook
-let pollingInterval: NodeJS.Timeout | null = null;
+let pollingInterval: ReturnType<typeof setInterval> | null = null;
 
 export const useQuakeStore = create<QuakeState>((set, get) => ({
   systemStatus: "SECURE",
