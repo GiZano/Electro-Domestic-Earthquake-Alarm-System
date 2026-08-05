@@ -22,7 +22,7 @@ import os
 import requests
 
 # --- CONFIGURATION ---
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://ollama:11434")  # NOSONAR: local on-premise Ollama, HTTP confined to the private Docker network
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://ollama:11434")  # NOSONAR:S5332 local on-premise Ollama, HTTP confined to the private Docker network
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:1b")
 OLLAMA_TIMEOUT = float(os.getenv("OLLAMA_TIMEOUT", "30"))
 
