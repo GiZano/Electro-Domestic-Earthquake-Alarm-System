@@ -75,7 +75,7 @@ Software-in-the-Loop (SIL) cross-validation: no logic duplication. It uses **100
 - ✅ Metrics: Sensitivity/Recall, False-Alarm Rate, response latency
 - ✅ Calibration of the trigger parameters (`TRIGGER_RATIO`, `NOISE_FLOOR`, `HPF_ALPHA`) against INGV ground-truth
 
-### R2 — AI Benchmarking (Claim of novelty)
+### R2 — AI Benchmarking (this is the paper's primary novelty contribution)
 
 - P50/P99 latency benchmark of the local async AI worker (Ollama)
 - Measurement of the hallucination rate of the generated reports
@@ -83,9 +83,9 @@ Software-in-the-Loop (SIL) cross-validation: no logic duplication. It uses **100
 
 ---
 
-### R3 — Scientific Validation (parallel node, starts after v1.2)
+### R3 — Dissemination & Output
 
-- [ ] SIL cross-validation against INGV ground-truth catalog
-- [ ] ROC metrics + AI benchmarking (latency P50/P99, hallucination rate)
+> R1 + R2 confluiscono qui: i risultati vengono pubblicati come artefatti separati dal software.
+
 - [ ] Publish open validation dataset (Zenodo DOI, separate from software)
 - [ ] Draft technical paper / preprint (arXiv)
