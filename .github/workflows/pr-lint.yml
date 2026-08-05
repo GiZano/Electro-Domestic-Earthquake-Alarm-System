@@ -23,6 +23,8 @@ jobs:
             iot
             ci
             deps
+            deps-dev
             core
+            style
             fullstack
           requireScope: true

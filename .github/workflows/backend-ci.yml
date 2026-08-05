@@ -63,9 +63,9 @@ jobs:
 
     - name: Initialize Docker Infrastructure
       env:
-        POSTGRES_DB: ${{ secrets.CI_POSTGRES_DB }}
-        POSTGRES_USER: ${{ secrets.CI_POSTGRES_USER }}
-        POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
+        POSTGRES_DB: ${{ secrets.CI_POSTGRES_DB || 'quakeguard_test' }}
+        POSTGRES_USER: ${{ secrets.CI_POSTGRES_USER || 'quakeguard' }}
+        POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD || 'ci-postgres-password' }}
         IOT_API_KEY: "ci-test-key-123"
         MOBILE_WS_TOKEN: "ci-ws-token-456"
         ENROLLMENT_TOKEN: "ci-enroll-token-789"
