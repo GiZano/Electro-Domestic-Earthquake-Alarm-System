@@ -80,3 +80,12 @@ Software-in-the-Loop (SIL) cross-validation: no logic duplication. It uses **100
 - P50/P99 latency benchmark of the local async AI worker (Ollama)
 - Measurement of the hallucination rate of the generated reports
 - Quantification of the privacy/latency advantage vs Cloud baseline
+
+---
+
+### R3 — Scientific Validation (parallel node, starts after v1.2)
+
+- [ ] SIL cross-validation against INGV ground-truth catalog
+- [ ] ROC metrics + AI benchmarking (latency P50/P99, hallucination rate)
+- [ ] Publish open validation dataset (Zenodo DOI, separate from software)
+- [ ] Draft technical paper / preprint (arXiv)
