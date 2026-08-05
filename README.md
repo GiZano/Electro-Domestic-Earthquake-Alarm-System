@@ -62,13 +62,13 @@ MQTT Bridge ──► POST /readings/ ──► ECDSA Verification
                                         Redis Queue
                                               │
                                               ▼
-                                    Background Worker ────►┌───────────┐
-                                     │           │ (Queue)  │ AI Worker │
-                                     ▼           ▼          │ (Ollama)  │
-                              PostgreSQL    Redis Pub/Sub ◄─└─────┬─────┘
-                                                  │
-                                                  ▼
-                                           WebSocket Broadcast
+                                     Background Worker ────►┌───────────┐
+                                      │           │ (Queue)  │ AI Worker │
+                                      ▼           ▼          │ (Ollama)  │
+                               PostgreSQL    Redis Pub/Sub ◄─└─────┬─────┘
+                               + PostGIS               │
+                                                   ▼
+                                            WebSocket Broadcast
                                                   │
                                                   ▼
                                         React Native Mobile App
@@ -126,7 +126,7 @@ The project follows **Microservices** and **Event-Driven Design** principles acr
 | Real-Time | WebSocket context with exponential backoff reconnection |
 | Alert Delivery | SOS haptic vibration pattern + OS push notification via `expo-notifications` |
 | Alert History | In-session feed of last 10 critical events |
-| AI Report Banner | Inline AI-generated emergency report (summary + recommendations) for the latest alert, with "Report non disponibile" badge on failures |
+| AI Report Banner | Inline AI-generated emergency report (summary + recommendations) for the latest alert, with "Report unavailable" badge on failures |
 | Offline Mode | Toggle silences WebSocket, halts all TanStack Query polling |
 | Notifications | `notificationsEnabled` toggle gates haptics and push notifications |
 | Safe Areas | `react-native-safe-area-context` — Dynamic Island and punch-hole compatible |
@@ -403,7 +403,7 @@ QuakeGuard/
 |---------|-------|
 | **v1.0** | ✅ Released — edge seismic detection on ESP32, local alerts |
 | **v1.1** | ✅ Released — HiveMQ Cloud MQTT (TLS), ngrok HTTPS tunnel, security hardening |
-| **v1.2** | ⚠️  In Progress — Edge AI Worker (Local Ollama / Llama 3.2) for privacy-preserving emergency reports |
+| **v1.2** | ✅ Current — Edge AI Worker (Local Ollama / Llama 3.2) for privacy-preserving emergency reports |
 | **#Research** | Parallel node (starts after v2.1) — SIL cross-validation: ground-truth INGV replay of the exact production C++ STA/LTA core, Python-only as orchestrator, ROC metrics + AI benchmarking (latency P50/P99, hallucination rate). See [ROADMAP.md](ROADMAP.md) |
 | **v1.3** | GNSS sync — accurate node timestamps, GPS coordinate resolution, ADXL345 calibration |
 | **v2.0** | Triangulation — multi-node spatial correlation + AI reports for epicenter calculation |

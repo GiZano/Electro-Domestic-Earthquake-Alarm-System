@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Worker Integration:** Alert engine now enqueues report jobs non-blocking (gated by `AI_REPORT_ENABLED`, default `false`); alert payloads carry `alert_id`.
 - **`GET /reports/{alert_id}`:** REST endpoint for report retrieval after WebSocket reconnect.
 - **Docker Compose `ai` profile:** `ollama` and `ai-worker` services behind a profile; `init-scripts/ollama-entrypoint.sh` auto-pulls the model on startup.
-- **Mobile Report UI:** Inline AI report banner + history cards (summary + recommendations; "Report non disponibile" badge on `FAILED`), driven by the `ai_reports` WebSocket channel.
+- **Mobile Report UI:** Inline AI report banner + history cards (summary + recommendations; "Report unavailable" badge on `FAILED`), driven by the `ai_reports` WebSocket channel.
 - **Unit Tests:** Coverage for the Ollama client, AI worker state machine, worker enqueue path, and EmergencyReport model (68 backend tests; mobile store tests for report handling).
 
 ### Changed

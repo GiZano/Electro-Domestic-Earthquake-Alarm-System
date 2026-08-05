@@ -30,7 +30,7 @@ Report generation is fully decoupled from the alert engine via a dedicated Redis
 $ "PENDING" arrow.r "COMPLETED" \ \ \ \ "PENDING" arrow.r "FAILED" $
 
 - *Dedicated Consumer:* The `ai-worker` container loops on a blocking `brpop`, fetches the telemetry context, invokes Ollama, and atomically flips the report state[cite: 1]. On success the worker publishes an `EMERGENCY_REPORT` payload to the `ai_reports` Redis Pub/Sub channel and commits the `COMPLETED` report with its `summary` and `recommendations`[cite: 1].
-- *Dead Letter Queue:* Unrecoverable failures (missing report, persistent inference errors) push the event to `ai_report_queue_dlq` and mark the report `FAILED`[cite: 1]. The mobile app renders a "Report non disponibile" badge for `FAILED` reports instead of showing partial or fabricated content[cite: 1].
+- *Dead Letter Queue:* Unrecoverable failures (missing report, persistent inference errors) push the event to `ai_report_queue_dlq` and mark the report `FAILED`[cite: 1]. The mobile app renders a "Report unavailable" badge for `FAILED` reports instead of showing partial or fabricated content[cite: 1].
 - *Graceful Shutdown:* The worker traps `SIGTERM`/`SIGINT` to drain in-flight inference calls before exiting[cite: 1].
 
 == WebSocket Delivery

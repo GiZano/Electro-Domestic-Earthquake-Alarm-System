@@ -4,79 +4,79 @@
 
 ---
 
-## v1.0.0 — Rilevamento Sismico Edge (Completata)
+## v1.0.0 — Edge Seismic Detection (Released)
 
-Rilevamento sismico edge su ESP32 e alert locale.
+Edge seismic detection on ESP32 with local alerts.
 
-- Acquisizione ADXL345 a 100 Hz con STA/LTA triggering
-- Firma ECDSA su ogni payload
-- Alert locale via LED / seriale
-
----
-
-## v1.1.0 — Cloud & Sicurezza (Attuale)
-
-Migrazione Data Plane su MQTT Cloud (HiveMQ), Control Plane REST (HTTPS) e sicurezza TLS.
-
-- Data Plane: ESP32 → HiveMQ Cloud (porta 8883, TLS + username/password)
-- Control Plane: ngrok tunnel HTTPS per provisioning REST
-- `setInsecure()` per handshake TLS su ESP32
-- MQTT Bridge (Python Paho) con TLS
-- Dashboard mobile funzionante con dati live
-- CI/CD attivo
+- ADXL345 acquisition at 100 Hz with STA/LTA triggering
+- ECDSA signature on every payload
+- Local alert via LED / serial
 
 ---
 
-## v1.2.0 — AI Cloud (Attuale)
+## v1.1.0 — Cloud & Security (Released)
 
-Integrazione AI Cloud (LLM on-premise nel backend per la generazione di report di emergenza testuali partendo dai dati MQTT).
+Data Plane migration to MQTT Cloud (HiveMQ), REST Control Plane (HTTPS) and TLS security.
 
-- ✅ LLM on-premise via Ollama (`llama3.2:1b`) che consuma gli alert confermati — telemetry mai esposta
-- ✅ Generazione automatica report emergenza: magnitudo, zona, timestamp, raccomandazioni (deterministico, anti-allucinazione)
-- ✅ WebSocket push del report AI alla mobile app (banner + card storico)
-- ✅ Stato `PENDING → COMPLETED | FAILED` con DLQ e fallback esplicito
-- ✅ Endpoint REST `GET /reports/{alert_id}`
-
----
-
-## v1.3.0 — GNSS Sincronizzato
-
-Sincronizzazione GNSS avanzata dei nodi per timestamp esatti.
-
-- GPS/GNSS module opzionale su ESP32
-- Timestamp NTP + PPS corretti per tutti i nodi
-- Risoluzione hardcoded GPS (coordinate Roma) con coordinate reali
-- Calibrazione ADXL345 offset su boot
+- Data Plane: ESP32 → HiveMQ Cloud (port 8883, TLS + username/password)
+- Control Plane: ngrok HTTPS tunnel for REST provisioning
+- `setInsecure()` for TLS handshake on ESP32
+- MQTT Bridge (Python Paho) with TLS
+- Working mobile dashboard with live data
+- Active CI/CD
 
 ---
 
-## v2.0.0 — Triangolazione Epicentro
+## v1.2.0 — AI Cloud (Current)
 
-Algoritmo di Triangolazione. Correlazione spaziale multi-nodo unita ai report AI per il calcolo dell'epicentro interno.
+On-premise AI integration (LLM in the backend) to generate textual emergency reports from MQTT data.
 
-- Algoritmo di triangolazione da ≥3 nodi
-- Correlazione spaziale e temporale multi-nodo
-- Calcolo epicentro interno
-- Unione dati AI + triangolazione per alert precisi
+- ✅ On-premise LLM via Ollama (`llama3.2:1b`) consuming confirmed alerts — telemetry never exposed
+- ✅ Automatic emergency report generation: magnitude, zone, timestamp, recommendations (deterministic, anti-hallucination)
+- ✅ WebSocket push of the AI report to the mobile app (banner + history card)
+- ✅ `PENDING → COMPLETED | FAILED` state machine with DLQ and explicit fallback
+- ✅ REST endpoint `GET /reports/{alert_id}`
 
 ---
 
-## #Research — Validazione Scientifica (SIL)
+## v1.3.0 — Synchronized GNSS
 
-Nodo parallelo (non semantico): avviato dopo il raggiungimento di **v2.1** come minimo.
+Advanced GNSS synchronization of nodes for exact timestamps.
 
-Cross-validazione Software-in-the-Loop (SIL): nessuna duplicazione di logica. Si usa il **100% del codice C++ di produzione** sia sul firmware che sull'host, garantendo l'equivalenza numerica per il paper IEEE.
+- Optional GPS/GNSS module on ESP32
+- Correct NTP + PPS timestamps for all nodes
+- Replace hardcoded GPS (Rome coordinates) with real coordinates
+- ADXL345 offset calibration on boot
 
-### R1 — Cross-validazione del rilevamento STA/LTA (Alta priorità)
+---
 
-- ✅ Isolamento del core algoritmico STA/LTA in C++ puro, disaccoppiato totalmente dall'hardware ESP32 (nessuna chiamata I2C/WiFi/FreeRTOS nel nucleo algoritmico)
-- ✅ Compilazione nativa del core C++ sull'host (stessa sorgente del firmware)
-- ✅ Python come **solo orchestratore**: lettura del dataset publico INGV (accelerogrammi), passaggio dei dati al binario C++ via `ctypes`/`subprocess`/`pybind11`, raccolta dei trigger point e tracciamento delle curve ROC
-- ✅ Metriche: Sensitivity/Rocheron, False-Alarm Rate, latenza di risposta
-- ✅ Calibrazione dei parametri di trigger (`TRIGGER_RATIO`, `NOISE_FLOOR`, `HPF_ALPHA`) contro ground-truth INGV
+## v2.0.0 — Epicenter Triangulation
+
+Triangulation algorithm. Multi-node spatial correlation combined with AI reports to compute the internal epicenter.
+
+- Triangulation algorithm from ≥3 nodes
+- Multi-node spatial and temporal correlation
+- Internal epicenter computation
+- AI + triangulation data fusion for precise alerts
+
+---
+
+## #Research — Scientific Validation (SIL)
+
+Parallel node (non-semantic): started after reaching **v2.1** at a minimum.
+
+Software-in-the-Loop (SIL) cross-validation: no logic duplication. It uses **100% of the production C++ code** on both the firmware and the host, guaranteeing numerical equivalence for the IEEE paper.
+
+### R1 — STA/LTA detection cross-validation (High priority)
+
+- ✅ Isolation of the STA/LTA algorithmic core in pure C++, fully decoupled from the ESP32 hardware (no I2C/WiFi/FreeRTOS calls in the algorithmic core)
+- ✅ Native host compilation of the C++ core (same source as the firmware)
+- ✅ Python as the **sole orchestrator**: reading the public INGV dataset (accelerograms), passing data to the C++ binary via `ctypes`/`subprocess`/`pybind11`, collecting trigger points and tracing ROC curves
+- ✅ Metrics: Sensitivity/Recall, False-Alarm Rate, response latency
+- ✅ Calibration of the trigger parameters (`TRIGGER_RATIO`, `NOISE_FLOOR`, `HPF_ALPHA`) against INGV ground-truth
 
 ### R2 — AI Benchmarking (Claim of novelty)
 
-- Benchmark latency P50/P99 del worker AI async locale (Ollama)
-- Misura del tasso di allucinazione dei report generati
-- Quantificazione del vantaggio privacy/latency vs baseline Cloud
+- P50/P99 latency benchmark of the local async AI worker (Ollama)
+- Measurement of the hallucination rate of the generated reports
+- Quantification of the privacy/latency advantage vs Cloud baseline
