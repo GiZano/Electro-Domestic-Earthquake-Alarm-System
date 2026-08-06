@@ -66,5 +66,5 @@ jobs:
 
     - name: SIL Smoke Test (synthetic dataset)
       run: |
-        python research/synthetic.py /tmp/synth_dataset --n-events 3
-        cd research && python calibrate.py /tmp/synth_dataset --out /tmp/calibration.json
+        python research/synthetic.py research/out/synth_dataset --n-events 3
+        cd research && python calibrate.py out/synth_dataset --out out/calibration.json

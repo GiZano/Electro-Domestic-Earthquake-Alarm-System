@@ -20,6 +20,22 @@ GROUND_TRUTH_FILE = "ground_truth.json"
 EVENTS_DIR = "events"
 
 
+def resolve_within_root(path: Path, root: Path | None = None) -> Path:
+    """Resolve a user-supplied output path and refuse escapes outside *root*.
+
+    Guards the CLI scripts against path-injection (Sonar S8707): a path such as
+    ``../../etc/something`` constructed from a command-line argument must not be
+    allowed to write outside the intended working directory.
+    """
+    base = (root or Path.cwd()).resolve()
+    target = Path(path).expanduser().resolve()
+    try:
+        target.relative_to(base)
+    except ValueError:
+        raise ValueError(f"Refusing to write outside {base}: {target}") from None
+    return target
+
+
 @dataclass
 class Accelerogram:
     """One recorded accelerogram."""

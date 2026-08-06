@@ -26,9 +26,9 @@ public:
     static constexpr unsigned long COOLDOWN_MS = 5000;
     static constexpr float INITIAL_RAW = 9.81f; // gravity baseline
 
-    SeismicDetector(float hpfAlpha = DEFAULT_HPF_ALPHA,
-                    float triggerRatio = DEFAULT_TRIGGER_RATIO,
-                    float noiseFloor = DEFAULT_NOISE_FLOOR);
+    explicit SeismicDetector(float hpfAlpha = DEFAULT_HPF_ALPHA,
+                             float triggerRatio = DEFAULT_TRIGGER_RATIO,
+                             float noiseFloor = DEFAULT_NOISE_FLOOR);
 
     /**
      * Euclidean norm of a 3-axis acceleration sample (the single shared
@@ -72,14 +72,15 @@ private:
 // ---------------------------------------------------------------------------
 
 inline SeismicDetector::SeismicDetector(float hpfAlpha, float triggerRatio, float noiseFloor)
-    : hpfAlpha_(hpfAlpha), triggerRatio_(triggerRatio), noiseFloor_(noiseFloor) {
-    filtered_ = 0.0f;
-    prevRaw_ = INITIAL_RAW;
-    inAlarm_ = false;
-    alarmStartMs_ = 0;
-    sta_ = 0.0f;
-    ratio_ = 0.0f;
-}
+    : hpfAlpha_(hpfAlpha),
+      triggerRatio_(triggerRatio),
+      noiseFloor_(noiseFloor),
+      filtered_(0.0f),
+      prevRaw_(INITIAL_RAW),
+      inAlarm_(false),
+      alarmStartMs_(0),
+      sta_(0.0f),
+      ratio_(0.0f) {}
 
 inline bool SeismicDetector::push(float rawMag, unsigned long nowMs) {
     // High-pass filter to remove gravity. NOTE: uses std::abs; on-firmware the

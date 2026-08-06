@@ -18,6 +18,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
+#include <iostream>
+#include <string>
 #include "DetectionCore.h"
 
 int main(int argc, char** argv) {
@@ -31,16 +33,19 @@ int main(int argc, char** argv) {
 
     SeismicDetector det(hpfAlpha, triggerRatio, noiseFloor);
 
-    char line[256];
-    while (fgets(line, sizeof(line), stdin) != nullptr) {
-        if (line[0] == '#') continue;
+    std::string line;
+    while (std::getline(std::cin, line)) {
+        if (line.empty() || line[0] == '#') continue;
 
-        double t, ax, ay, az;
-        if (sscanf(line, "%lf,%lf,%lf,%lf", &t, &ax, &ay, &az) != 4) continue;
+        double t = 0.0;
+        double ax = 0.0;
+        double ay = 0.0;
+        double az = 0.0;
+        if (std::sscanf(line.c_str(), "%lf,%lf,%lf,%lf", &t, &ax, &ay, &az) != 4) continue;
 
-        float raw = SeismicDetector::norm3(static_cast<float>(ax),
-                                           static_cast<float>(ay),
-                                           static_cast<float>(az));
+        auto raw = SeismicDetector::norm3(static_cast<float>(ax),
+                                          static_cast<float>(ay),
+                                          static_cast<float>(az));
 
         // 100 Hz => sample clock = t * 1000 ms (matches firmware millis()).
         unsigned long nowMs = static_cast<unsigned long>(t * 1000.0);

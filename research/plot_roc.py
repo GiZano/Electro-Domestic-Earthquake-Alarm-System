@@ -9,6 +9,8 @@ import argparse
 import json
 from pathlib import Path
 
+from calibrate_io import resolve_within_root
+
 
 def plot_roc(calibration: dict, out_path: Path) -> bool:
     """Render the ROC curve. Returns False if matplotlib is unavailable."""
@@ -45,8 +47,9 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
 
     calibration = json.loads(args.calibration_json.read_text())
-    wrote = plot_roc(calibration, args.roc_out)
-    print(f"ROC plot written to {args.roc_out}" if wrote else "matplotlib not installed; plot skipped")
+    out_path = resolve_within_root(args.roc_out)
+    wrote = plot_roc(calibration, out_path)
+    print(f"ROC plot written to {out_path}" if wrote else "matplotlib not installed; plot skipped")
 
 
 if __name__ == "__main__":

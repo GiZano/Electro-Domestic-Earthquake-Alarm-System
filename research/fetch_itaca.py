@@ -31,6 +31,8 @@ import random
 import sys
 from pathlib import Path
 
+from calibrate_io import resolve_within_root
+
 SAMPLING_HZ = 100
 
 # The gravity constant is the *standard* one used in geophysics, NOT the 9.81
@@ -179,8 +181,8 @@ def write_accelerogram_csv(
 
 def build_synthetic_dataset(out_dir: Path, n_events: int = 5, seed: int = 42) -> None:
     """Generate a realistic synthetic validation dataset (fallback mode)."""
-    out_dir = Path(out_dir)
-    events_dir = out_dir / "events"
+    safe_dir = resolve_within_root(out_dir)
+    events_dir = safe_dir / "events"
     events_dir.mkdir(parents=True, exist_ok=True)
 
     gen = RealisticSynthetic()
@@ -191,7 +193,7 @@ def build_synthetic_dataset(out_dir: Path, n_events: int = 5, seed: int = 42) ->
         write_accelerogram_csv(events_dir / f"{event_id}.csv", times, axes)
         ground_truth.append({"event_id": event_id, "p_arrival_s": p_arrival})
 
-    with (out_dir / "ground_truth.json").open("w") as f:
+    with (safe_dir / "ground_truth.json").open("w") as f:
         json.dump(ground_truth, f, indent=2)
 
 
@@ -203,7 +205,6 @@ def resolve_mode(fetcher: ItacaFetcher | None = None) -> str:
 
 def download_catalog(
     out_dir: Path,
-    min_magnitude: float = 4.0,
     n_events: int = 5,
     seed: int = 42,
     fetcher: ItacaFetcher | None = None,
@@ -214,9 +215,9 @@ def download_catalog(
     """
     mode = resolve_mode(fetcher)
     if mode == "real":
-        # TODO: implement the real ITACA path once a token is available and the
-        # DYNA 1.2 parser is bound. Until then the real path refuses to run
-        # instead of emitting a mock under a misleading name.
+        # The real ITACA path requires a token and a bound DYNA 1.2 parser.
+        # Until then it refuses to run instead of emitting a mock under a
+        # misleading name (see research/README.md).
         raise NotImplementedError(
             "ITACA real download is not implemented yet. "
             "Run without ITACA_TOKEN to use the synthetic fallback."
@@ -229,7 +230,7 @@ def download_catalog(
     return written, ground_truth, mode
 
 
-def main(argv: list[str] | None = None) -> None:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("out_dir", type=Path, help="output validation dataset dir")
     parser.add_argument("--min-magnitude", type=float, default=4.0)
@@ -239,7 +240,7 @@ def main(argv: list[str] | None = None) -> None:
 
     try:
         written, ground_truth, mode = download_catalog(
-            args.out_dir, args.min_magnitude, n_events=args.n_events, seed=args.seed
+            args.out_dir, n_events=args.n_events, seed=args.seed
         )
     except NotImplementedError as exc:
         print(f"ITACA download not yet integrated ({exc}).", file=sys.stderr)

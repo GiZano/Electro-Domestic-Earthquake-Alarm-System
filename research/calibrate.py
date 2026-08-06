@@ -20,9 +20,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 
-from calibrate_io import load_validation_set
+from calibrate_io import load_validation_set, resolve_within_root
 from metrics import compute_metrics, roc_curve
 from orchestrator import build_cli, run_detector
 
@@ -35,7 +36,7 @@ def f1(sensitivity: float, false_alarm_rate: float) -> float:
     """F1 = harmonic mean of precision and recall."""
     precision = 1.0 - false_alarm_rate
     denom = precision + sensitivity
-    if denom == 0.0:
+    if math.isclose(denom, 0.0, abs_tol=1e-12):
         return 0.0
     return 2.0 * (precision * sensitivity) / denom
 
@@ -109,8 +110,9 @@ def main(argv: list[str] | None = None) -> None:
     cli = build_cli(args.cli)
 
     summary = calibrate(cli, samples, ground_truth)
-    args.out.write_text(json.dumps(summary, indent=2))
-    print(f"Calibration written to {args.out}")
+    out_path = resolve_within_root(args.out)
+    out_path.write_text(json.dumps(summary, indent=2))
+    print(f"Calibration written to {out_path}")
     print(
         f"Best: ratio={summary['best']['trigger_ratio']} "
         f"floor={summary['best']['noise_floor']} "
