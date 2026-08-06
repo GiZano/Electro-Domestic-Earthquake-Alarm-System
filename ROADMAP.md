@@ -61,6 +61,15 @@ Triangulation algorithm. Multi-node spatial correlation combined with AI reports
 
 ---
 
+## v2.1.0 — Data Dashboards
+
+Grafana dashboards for real-time visualization of seismic telemetry.
+
+- Grafana dashboards for live seismic telemetry
+- Real-time visualization of multi-node network activity
+
+---
+
 ## #Research — Scientific Validation (SIL)
 
 Parallel node (non-semantic): started after reaching **v2.1** at a minimum.
@@ -69,11 +78,13 @@ Software-in-the-Loop (SIL) cross-validation: no logic duplication. It uses **100
 
 ### R1 — STA/LTA detection cross-validation (High priority)
 
-- ✅ Isolation of the STA/LTA algorithmic core in pure C++, fully decoupled from the ESP32 hardware (no I2C/WiFi/FreeRTOS calls in the algorithmic core)
-- ✅ Native host compilation of the C++ core (same source as the firmware)
-- ✅ Python as the **sole orchestrator**: reading the public INGV dataset (accelerograms), passing data to the C++ binary via `ctypes`/`subprocess`/`pybind11`, collecting trigger points and tracing ROC curves
-- ✅ Metrics: Sensitivity/Recall, False-Alarm Rate, response latency
-- ✅ Calibration of the trigger parameters (`TRIGGER_RATIO`, `NOISE_FLOOR`, `HPF_ALPHA`) against INGV ground-truth
+> Status: **Not implemented.** Only a partial baseline exists today: the pure, shared `RingBuffer.h` (compiled natively in CI) and host unit tests of the detection logic (`test_detection.cpp`, which currently re-implements rather than reuses the firmware core). The STA/LTA core is still inline in `main.cpp` and the Python/INGV orchestrator is missing.
+
+- [ ] Isolation of the STA/LTA algorithmic core in pure C++, fully decoupled from the ESP32 hardware (no I2C/WiFi/FreeRTOS calls in the algorithmic core)
+- [ ] Native host compilation of the C++ core (same source as the firmware)
+- [ ] Python as the **sole orchestrator**: reading the public INGV dataset (accelerograms), passing data to the C++ binary via `ctypes`/`subprocess`/`pybind11`, collecting trigger points and tracing ROC curves
+- [ ] Metrics: Sensitivity/Recall, False-Alarm Rate, response latency
+- [ ] Calibration of the trigger parameters (`TRIGGER_RATIO`, `NOISE_FLOOR`, `HPF_ALPHA`) against INGV ground-truth
 
 ### R2 — AI Benchmarking (this is the paper's primary novelty contribution)
 

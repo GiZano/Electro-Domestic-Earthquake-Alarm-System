@@ -404,10 +404,15 @@ QuakeGuard/
 | **v1.0** | ✅ Released — edge seismic detection on ESP32, local alerts |
 | **v1.1** | ✅ Released — HiveMQ Cloud MQTT (TLS), ngrok HTTPS tunnel, security hardening |
 | **v1.2** | ✅ Current — Edge AI Worker (Local Ollama / Llama 3.2) for privacy-preserving emergency reports |
-| **#Research** | Parallel node (starts after v2.1) — SIL cross-validation: ground-truth INGV replay of the exact production C++ STA/LTA core, Python-only as orchestrator, ROC metrics + AI benchmarking (latency P50/P99, hallucination rate). See [ROADMAP.md](ROADMAP.md) |
 | **v1.3** | GNSS sync — accurate node timestamps, GPS coordinate resolution, ADXL345 calibration |
 | **v2.0** | Triangulation — multi-node spatial correlation + AI reports for epicenter calculation |
 | **v2.1** | Data Dashboards — Grafana dashboards for real-time visualization of seismic telemetry |
+
+### #Research — Scientific Validation (SIL)
+
+| Node | Focus |
+|------|-------|
+| **#Research** | Parallel node (starts after v2.1) — SIL cross-validation: ground-truth INGV replay of the exact production C++ STA/LTA core, Python-only as orchestrator, ROC metrics + AI benchmarking (latency P50/P99, hallucination rate). See [ROADMAP.md](ROADMAP.md) |
 
 ---
 
