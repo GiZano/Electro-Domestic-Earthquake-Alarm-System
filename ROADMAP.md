@@ -70,21 +70,42 @@ Grafana dashboards for real-time visualization of seismic telemetry.
 
 ---
 
+## v2.2.0 — Heterogeneous Edge Intelligence
+
+Crowning of the engineering phase. Two-tier edge cluster where TinyML is **not** a simple STA/LTA replacement, but a hierarchical Decision Fusion between cheap ubiquitous sensors and intelligent confirmation gates.
+
+> **Blocking prerequisite:** the STA/LTA parameter calibration from **R1** must be completed before drafting/training the v2.2.0 models. Calibration is urgent and runs in parallel with v1.3.
+
+**Tier A — Ubiquitous sensors (ESP32-C3):**
+- Low-cost, installable anywhere; STA/LTA + ECDSA signing, unchanged from v1.x
+- Produce the **proprietary MEMS dataset** (fills the domain gap vs INGV professional seismometers)
+
+**Tier B — Intelligent confirmation gates (ESP32-S3):**
+- Hybrid quantized CNN (INT8) via ESP-DL / TensorFlow Lite Micro
+- Activated **only on STA/LTA triggers** to compute the local event probability
+- Emits a confidence score that confirms or discards Tier A triggers (Decision Fusion)
+
+---
+
 ## #Research — Scientific Validation (SIL)
 
-Parallel node (non-semantic): started after reaching **v2.1** at a minimum.
+Parallel node (non-semantic). **R1 is the Foundation**: it starts immediately, in parallel with v1.3 (GNSS), and its calibration is urgent because it is the blocking prerequisite for v2.2.0 and the paper.
 
 Software-in-the-Loop (SIL) cross-validation: no logic duplication. It uses **100% of the production C++ code** on both the firmware and the host, guaranteeing numerical equivalence for the IEEE paper.
 
-### R1 — STA/LTA detection cross-validation (High priority)
+### R1 — STA/LTA detection cross-validation via SIL (Foundation)
 
-> Status: **Not implemented.** Only a partial baseline exists today: the pure, shared `RingBuffer.h` (compiled natively in CI) and host unit tests of the detection logic (`test_detection.cpp`, which currently re-implements rather than reuses the firmware core). The STA/LTA core is still inline in `main.cpp` and the Python/INGV orchestrator is missing.
+> Status: **implemented (Fase 0–4).** The STA/LTA core is isolated in pure C++, compiled natively in CI, and driven by the Python orchestrator with zero logic duplication.
+>
+> Scheduling: **in parallel with v1.3 (GNSS)**. The calibration of the trigger parameters is **urgent and blocking**: it gates the start of v2.2.0 model drafting/training.
 
-- [ ] Isolation of the STA/LTA algorithmic core in pure C++, fully decoupled from the ESP32 hardware (no I2C/WiFi/FreeRTOS calls in the algorithmic core)
-- [ ] Native host compilation of the C++ core (same source as the firmware)
-- [ ] Python as the **sole orchestrator**: reading the public INGV dataset (accelerograms), passing data to the C++ binary via `ctypes`/`subprocess`/`pybind11`, collecting trigger points and tracing ROC curves
-- [ ] Metrics: Sensitivity/Recall, False-Alarm Rate, response latency
-- [ ] Calibration of the trigger parameters (`TRIGGER_RATIO`, `NOISE_FLOOR`, `HPF_ALPHA`) against INGV ground-truth
+- [x] Isolation of the STA/LTA algorithmic core in pure C++, fully decoupled from the ESP32 hardware (no I2C/WiFi/FreeRTOS calls in the algorithmic core) — `firmware/src/DetectionCore.h`
+- [x] Native host compilation of the C++ core (same source as the firmware) — `detect_cli.cpp` + CI build
+- [x] Python as the **sole orchestrator**: reading the public INGV dataset (accelerograms), passing data to the C++ binary via `subprocess`, collecting trigger points and tracing ROC curves — `research/`
+- [x] Metrics: Sensitivity/Recall, False-Alarm Rate, response latency — `research/metrics.py`
+- [x] Calibration of the trigger parameters (`TRIGGER_RATIO`, `NOISE_FLOOR`, `HPF_ALPHA`) against ground-truth — `research/calibrate.py`; **real ITACA download pending** (`ITICA_TOKEN`, see `research/README.md`)
+
+> **Remaining for full R1 closure:** real ITACA/INGV ground-truth validation once the ITACA token portal is reachable; the calibration currently runs on the realistic synthetic fallback (unit-tested, CI-covered).
 
 ### R2 — AI Benchmarking (this is the paper's primary novelty contribution)
 
@@ -100,3 +121,28 @@ Software-in-the-Loop (SIL) cross-validation: no logic duplication. It uses **100
 
 - [ ] Publish open validation dataset (Zenodo DOI, separate from software)
 - [ ] Draft technical paper / preprint (arXiv)
+
+---
+
+## Future Horizon — Cloud Infrastructure & Real-Time Auto-Scaling
+
+Production-grade cloud platform behind the alert pipeline: the MQTT/REST/AI stack of v1.x–v2.2 runs as containerized workloads on Kubernetes, fully provisioned as **Infrastructure-as-Code** with Terraform. The control plane elastically scales with the number of deployed sensors and with real-time alert bursts.
+
+> Post-research horizon (after v2.2.0 / paper). Not blocking for the thesis; it targets the operational release of the system.
+
+**Infrastructure-as-Code (Terraform):**
+- Declarative provisioning of the cloud provider resources (managed Kubernetes cluster, VPC, node pools, networking) in versioned modules
+- State management and drift detection for reproducible, auditable deployments
+
+**Orchestration (Kubernetes):**
+- Containerized deployment of the MQTT broker, AI report worker, REST control plane and dashboard
+- Native autoscaling (Horizontal Pod Autoscaler / cluster autoscaler) driven by MQTT ingestion rate and CPU/memory
+- Real-time elastic burst handling: alert spikes scale up workers (AI reports) and event queues; quiet periods scale to zero
+- Rolling updates, health probes and self-healing for continuous availability
+
+**Delivery & observability:**
+- GitOps / CI/CD pipeline applying Terraform and Helm charts
+- Monitoring and alerting for the cluster itself (resource saturation, autoscaling events)
+
+---
+

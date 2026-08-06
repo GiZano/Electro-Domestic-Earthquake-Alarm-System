@@ -13,6 +13,7 @@
 .venv/
 __pycache__/
 *.py[cod]
+*.py[cod]
 
 # ------------------------------------------
 # Node.js / React Native (Mobile)
@@ -51,3 +52,11 @@ ROADMAP.md
 # Compiled Documents & Media
 # ------------------------------------------
 *.pdf
+
+# ------------------------------------------
+# Research (SIL validation, ROADMAP R1)
+# ------------------------------------------
+research/data/
+research/out/
+research/*.png
+firmware/tools/detect_cli
