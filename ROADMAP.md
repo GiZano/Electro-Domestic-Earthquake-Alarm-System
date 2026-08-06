@@ -27,7 +27,7 @@ Data Plane migration to MQTT Cloud (HiveMQ), REST Control Plane (HTTPS) and TLS 
 
 ---
 
-## v1.2.0 — AI Cloud (Current)
+## v1.2.0 — On-Premise AI Reports (Current)
 
 On-premise AI integration (LLM in the backend) to generate textual emergency reports from MQTT data.
 
