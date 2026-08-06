@@ -43,10 +43,11 @@ Thumbs.db
 # ------------------------------------------
 # Project Notes & Local Context
 # ------------------------------------------
-codebase_context.txt
+codebase_*.txt
 MEMORIA.md
 PROBLEMI.md
 ROADMAP.md
+extract.sh
 
 # ------------------------------------------
 # Compiled Documents & Media
