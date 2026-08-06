@@ -46,7 +46,8 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--roc-out", type=Path, default=Path("roc_curve.png"))
     args = parser.parse_args(argv)
 
-    calibration = json.loads(args.calibration_json.read_text())
+    calibration_path = resolve_within_root(args.calibration_json)
+    calibration = json.loads(calibration_path.read_text())
     out_path = resolve_within_root(args.roc_out)
     wrote = plot_roc(calibration, out_path)
     print(f"ROC plot written to {out_path}" if wrote else "matplotlib not installed; plot skipped")
