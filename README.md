@@ -377,12 +377,25 @@ QuakeGuard/
 ├── firmware/
 │   ├── src/
 │   │   ├── main.cpp             # FreeRTOS tasks, STA/LTA, MQTT, provisioning
+│   │   ├── DetectionCore.h      # Pure-C++ STA/LTA core (shared firmware/host, R1)
 │   │   └── RingBuffer.h         # Statically allocated circular buffer
+│   ├── tools/
+│   │   └── detect_cli.cpp       # Native host CLI (SIL replay, same core)
 │   ├── test/                    # Test scripts to insert into the ESP32
 │   ├── key-generator/           # ECDSA key generator for backend testing
 │   ├── esp32_config.env.example
 │   ├── extra_script.py          # ENV variables injector
 │   └── platformio.ini
+├── research/                    # SIL validation (ROADMAP R1)
+│   ├── fetch_itaca.py           # ITACA download (graceful degradation) / synthetic fallback
+│   ├── synthetic.py             # Realistic synthetic dataset generator
+│   ├── calibrate_io.py          # Dataset layout I/O + path-injection guard
+│   ├── orchestrator.py          # Compile & run the host C++ CLI (subprocess bridge)
+│   ├── metrics.py               # Sensitivity, False-Alarm Rate, latency, ROC
+│   ├── calibrate.py             # TRIGGER_RATIO x NOISE_FLOOR sweep (F1 maximization)
+│   ├── plot_roc.py              # ROC curve figure for the paper
+│   ├── requirements.txt         # matplotlib (optional, plotting)
+│   └── README.md                # Dataset layout, unit conversion, licensing policy
 └── docs/                            # Technical Documentation
     ├── main.typ                     # Typst Whitepaper Entrypoint
     ├── 01-architecture.typ          # System Architecture & Overview
