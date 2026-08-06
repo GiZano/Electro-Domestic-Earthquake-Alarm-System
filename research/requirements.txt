@@ -1,0 +1,3 @@
+# QuakeGuard SIL research (R1) — runtime dependencies (runtime only).
+# Plotting requires matplotlib; everything else uses the Python stdlib.
+matplotlib>=3.8

@@ -5,11 +5,13 @@ on:
     branches: [ "main", "develop" ]
     paths:
       - 'firmware/**'
+      - 'research/**'
       - '.github/workflows/iot-ci.yml'
   pull_request:
     branches: [ "main" ]
     paths:
       - 'firmware/**'
+      - 'research/**'
       - '.github/workflows/iot-ci.yml'
 
 jobs:
@@ -56,3 +58,13 @@ jobs:
         /tmp/test_ringbuffer
         g++ -std=c++11 -I src test/test_detection.cpp -lm -o /tmp/test_detection
         /tmp/test_detection
+
+    - name: Build Host SIL CLI (same core as firmware)
+      run: |
+        cd firmware
+        g++ -std=c++11 -I src tools/detect_cli.cpp -lm -o /tmp/detect_cli
+
+    - name: SIL Smoke Test (synthetic dataset)
+      run: |
+        python research/synthetic.py /tmp/synth_dataset --n-events 3
+        cd research && python calibrate.py /tmp/synth_dataset --out /tmp/calibration.json

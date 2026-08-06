@@ -407,12 +407,14 @@ QuakeGuard/
 | **v1.3** | GNSS sync — accurate node timestamps, GPS coordinate resolution, ADXL345 calibration |
 | **v2.0** | Triangulation — multi-node spatial correlation + AI reports for epicenter calculation |
 | **v2.1** | Data Dashboards — Grafana dashboards for real-time visualization of seismic telemetry |
+| **v2.2** | Heterogeneous Edge Intelligence — hybrid Tier A (STA/LTA) + Tier B (quantized CNN) decision fusion |
+| **Future** | Cloud IaC — Kubernetes + Terraform auto-scaling platform (see [ROADMAP.md](ROADMAP.md)) |
 
 ### #Research — Scientific Validation (SIL)
 
 | Node | Focus |
 |------|-------|
-| **#Research** | Parallel node (starts after v2.1) — SIL cross-validation: ground-truth INGV replay of the exact production C++ STA/LTA core, Python-only as orchestrator, ROC metrics + AI benchmarking (latency P50/P99, hallucination rate). See [ROADMAP.md](ROADMAP.md) |
+| **#Research** | Parallel ongoing node — SIL cross-validation: replay of the exact production C++ STA/LTA core (`DetectionCore.h`) on the host via the same C++ source, Python-only as orchestrator, ROC metrics + AI benchmarking (latency P50/P99, hallucination rate). R1 pipeline (core isolation, host CLI, orchestrator, metrics, calibration) implemented; see [ROADMAP.md](ROADMAP.md) |
 
 ---
 

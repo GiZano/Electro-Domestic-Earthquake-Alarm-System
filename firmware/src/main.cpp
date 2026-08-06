@@ -29,7 +29,7 @@
 #include <array>
 #include <vector>
 #include <chrono>
-#include "RingBuffer.h"
+#include "DetectionCore.h"
 
 // --------------------------------------------------------------------------
 // HARDWARE & SERVER CONFIGURATION
@@ -87,8 +87,6 @@ struct SeismicEvent {
     unsigned long event_millis;
 };
 
-constexpr float ALPHA_LTA = 0.05f;
-constexpr float ALPHA_STA = 0.40f;
 constexpr float TRIGGER_RATIO = 1.8f;
 constexpr float NOISE_FLOOR = 0.04f;
 constexpr float HPF_ALPHA = 0.9f;
@@ -248,64 +246,27 @@ bool performProvisioning() {
 // TASK 1: SENSOR ACQUISITION
 // --------------------------------------------------------------------------
 void sensorTask(void *pvParameters) { // NOSONAR
-    float prev_raw_mag = 9.81f;
-    float filtered_mag = 0.0f;
     sensors_event_t event;
 
-    // Instantiate our strict rolling window buffers!
-    // At 100Hz: STA = 1 second, LTA = 10 seconds
-    RingBuffer<100> staBuffer;
-    RingBuffer<1000> ltaBuffer;
+    // Pure-C++ STA/LTA core, shared with the host SIL validation (same source).
+    SeismicDetector detector(HPF_ALPHA, TRIGGER_RATIO, NOISE_FLOOR);
 
     Serial.println("[SENSOR] Task Active. Stabilizing and filling buffers...");
     
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(10); // Exactly 100Hz
 
-    bool inAlarm = false;
-    unsigned long alarmStart = 0;
-
     for(;;) {
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
         accel.getEvent(&event);
-        float raw_mag = sqrt(pow(event.acceleration.x, 2) + pow(event.acceleration.y, 2) + pow(event.acceleration.z, 2));
+        float raw_mag = SeismicDetector::norm3(event.acceleration.x, event.acceleration.y, event.acceleration.z);
 
-        // High Pass Filter to remove gravity
-        filtered_mag = HPF_ALPHA * (filtered_mag + raw_mag - prev_raw_mag);
-        prev_raw_mag = raw_mag;
-        float abs_signal = abs(filtered_mag);
-
-        if (abs_signal < NOISE_FLOOR) abs_signal = 0.0f;
-
-        // Push the clean signal into our circular buffers
-        staBuffer.push(abs_signal);
-        ltaBuffer.push(abs_signal);
-
-        // Wait until the Long-Term window is fully populated before triggering alarms
-        if (!ltaBuffer.isFull()) {
-            continue; 
-        }
-
-        float sta = staBuffer.average();
-        float lta = ltaBuffer.average();
-        
-        // Prevent division by zero if LTA drops too low
-        if (lta < 0.01f) lta = 0.01f; 
-
-        float ratio = sta / lta;
-
-        // DEBUG: Uncomment this line to view the rolling windows in the Serial Plotter!
-        // Serial.printf("Signal:%.3f,STA:%.3f,LTA:%.3f,Ratio:%.2f\n", abs_signal, sta, lta, ratio);
-
-        if (ratio >= TRIGGER_RATIO && sta > NOISE_FLOOR && !inAlarm) {
-            Serial.printf("[SENSOR] EARTHQUAKE! Ratio: %.2f (Mag: %.3f G)\n", ratio, sta);
-            SeismicEvent evt = { ratio, millis() };
+        // Clock-injected: the detector receives the same millis() the firmware would use.
+        if (detector.push(raw_mag, millis())) {
+            Serial.printf("[SENSOR] EARTHQUAKE! Ratio: %.2f (Mag: %.3f G)\n", detector.lastRatio(), detector.lastSTA());
+            SeismicEvent evt = { detector.lastRatio(), millis() };
             xQueueSend(eventQueue, &evt, 0);
-            inAlarm = true;
-            alarmStart = millis();
         }
-
-        if (inAlarm && (millis() - alarmStart > 5000)) inAlarm = false;
     }
 }
 
