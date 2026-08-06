@@ -72,15 +72,7 @@ private:
 // ---------------------------------------------------------------------------
 
 inline SeismicDetector::SeismicDetector(float hpfAlpha, float triggerRatio, float noiseFloor)
-    : hpfAlpha_(hpfAlpha),
-      triggerRatio_(triggerRatio),
-      noiseFloor_(noiseFloor),
-      filtered_(0.0f),
-      prevRaw_(INITIAL_RAW),
-      inAlarm_(false),
-      alarmStartMs_(0),
-      sta_(0.0f),
-      ratio_(0.0f) {}
+    : hpfAlpha_(hpfAlpha), triggerRatio_(triggerRatio), noiseFloor_(noiseFloor) {}
 
 inline bool SeismicDetector::push(float rawMag, unsigned long nowMs) {
     // High-pass filter to remove gravity. NOTE: uses std::abs; on-firmware the

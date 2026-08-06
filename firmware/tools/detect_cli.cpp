@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
                                           static_cast<float>(az));
 
         // 100 Hz => sample clock = t * 1000 ms (matches firmware millis()).
-        unsigned long nowMs = static_cast<unsigned long>(t * 1000.0);
+        auto nowMs = static_cast<unsigned long>(t * 1000.0);
 
         if (det.push(raw, nowMs)) {
             printf("%.3f,%.6f\n", t, det.lastRatio()); // NOSONAR(cpp:S6494)
