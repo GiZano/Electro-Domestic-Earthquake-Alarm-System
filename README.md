@@ -417,9 +417,11 @@ QuakeGuard/
 | **v1.0** | ✅ Released — edge seismic detection on ESP32, local alerts |
 | **v1.1** | ✅ Released — HiveMQ Cloud MQTT (TLS), ngrok HTTPS tunnel, security hardening |
 | **v1.2** | ✅ Current — On-Premise AI Worker (Local Ollama / Llama 3.2) for privacy-preserving emergency reports |
+| **v1.2.1** | Zero-Trust Serial Fallback — signed telemetry over USB CDC (serial) when MQTT is unreachable |
 | **v1.3** | GNSS sync — accurate node timestamps, GPS coordinate resolution, ADXL345 calibration |
 | **v2.0** | Triangulation — multi-node spatial correlation + AI reports for epicenter calculation |
 | **v2.1** | Data Dashboards — Grafana dashboards for real-time visualization of seismic telemetry |
+| **v2.1.1** | Timeseries DB & Mobile Fix — migration to TimescaleDB/InfluxDB; per-sensor chart isolation in React Native mobile |
 | **v2.2** | Heterogeneous Edge Intelligence — hybrid Tier A (STA/LTA) + Tier B (quantized CNN) decision fusion |
 | **Future** | Cloud IaC — Kubernetes + Terraform auto-scaling platform (see [ROADMAP.md](ROADMAP.md)) |
 

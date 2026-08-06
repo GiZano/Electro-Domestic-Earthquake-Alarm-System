@@ -39,6 +39,16 @@ On-premise AI integration (LLM in the backend) to generate textual emergency rep
 
 ---
 
+## v1.2.1 — Zero-Trust Serial Fallback
+
+Signed telemetry over a serial link (USB CDC) when MQTT/WiFi connectivity is lost, so the host still receives data during offline simulations.
+
+- Second consumer of the existing event queue: signed telemetry over USB CDC when MQTT is unreachable
+- ECDSA-signed payloads, identical signing to the MQTT data plane
+- Host-side bridge collecting serial output and forwarding to the ingestion pipeline
+
+---
+
 ## v1.3.0 — Synchronized GNSS
 
 Advanced GNSS synchronization of nodes for exact timestamps.
