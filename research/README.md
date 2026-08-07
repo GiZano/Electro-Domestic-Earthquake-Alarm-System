@@ -7,7 +7,7 @@ numerical equivalence for the IEEE paper.
 
 ```
 ┌─ fetch_itaca.py ─── download accelerograms + P-arrival ground truth
-│                        (graceful degradation: real ITACA if ITACA_TOKEN,
+│                        (ESM public FDSN API via ObsPy, no token;
 │                         realistic synthetic fallback otherwise)
 │
 ├─ synthetic.py ─────── generate a synthetic dataset (no network) for CI / smoke tests
@@ -30,13 +30,12 @@ numerical equivalence for the IEEE paper.
 (`metrics.py`, `calibrate.py`, the C++ core) never know whether they process a
 real earthquake or a locally generated mock — that is the point. Resolution:
 
-- **Real path (ITACA).** Set `ITACA_TOKEN` (e.g. in a `.env`). The script then
-  calls the ITACA/ESM `eventdata` web-service (`/itaca40ws/eventdata/1/query`)
-  and parses the returned DYNA 1.2 ASCII archive into the shared layout.
-  *Note:* the ITACA registration/token portal is currently unavailable, so the
-  real download path is implemented as an explicitly-failing stub rather than a
-  silent mock.
-- **Synthetic fallback (default).** When no token is configured the script
+- **Real path (ESM).** The script queries the **ESM (European Strong-Motion) database**
+  through its **public FDSN web-service** using **ObsPy** (`obspy.fdsn`), downloads the
+  parametric flatfiles and accelerograms, and converts them into the shared layout.
+  No registration token is required, so the real path works headlessly in CI/CD. This
+  replaces the previous ITACA DYNA-1.2 parser (custom code, token-gated portal).
+- **Synthetic fallback (default).** When no network/ESM is available the script
   generates *realistic* accelerometer-like mocks: white background noise, a
   high-frequency P impulse, a larger/lower-frequency S arrival, and a 1 G
   gravity offset (matching the firmware's `sensors_event_t`). The exact
@@ -45,8 +44,8 @@ real earthquake or a locally generated mock — that is the point. Resolution:
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │  fetch_itaca.py                                                         │
-│    ITACA_TOKEN set? ──yes──▶ eventdata WS → DYNA 1.2 → t,ax,ay,az (m/s²)│
-│           │no                                                          │
+│    ESM reachable? ──yes──▶ ESM FDSN (ObsPy) → flatfiles → t,ax,ay,az    │
+│           │no                       (m/s²)                              │
 │           └──────────▶ realistic synthetic generator ──── P known       │
 └──────────────────────────────▶ (identical layout below) ────────────────┘
 ```
@@ -57,10 +56,10 @@ The dataset is **not** committed to git (see `research/README.md` re: license
 and weight). Generate it with:
 
 ```bash
-# real INGV/ITACA (needs ITACA_TOKEN in the environment)
+# real ESM (public FDSN API, no token required)
 python research/fetch_itaca.py research/data
 # or, for a realistic local / CI mock:
-python research/fetch_itaca.py research/data          # same command, no token
+python research/fetch_itaca.py research/data          # same command, no network
 python research/synthetic.py  research/data_synth
 ```
 
@@ -88,8 +87,8 @@ python research/plot_roc.py research/out/calibration.json --roc-out research/out
 
 ## Unit conversion (Gal → m/s²)
 
-ITACA/ESM DYNA 1.2 files carry accelerations in **Gal** (cm/s²). The real
-parser converts to the same m/s² scale the firmware/C++ core expects:
+ESM/ITACA flatfiles carry accelerations in **Gal** (cm/s²). The parser converts
+to the same m/s² scale the firmware/C++ core expects:
 
 ```
 Acceleration (m/s²) = Acceleration (Gal) / 100
@@ -98,19 +97,28 @@ Acceleration (m/s²) = Acceleration (Gal) / 100
 
 ## Licensing & the real Zenodo dataset
 
-- **ITACA = CC-BY-NC-ND 4.0.** The derived, converted accelerograms must *not*
-  be redistributed as a modified dataset. The elegant resolution:
-  * fetch the raw ITACA data on-the-fly on the user's machine (the code, not
-    the data, is distributed);
+- **ESM = CC-BY-4.0 (parametric flatfiles).** ESM distributes its parametric
+  flatfiles (magnitude, station coordinates, PGA, distances) under **CC-BY-4.0**.
+  The **derived calibration dataset** (parsed events + ground truth in the shared
+  layout) is therefore **re-distributable**: it can be published as an open
+  validation artifact on Zenodo with its own DOI. Cite ESM in `CITATION.cff`.
+- **ITACA = CC-BY-NC-ND-4.0.** ITACA forbids redistribution and modification of
+  its data. The derived, converted accelerograms must *not* be redistributed as a
+  modified dataset. The elegant resolution:
+  * fetch the raw data on-the-fly on the user's machine (the code, not the data,
+    is distributed);
   * process it locally; publish only the **aggregate results** (ROC, F1,
     false-alarm rates, optimal calibration parameters) — these are research
     outputs, not derivatives of the seismic data;
   * cite ITACA formally (CC-BY attribution) in the paper and in `CITATION.cff`.
+- **License re-verification gate.** Before publishing ANY derived artifact,
+  re-check the current ITACA/ESM license terms (they can change) and update
+  `CITATION.cff` accordingly at release time.
 - **QuakeGuard MEMS Dataset (yours).** The Zenodo dataset with its own DOI is
   the accelerogram recorded by your physical ESP32-C3 nodes (Tier A) — your own
-  IP, licensed freely (e.g. MIT / CC-BY 4.0). ITACA serves only as reference
+  IP, licensed freely (e.g. MIT / CC-BY 4.0). ITACA/ESM serve only as reference
   ground truth for validating the detection algorithm (R1), never as a
-  publishable output. See `CITATION.cff` for the ITACA citation once published.
+  publishable output. See `CITATION.cff` for the ESM/ITACA citations once published.
 
 ## DOI workflow (QuakeGuard MEMS Dataset)
 

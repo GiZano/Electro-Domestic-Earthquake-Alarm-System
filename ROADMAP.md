@@ -80,6 +80,18 @@ Grafana dashboards for real-time visualization of seismic telemetry.
 
 ---
 
+> **Geo-zoning & cooldown-lock design (relevant for the paper's System-Engineering claim):**
+> - The per-zone Redis cooldown lock (`lock:cooldown:<zone>`) can *silence independent
+>   earthquakes* inside a single macro-region (e.g. two events in the same "North America"
+>   polygon trigger one lock and the second alert is dropped as a duplicate).
+> - Plan fragmentation to Geohash/H3 keys (`lock:cooldown:<geohash>`) — this offloads zone
+>   assignment from PostGIS `ST_Contains` to fast Redis lookups.
+> - For real administrative polygons: apply `ST_SimplifyPreserveTopology` + a GiST index;
+>   size zones so an event cannot physically reach the adjacent zone (~50–100 km for
+>   destructive surface-wave propagation).
+
+---
+
 ## v2.2.0 — Heterogeneous Edge Intelligence
 
 Crowning of the engineering phase. Two-tier edge cluster where TinyML is **not** a simple STA/LTA replacement, but a hierarchical Decision Fusion between cheap ubiquitous sensors and intelligent confirmation gates.
@@ -113,15 +125,30 @@ Software-in-the-Loop (SIL) cross-validation: no logic duplication. It uses **100
 - [x] Native host compilation of the C++ core (same source as the firmware) — `detect_cli.cpp` + CI build
 - [x] Python as the **sole orchestrator**: reading the public INGV dataset (accelerograms), passing data to the C++ binary via `subprocess`, collecting trigger points and tracing ROC curves — `research/`
 - [x] Metrics: Sensitivity/Recall, False-Alarm Rate, response latency — `research/metrics.py`
-- [x] Calibration of the trigger parameters (`TRIGGER_RATIO`, `NOISE_FLOOR`, `HPF_ALPHA`) against ground-truth — `research/calibrate.py`; **real ITACA download pending** (`ITICA_TOKEN`, see `research/README.md`)
+- [x] Calibration of the trigger parameters (`TRIGGER_RATIO`, `NOISE_FLOOR`, `HPF_ALPHA`) against ground-truth — `research/calibrate.py`; **real ground-truth download via ESM** (public FDSN API + ObsPy, CC-BY-4.0 flatfiles) — see `research/README.md`
 
-> **Remaining for full R1 closure:** real ITACA/INGV ground-truth validation once the ITACA token portal is reachable; the calibration currently runs on the realistic synthetic fallback (unit-tested, CI-covered).
+> **Remaining for full R1 closure:** real ESM ground-truth validation via ObsPy (public FDSN API, no token required); the calibration currently runs on the realistic synthetic fallback (unit-tested, CI-covered).
 
 ### R2 — AI Benchmarking (this is the paper's primary novelty contribution)
 
 - P50/P99 latency benchmark of the local async AI worker (Ollama)
 - Measurement of the hallucination rate of the generated reports
 - Quantification of the privacy/latency advantage vs Cloud baseline
+
+> **Two distinct claims — do not conflate them in the paper:**
+> - **Self-hosted, data-sovereign LLM.** Inference runs inside the Docker network
+>   (`http://ollama:11434`), uses no third-party inference API, and telemetry never
+>   leaves the deployment. *True regardless of deployment target (defensible).*
+> - **Local-first resilience** is a *deployment property*, not a software property:
+>   it holds only when the full alert path (local MQTT broker → bridge → AI worker)
+>   runs on an on-premise host co-located with the community. **Today the alert path
+>   uses HiveMQ Cloud, so the alert path still depends on the WAN.** Claim this only
+>   for the on-premise topology.
+>
+> **Determinism is a hypothesis, not a guarantee:** `temperature=0`, `top_k=1`
+> (greedy decoding) remove *stochastic variance*, but the model can be
+> *deterministically wrong*. The hallucination rate must be **measured empirically**
+> in this benchmark before any quantitative claim is reported.
 
 ---
 
@@ -131,6 +158,13 @@ Software-in-the-Loop (SIL) cross-validation: no logic duplication. It uses **100
 
 - [ ] Publish open validation dataset (Zenodo DOI, separate from software)
 - [ ] Draft technical paper / preprint (arXiv)
+
+> **Open data strategy & license gate:**
+> - Publish the **derived ESM parametric dataset** (CC-BY-4.0) as a re-distributable
+>   Zenodo artifact with its own DOI, separate from the software.
+> - **License re-verification step before publishing ANY derived data:** re-check the
+>   current ITACA/ESM license terms and update `CITATION.cff` at release time (ITACA is
+>   CC-BY-NC-ND-4.0 and forbids redistribution of derived waveforms).
 
 ---
 
@@ -153,6 +187,19 @@ Production-grade cloud platform behind the alert pipeline: the MQTT/REST/AI stac
 **Delivery & observability:**
 - GitOps / CI/CD pipeline applying Terraform and Helm charts
 - Monitoring and alerting for the cluster itself (resource saturation, autoscaling events)
+
+### Performance & scaling engineering (post-paper, not needed at current scale)
+
+- **Non-blocking MQTT-Bridge refactor** — `aiomqtt` + async push to Redis (or `httpx`/`aiohttp`)
+  to make the bridge relay fully non-blocking. *Parked: the current synchronous bridge is not
+  the bottleneck at sandbox scale.*
+- **Rust ingestion microservice (Axum) + ECDSA verification via PyO3** — the hybrid path:
+  keep FastAPI/PostGIS/Ollama, move only the CPU-bound signature verification (P-256/SHA-256)
+  to native speed; a dedicated Axum ingestion endpoint can later absorb `POST /readings/`.
+- **Local MQTT broker (`mosquitto`) as the default alert path** — makes the R2 "local-first
+  resilience" claim real; explicitly note HiveMQ Cloud as the current WAN dependency.
+- **Load-test on rented infrastructure (e.g. AWS), one-off** — not GitHub Actions (hardware
+  limits); results published as static charts in the paper.
 
 ---
 
