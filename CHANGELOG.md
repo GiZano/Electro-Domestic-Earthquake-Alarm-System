@@ -5,7 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - (Target: v1.2.0)
+## [1.2.1] - 2026-08-14
+### Added
+- **Geo-Zoning:** PostGIS zones as the source of truth (`Zone` model, `GET /zones`, `POST /zones/`), with a geohash-based Redis fast path for coordinate→zone lookup.
+- **Zone Detection:** `GET /zones/locate` resolves a device's GPS position into a monitored polygon; Settings now ships "Detect my zone via GPS".
+- **Per-Zone Seismograph:** `GET /zones/{zone_id}/readings` + `DELETE /zones/{zone_id}/readings`; the mobile dashboard renders a live seismograph per zone (horizontal zone strip) instead of mixing network-wide telemetry.
+- **Per-Area Cooldown Fragmentation:** alert cooldown keys are now area-based (geohash region or zone), not global.
+- **GNSS-Ready Data Model:** `Sensor.last_fix_at`, `Reading.lat/lon` captured at ingestion for area-fragmented cooldowns and future spatial correlation.
+- **Per-Zone Alerts Feed:** `GET /zones/{zone_id}/alerts` retrieves the confirmed seismic alerts raised for a single area.
+- **Live Chart Overhaul (mobile):** sliding window anchored to the wall clock (stale readings leave the window), linear MAG scale (MIN 3.5 / MED 4.0 / ALTO 4.5) with the axis pinned left, positive X seconds and a centered `TIME` label; the trace always renders inside the plot.
+- **Settings Explore Section:** links to the GitHub repository (`GiZano/QuakeGuard`) and the QuakeGuard site; `QuakeGuard v1.2.1` footer.
+
+### Changed
+- Worker alert pipeline uses per-area cooldown keys and rounds-trip normalization (magnitude estimation shared with the mobile client).
+- Peripheral MQTT subscriber wiring and `scripts/simulate_zone.py` updated for the per-zone stream flow.
+- Version artifacts bumped to v1.2.1 (CITATION.cff, mobile footer, README roadmap).
+
+## [1.2.0] - 2026-08-06
 ### Added
 - **On-Premise AI Emergency Reports:** New AI layer generates human-readable emergency reports from confirmed seismic alerts via a local Ollama LLM (`llama3.2:1b` default), keeping telemetry on the host.
 - **`ollama_client.py`:** Deterministic report generation (`temperature 0.0`, `top_k 1`, streaming disabled) with a strict system prompt ("Only use the provided JSON telemetry. Do not invent data.") and explicit `"AI report unavailable."` fallback on failure.

@@ -49,6 +49,14 @@ Before compiling, ensure the network and server credentials in `src/main.cpp` ar
 #endif
 ```
 
+### Enabling the Optional GNSS Module (Experimental)
+The firmware ships with a **GNSS heartbeats module**, disabled by default. When enabled, the device reads a connected UART GNSS receiver, computes a geohash from the current fix, and includes it in every heartbeat sent to the server (used by the geo-spatial zone-alerting feature on the backend).
+
+* **Makefile/environment flag:** set `GNSS_ENABLED=1` in the `esp32_config.env` file (see `esp32_config.env.example`) and rebuild. Without the flag (or without the file), the module compiles out entirely — zero RAM/flash overhead.
+* **Hardware wiring (UART):** connect the GNSS receiver TX to a free UART-capable pin and set `GNSS_UART_TX_PIN` / `GNSS_UART_RX_PIN` in `src/gnss/GnssModule.h`.
+* **Behavior while unlocked:** the module stays **UART-silent** (no `$GxRMC`/`$GxGGA` requests) so legacy GeoGuessr-style debugging on the same UART line is preserved.
+* **Fallback:** if the receiver never produces a fix, the heartbeat is sent without location and the server falls back to the device's registered location.
+
 ## 5. Installation & Provisioning
 
 ### Step 1: Upload Firmware

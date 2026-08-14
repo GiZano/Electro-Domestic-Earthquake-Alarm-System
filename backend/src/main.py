@@ -28,10 +28,19 @@ from geoalchemy2.elements import WKTElement
 
 # --- LOCAL MODULES ---
 from src.database import get_db, engine, SessionLocal, DATABASE_URL
+from src.geo import (
+    COOLDOWN_PRECISION,
+    ZONE_INDEX_PRECISION,
+    build_zone_index,
+    candidate_zone_ids,
+    point_to_geohash,
+)
+from src import ingest
 import src.models as models
 import src.schemas as schemas
 from src.security import verify_api_key, validate_iot_payload
 from src.seed import seed_zones
+from src.timescale import apply_timescale
 
 PING_QUERY = "SELECT 1"
 
@@ -116,17 +125,34 @@ async def redis_alert_listener() -> None:
 async def lifespan(app: FastAPI):
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, wait_for_db)
+    # PostGIS must exist before create_all: the models use `geometry` columns.
+    # Some DB images (e.g. timescale-ha) do not run the postgis init hook, so the
+    # app ensures the extension itself — idempotent and safe on stock PostGIS.
+    with engine.begin() as conn:
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
     await loop.run_in_executor(None, lambda: models.Base.metadata.create_all(bind=engine))
 
     with SessionLocal() as db:
         seed_zones(db)
+        build_zone_index(db)
+        # TimescaleDB hypertable + rollups (best-effort; no-op on plain PostGIS).
+        try:
+            apply_timescale(db)
+        except Exception as e:
+            print(f"⚠️ TimescaleDB migration skipped: {e}", flush=True)
+
+    # Ensure the ingestion consumer group exists so stream reads never error.
+    try:
+        await ingest.ensure_group_async(redis_client)
+    except Exception as e:
+        print(f"⚠️ Ingest group ensure skipped: {e}", flush=True)
 
     listener_task = asyncio.create_task(redis_alert_listener())
     yield
     listener_task.cancel()
 
 # Initialize FastAPI
-app = FastAPI(title="QuakeGuard Backend", version="2.2.0", lifespan=lifespan)
+app = FastAPI(title="QuakeGuard Backend", version="1.2.1", lifespan=lifespan)
 
 # ==========================================
 # MIDDLEWARE
@@ -158,13 +184,23 @@ def resolve_zone(db: Session, latitude: float | None, longitude: float | None) -
     Spatial auto-assignment helper.
     Finds the smallest containing polygon for given GPS coordinates.
     Falls back to 'Unknown Region' if no match is found or coordinates are null.
+
+    Fast path: the Redis zone-index (geohash -> zone ids) resolves the zone for
+    a coordinate without a DB round-trip. On a miss or an ambiguous multi-zone
+    match we fall back to the authoritative PostGIS ST_Contains query, so the
+    Redis cache is purely an optimization and can never assign a wrong zone.
     """
     if latitude is None or longitude is None:
         fallback = db.query(models.Zone).filter(models.Zone.city == "Unknown Region").first()
         return fallback.id if fallback else 1
 
+    candidates = candidate_zone_ids(latitude, longitude, precision=ZONE_INDEX_PRECISION)
+    if len(candidates) == 1:
+        return candidates.pop()
+
+    # Redis miss, empty or ambiguous match -> authoritative PostGIS query
     point = WKTElement(f"POINT({longitude} {latitude})", srid=4326)
-    
+
     # Query PostGIS to find the containing polygon, ordered by smallest area first
     matched_zone = db.query(models.Zone).filter(
         func.ST_Contains(models.Zone.geom, point)
@@ -172,10 +208,10 @@ def resolve_zone(db: Session, latitude: float | None, longitude: float | None) -
 
     if matched_zone:
         return matched_zone.id
-        
+
     # Fallback to Unknown Region
     fallback = db.query(models.Zone).filter(models.Zone.city == "Unknown Region").first()
-    return fallback.id if fallback else 1 # Final failsafe
+    return fallback.id if fallback else 1  # Final failsafe
 
 # ==========================================
 # WEBSOCKET ENDPOINT
@@ -303,6 +339,25 @@ def get_zones(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
     limit = min(limit, 1000)
     return db.query(models.Zone).offset(skip).limit(limit).all()
 
+@app.get("/zones/locate", response_model=schemas.Zone, tags=["Data Retrieval"], dependencies=[Depends(verify_api_key)])
+def locate_zone(latitude: float, longitude: float, db: Session = Depends(get_db)):
+    """
+    Resolve GPS coordinates to the smallest containing monitored zone.
+
+    Powers the "Detect my zone" flow: the app pings this with a GPS fix and gets
+    the zone back so alert alarms can be scoped to the operator's own area.
+    Returns 404 when the coordinate is not covered by any monitored polygon.
+    """
+    matched = (
+        db.query(models.Zone)
+        .filter(func.ST_Contains(models.Zone.geom, WKTElement(f"POINT({longitude} {latitude})", srid=4326)))
+        .order_by(func.ST_Area(models.Zone.geom).asc())
+        .first()
+    )
+    if matched is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Coordinates not inside any monitored zone")
+    return matched
+
 def _create_sensor(db: Session, active: bool, zone_id: int | None, latitude: float | None, longitude: float | None, public_key_hex: str, mac_address: str | None = None) -> models.Sensor:
     """Create and persist a Sensor with spatial zone auto-assignment."""
     assigned_zone_id = zone_id or resolve_zone(db, latitude, longitude)
@@ -340,6 +395,26 @@ def register_device(payload: schemas.DeviceRegisterRequest, db: Session = Depend
     ).first()
 
     if existing:
+        # GNSS-ready: a relocated node (or a spare re-deployed after a cold
+        # boot) re-reports its real fix at handshake time. Keep the last known
+        # coordinates fresh and re-assign the zone if it actually moved.
+        if payload.latitude is not None and payload.longitude is not None:
+            moved = (
+                existing.latitude != payload.latitude
+                or existing.longitude != payload.longitude
+            )
+            if moved:
+                existing.latitude = payload.latitude
+                existing.longitude = payload.longitude
+                existing.location = WKTElement(
+                    f"POINT({payload.longitude} {payload.latitude})", srid=4326
+                )
+                existing.zone_id = resolve_zone(db, payload.latitude, payload.longitude)
+                db.commit()
+                print(
+                    f"[PROV] Sensor {existing.id} moved -> new zone_id {existing.zone_id}",
+                    flush=True,
+                )
         return {"sensor_id": existing.id}
 
     new_device = _create_sensor(db, True, None, payload.latitude, payload.longitude, payload.public_key_hex, payload.mac_address)
@@ -364,13 +439,38 @@ async def create_reading_async(
     # Enqueue for Worker
     payload = reading.model_dump()
     payload['zone_id'] = sensor.zone_id
+    # GNSS-ready: propagate the sensor's current fix so the worker can persist
+    # coordinates and fragment the cooldown lock per-area instead of per-zone.
+    payload['latitude'] = sensor.latitude
+    payload['longitude'] = sensor.longitude
+    if sensor.latitude is not None and sensor.longitude is not None:
+        payload['sensor_geohash'] = point_to_geohash(sensor.latitude, sensor.longitude, COOLDOWN_PRECISION)
     
-    # Offload to the Redis queue
-    await redis_client.lpush("seismic_events", json.dumps(payload))
+    # Append to the Redis Streams ingestion bus (O(1)); the worker group drains it.
+    await ingest.enqueue_reading(redis_client, json.dumps(payload))
     return {"status": "accepted"}
 
 @app.get("/sensors/{id}/statistics", tags=["Data Retrieval"], dependencies=[Depends(verify_api_key)])
 def get_sensor_statistics(id: int, db: Session = Depends(get_db)):
+    # Fast path: when TimescaleDB provisioned the continuous aggregate, the
+    # dashboard rollups are served from pre-computed buckets instead of a COUNT
+    # scan over the hypertable.
+    has_aggregate = db.execute(
+        text("SELECT to_regclass('public.readings_minute') IS NOT NULL")
+    ).scalar()
+    if has_aggregate:
+        row = db.execute(
+            text(
+                "SELECT COALESCE(SUM(n), 0) AS total, COALESCE(MAX(peak), 0) AS peak "
+                "FROM readings_minute WHERE sensor_id = :sensor_id"
+            ),
+            {"sensor_id": id},
+        ).one()
+        return {
+            "sensor_id": id,
+            "total_readings": row.total,
+            "peak_value": row.peak,
+        }
     count = db.query(models.Reading).filter(models.Reading.sensor_id == id).count()
     return {
         "sensor_id": id,
@@ -387,6 +487,73 @@ def get_readings(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
         skip = 0
     limit = min(limit, 1000)
     return db.query(models.Reading).order_by(models.Reading.recorded_at.desc()).offset(skip).limit(limit).all()
+
+@app.get("/zones/{zone_id}/readings", response_model=List[schemas.Reading], tags=["Data Retrieval"], dependencies=[Depends(verify_api_key)])
+def get_zone_readings(zone_id: int, limit: int = 60, db: Session = Depends(get_db)):
+    """
+    Fetch the most recent readings emitted by sensors belonging to a single
+    PostGIS zone. Powers the per-zone seismograph on the dashboard: each zone
+    renders its own sliding window instead of mixing the whole network.
+    """
+    zone = db.query(models.Zone).filter(models.Zone.id == zone_id).first()
+    if not zone:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zone not found")
+    limit = max(1, min(limit, 200))
+    return (
+        db.query(models.Reading)
+        .join(models.Sensor, models.Reading.sensor_id == models.Sensor.id)
+        .filter(models.Sensor.zone_id == zone_id)
+        .order_by(models.Reading.recorded_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+@app.delete("/zones/{zone_id}/readings", tags=["Data Management"], dependencies=[Depends(verify_api_key)])
+def delete_zone_readings(zone_id: int, db: Session = Depends(get_db)):
+    """
+    Clear the telemetry emitted by sensors belonging to a single PostGIS zone.
+
+    Removes every reading whose sensor is assigned to the given zone so the
+    per-zone seismograph can be reset without touching data from other areas.
+    Returns the number of deleted readings.
+    """
+    zone = db.query(models.Zone).filter(models.Zone.id == zone_id).first()
+    if not zone:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zone not found")
+
+    sensor_ids = [
+        row[0]
+        for row in db.query(models.Sensor.id).filter(models.Sensor.zone_id == zone_id).all()
+    ]
+    deleted = 0
+    if sensor_ids:
+        deleted = (
+            db.query(models.Reading)
+            .filter(models.Reading.sensor_id.in_(sensor_ids))
+            .delete(synchronize_session=False)
+        )
+        db.commit()
+    return {"deleted": deleted}
+
+@app.get("/zones/{zone_id}/alerts", response_model=List[schemas.Alert], tags=["Data Retrieval"], dependencies=[Depends(verify_api_key)])
+def get_zone_alerts(zone_id: int, limit: int = 20, db: Session = Depends(get_db)):
+    """
+    Retrieve the confirmed seismic alerts raised for a specific PostGIS zone.
+
+    Orders by most recent first so the dashboard can render an area-scoped
+    alert history. Returns 404 when the zone does not exist.
+    """
+    zone = db.query(models.Zone).filter(models.Zone.id == zone_id).first()
+    if not zone:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zone not found")
+    limit = max(1, min(limit, 100))
+    return (
+        db.query(models.Alert)
+        .filter(models.Alert.zone_id == zone_id)
+        .order_by(models.Alert.created_at.desc())
+        .limit(limit)
+        .all()
+    )
 
 @app.get("/reports/{alert_id}", response_model=schemas.EmergencyReport, tags=["Data Retrieval"], dependencies=[Depends(verify_api_key)])
 def get_emergency_report(alert_id: int, db: Session = Depends(get_db)):

@@ -56,8 +56,11 @@ if __name__ == "__main__":
     
     if MQTT_USERNAME and MQTT_PASSWORD:
         client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
-    
-    client.tls_set(cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLS)
+
+    # TLS is required on the WAN port (8883) but must be skipped for the local
+    # plaintext mosquitto (1883), mirroring the firmware's dual-mode transport.
+    if MQTT_PORT == 8883:
+        client.tls_set(cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLS)
     
     print(f"🔌 Connecting to MQTT Broker at {MQTT_BROKER}:{MQTT_PORT}...")
     client.connect(MQTT_BROKER, MQTT_PORT, 60)

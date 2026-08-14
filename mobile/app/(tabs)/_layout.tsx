@@ -1,30 +1,33 @@
 import { Tabs } from "expo-router";
 import { Map, ShieldCheck, Settings } from "lucide-react-native";
 import React from "react";
-// 💡 IMPORT THE INSETS HOOK
-import { useSafeAreaInsets } from "react-native-safe-area-context"; 
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAppTheme } from "../../theme/useTheme";
+import { MONO } from "../../theme";
 
 export default function TabLayout() {
-  // 💡 GET SYSTEM DIMENSIONS
-  const insets = useSafeAreaInsets(); 
+  const insets = useSafeAreaInsets();
+  const { colors } = useAppTheme();
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#dc2626", // Red color for active state
-        tabBarInactiveTintColor: "#6b7280", // Gray color for inactive state
+        tabBarActiveTintColor: colors.alert,
+        tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
-          // 💡 DYNAMICALLY ADD SYSTEM INSETS TO OUR BASE VALUES
-          paddingBottom: 5 + insets.bottom, 
-          height: 60 + insets.bottom,       
+          backgroundColor: colors.bg,
+          borderTopColor: colors.border,
+          paddingBottom: 5 + insets.bottom,
+          height: 60 + insets.bottom,
           borderTopWidth: 1,
-          borderTopColor: "#e5e7eb",
         },
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: "600",
+          fontSize: 11,
+          fontWeight: "700",
           marginBottom: 5,
+          fontFamily: MONO,
+          letterSpacing: 1,
         },
       }}
     >

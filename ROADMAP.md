@@ -27,7 +27,7 @@ Data Plane migration to MQTT Cloud (HiveMQ), REST Control Plane (HTTPS) and TLS 
 
 ---
 
-## v1.2.0 — On-Premise AI Reports (Current)
+## v1.2.0 — On-Premise AI Reports (Released)
 
 On-premise AI integration (LLM in the backend) to generate textual emergency reports from MQTT data.
 
@@ -39,7 +39,23 @@ On-premise AI integration (LLM in the backend) to generate textual emergency rep
 
 ---
 
-## v1.2.1 — Zero-Trust Serial Fallback
+## v1.2.1 — Geo-Zoning & Cooldown Fragmentation (GNSS-ready) (Current)
+
+Geographic zone division designed so the system is ready for the GNSS upgrade (v1.3). The alert cooldown is fragmented from the coarse macro-region level down to a per-area geohash granularity, and the zone-assignment hot path is offloaded from PostGIS queries to a Redis geohash index — with PostGIS kept as the single source of truth.
+
+> **Blocking prerequisite for v1.3 (GNSS):** real GNSS coordinates replace the hardcoded Rome fix in the firmware (`main.cpp`), so the geo layer must already resolve zones and fragment cooldowns from raw coordinates — not from a fixed registration-time zone.
+
+- ✅ **Geohash zone index (Redis fast path)** — `backend/src/geo.py`: at seed time every zone polygon is decomposed into the set of geohash cells (prec 3, ~156 km) it intersects; `resolve_zone()` (in `main.py`) resolves a coordinate from the Redis SET without a DB round-trip. Redis miss or ambiguous multi-zone match falls back to the authoritative PostGIS `ST_Contains` + `ST_Area ASC` query, so the cache can never assign a wrong zone
+- ✅ **Pure-Python geohash encoder** matching PostGIS `ST_GeoHash` — zero new dependencies, deterministic keys shared by seed-time index and runtime lookup
+- ✅ **Fragmented cooldown lock** — `alert_cooldown:<geohash>` (prec 4, ~50 km) instead of `alert_cooldown:<zone_id>`: two independent events inside the same overlapping macro-polygon no longer silence each other. Legacy `alert_cooldown:zone:<id>` retained for coordinates-less sensors
+- ✅ **GNSS-ready data model** — `Sensor.last_fix_at`, `Reading.latitude`/`longitude`; the ingestion payload carries the sensor's fix + geohash; `/devices/register` re-resolves the zone if a relocated node reports a changed fix
+- ✅ **Real spatial tests** — integration tests assert resolution against the seeded PostGIS polygons (Milan, Madrid, Tokyo, unknown point), and `point_to_geohash` is cross-validated against PostGIS `ST_GeoHash`
+
+> **Future hardening (for administrative polygons):** `ST_SimplifyPreserveTopology` + GiST tuning, sizing zones so an event cannot physically reach the adjacent zone (~50–100 km for destructive surface-wave propagation).
+
+---
+
+## v1.2.2 — Zero-Trust Serial Fallback
 
 Signed telemetry over a serial link (USB CDC) when MQTT/WiFi connectivity is lost, so the host still receives data during offline simulations.
 
@@ -68,6 +84,7 @@ Triangulation algorithm. Multi-node spatial correlation combined with AI reports
 - Multi-node spatial and temporal correlation
 - Internal epicenter computation
 - AI + triangulation data fusion for precise alerts
+- KiCad schematics and Gerber files of the node PCB (hardware blueprints for the triangulation node) — already designed; fabrication order + bring-up pending
 
 ---
 
@@ -81,14 +98,14 @@ Grafana dashboards for real-time visualization of seismic telemetry.
 ---
 
 > **Geo-zoning & cooldown-lock design (relevant for the paper's System-Engineering claim):**
-> - The per-zone Redis cooldown lock (`lock:cooldown:<zone>`) can *silence independent
->   earthquakes* inside a single macro-region (e.g. two events in the same "North America"
->   polygon trigger one lock and the second alert is dropped as a duplicate).
-> - Plan fragmentation to Geohash/H3 keys (`lock:cooldown:<geohash>`) — this offloads zone
->   assignment from PostGIS `ST_Contains` to fast Redis lookups.
-> - For real administrative polygons: apply `ST_SimplifyPreserveTopology` + a GiST index;
->   size zones so an event cannot physically reach the adjacent zone (~50–100 km for
->   destructive surface-wave propagation).
+> - **Implemented in v1.2.1:** fragmentation to Geohash keys (`alert_cooldown:<geohash>`),
+>   which offloads zone assignment from PostGIS `ST_Contains` to fast Redis lookups
+>   and stops overlapping macro-regions from silencing independent earthquakes.
+> - **Future:** H3 hex-grid reindexing is re-evaluated when the v2.0 triangulation
+>   clustering is designed; daily H3 resolution can replace the coarsen geohash grid
+>   with no zone-model change. For real administrative polygons: apply
+>   `ST_SimplifyPreserveTopology` + a GiST index; size zones so an event cannot
+>   physically reach the adjacent zone (~50–100 km for destructive surface-wave propagation).
 
 ---
 
@@ -106,6 +123,22 @@ Crowning of the engineering phase. Two-tier edge cluster where TinyML is **not**
 - Hybrid quantized CNN (INT8) via ESP-DL / TensorFlow Lite Micro
 - Activated **only on STA/LTA triggers** to compute the local event probability
 - Emits a confidence score that confirms or discards Tier A triggers (Decision Fusion)
+
+---
+
+## v2.3.0 — Right-Sized Ingestion at Scale (Redis Streams + TimescaleDB)
+
+Backend ingestion redesigned so the control plane sustains tens of thousands of sensors on a small footprint instead of degrading into a single-queue toy.
+
+- ✅ **Redis Streams replaces the single-consumer list queue** — producers XADD to `readings:stream` (O(1) append); N worker processes drain via consumer groups (`docker compose scale worker=N`); `XAUTOCLAIM` recovers pending entries across worker restarts (at-least-once delivery); poisoned heartbeats park on the `readings:dlq` stream so they never stall the group — `backend/src/ingest.py`
+- ✅ **Batched DB commits** — a stream batch (default 64) is written in one transaction instead of one commit per heartbeat
+- ✅ **TimescaleDB hypertable on `readings`** — chunked on `recorded_at`; continuous aggregate `readings_minute` serves the dashboard rollups; compression + retention policies. Migration (`backend/src/timescale.py`) is idempotent and **fails closed** on plain PostGIS (dev/CI)
+- ✅ **Statistics fast-path** — `/sensors/{id}/statistics` reads the continuous aggregate when present, falls back to a COUNT otherwise
+- ✅ **Single TimescaleDB+PostGIS image** — `backend/docker/postgres-timescale.Dockerfile`, wired into `docker-compose.yml`
+- ✅ **Real migration coverage** — dedicated CI job runs the hypertable + aggregate tests against the actual deployment image
+- ✅ **Load generator** `backend/scripts/load_test.py` — N sensors at H Hz (default matches the 150-sensor CI requirement), stream or HTTP transport
+
+> **Scale math (design target):** 150 sensors @ 1/5s ≈ 30 msg/s (trivial today); 10k sensors @ 1 Hz ≈ 2k msg/s (bounded by worker count + hypertable inserts, still 1 Postgres node). The MQTT transport already exists (firmware → broker → bridge → API); the bridge stays HTTP-proxying by design — direct MQTT→stream is the documented next step only if the broker becomes the bottleneck.
 
 ---
 
@@ -190,9 +223,12 @@ Production-grade cloud platform behind the alert pipeline: the MQTT/REST/AI stac
 
 ### Performance & scaling engineering (post-paper, not needed at current scale)
 
+- **Kafka / Redpanda as the central ingestion buffer (millions-class)** — replaces Redis Streams as the durable, replayable backbone once sustained ingestion exceeds what a single Redis node can buffer. The v2.3.0 consumer interface (`src/ingest.py`) is deliberately transport-agnostic: `enqueue_reading` / `read_batch` / `ack` / `recover_pending` are re-pointable so a Kafka-backed implementation can slot in without touching the worker. Also unlocks partitions-per-sensor ordering and backfill reprocessing for the triangulation engine (v2.0).
+- **ClickHouse for cold-path analytics** — move long-range dashboards / multi-node correlation queries (epicenter triangulation, swarm clustering) off the operational Postgres node onto a columnar store with a Kafka connector. Cold reads never contend with the ingestion hot path; TimescaleDB continuous aggregates keep serving the real-time dashboard.
 - **Non-blocking MQTT-Bridge refactor** — `aiomqtt` + async push to Redis (or `httpx`/`aiohttp`)
-  to make the bridge relay fully non-blocking. *Parked: the current synchronous bridge is not
-  the bottleneck at sandbox scale.*
+  to make the bridge relay fully non-blocking. *Partially superseded by v2.3.0: the ingestion
+  endpoint is now an O(1) stream append, so the HTTP-proxying bridge is no longer the DB
+  bottleneck; direct MQTT→stream still removes the HTTP hop and is the documented next step.*
 - **Rust ingestion microservice (Axum) + ECDSA verification via PyO3** — the hybrid path:
   keep FastAPI/PostGIS/Ollama, move only the CPU-bound signature verification (P-256/SHA-256)
   to native speed; a dedicated Axum ingestion endpoint can later absorb `POST /readings/`.

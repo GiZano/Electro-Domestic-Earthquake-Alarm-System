@@ -10,12 +10,12 @@ authors:
     given-names: "Riccardo"
     alias: "riccardo0731"
 title: "QuakeGuard"
-version: 1.2.0
+version: 1.2.1
 identifiers:
   - type: doi
     value: "10.5281/zenodo.21814890"
-    description: "Software archive (v1.2.0)"
-date-released: 2026-08-06
+    description: "Software archive (v1.2.1)"
+date-released: 2026-08-14
 url: "https://giovanni-zanotti.is-a.dev/Pages/Works/quakeguard/"
 repository-code: "https://github.com/GiZano/QuakeGuard"
 license: "AGPL-3.0"
