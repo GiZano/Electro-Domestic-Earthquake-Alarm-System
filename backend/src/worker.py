@@ -174,6 +174,44 @@ def enqueue_ai_report(db: Session, event: dict, alert_id: int, zone_id: int, mag
     redis_sync.lpush(AI_REPORT_QUEUE, json.dumps(ai_payload))
     print(f"🤖 AI Report enqueued (report_id={report.id})", flush=True)
 
+def _parse_batch(batch: list) -> list:
+    """Decode raw stream entries; park malformed payloads on the DLQ."""
+    pending = []
+    for message_id, payload in batch:
+        try:
+            event = json.loads(payload)
+        except Exception:
+            print("❌ Malformed payload -> DLQ.", flush=True)
+            try:
+                move_to_dlq(redis_sync, message_id, payload, reason="malformed_json")
+            except Exception as e:
+                print(f"❌ DLQ write failed: {e}", flush=True)
+            continue
+        pending.append((message_id, event, payload))
+    return pending
+
+
+def _process_pending(pending: list, db: Session) -> None:
+    """Persist a parsed batch in one transaction and acknowledge the stream."""
+    try:
+        process_batch([event for _, event, _ in pending], db)
+        ack(redis_sync, [message_id for message_id, _, _ in pending])
+        for _, event, _ in pending:
+            print(
+                f"✅ Processed sensor {event.get('sensor_id')} -> {event.get('value')} "
+                f"(Mag: {estimate_magnitude(event.get('value', 0))})",
+                flush=True,
+            )
+    except Exception as e:
+        print(f"❌ Batch DB Error: {e}. Moving batch to DLQ.", flush=True)
+        db.rollback()
+        for message_id, _, payload in pending:
+            try:
+                move_to_dlq(redis_sync, message_id, payload, reason=f"process_error: {e}")
+            except Exception as dlq_err:
+                print(f"❌ DLQ write failed: {dlq_err}", flush=True)
+
+
 def run_worker():
     consumer = f"{CONSUMER_PREFIX}-{socket.gethostname()}-{os.getpid()}"
     print(f"👷 Worker started. stream='{READINGS_STREAM}' group='{READINGS_GROUP}' consumer='{consumer}'")
@@ -195,39 +233,11 @@ def run_worker():
             if not batch:
                 continue
 
-            pending = []
-            for message_id, payload in batch:
-                try:
-                    event = json.loads(payload)
-                except Exception:
-                    print("❌ Malformed payload -> DLQ.", flush=True)
-                    try:
-                        move_to_dlq(redis_sync, message_id, payload, reason="malformed_json")
-                    except Exception as e:
-                        print(f"❌ DLQ write failed: {e}", flush=True)
-                    continue
-                pending.append((message_id, event, payload))
-
+            pending = _parse_batch(batch)
             if not pending:
                 continue
 
-            try:
-                process_batch([event for _, event, _ in pending], db)
-                ack(redis_sync, [message_id for message_id, _, _ in pending])
-                for _, event, _ in pending:
-                    print(
-                        f"✅ Processed sensor {event.get('sensor_id')} -> {event.get('value')} "
-                        f"(Mag: {estimate_magnitude(event.get('value', 0))})",
-                        flush=True,
-                    )
-            except Exception as e:
-                print(f"❌ Batch DB Error: {e}. Moving batch to DLQ.", flush=True)
-                db.rollback()
-                for message_id, _, payload in pending:
-                    try:
-                        move_to_dlq(redis_sync, message_id, payload, reason=f"process_error: {e}")
-                    except Exception as dlq_err:
-                        print(f"❌ DLQ write failed: {dlq_err}", flush=True)
+            _process_pending(pending, db)
 
         except Exception as e:
             print(f"❌ Redis Connection Error: {e}", flush=True)

@@ -2,7 +2,7 @@
 
 #ifdef GNSS_ENABLED
 
-namespace {
+namespace quakeguard_gnss {
 
 float scaleLat(double lat) {
   return static_cast<float>(lat);
@@ -12,7 +12,7 @@ float scaleLon(double lon) {
   return static_cast<float>(lon);
 }
 
-}  // namespace
+}  // namespace quakeguard_gnss
 
 GnssModule& gnss() {
   static GnssModule instance;

@@ -36,7 +36,7 @@
   #define GPS_SERIAL_BAUD 9600
 #endif
 
-namespace {
+namespace quakeguard_gnss {
 constexpr const char* GNSS_NVS_NAMESPACE = "quake-gnss";
 constexpr const char* GNSS_NVS_LAT = "lat";
 constexpr const char* GNSS_NVS_LON = "lon";
