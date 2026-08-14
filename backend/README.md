@@ -17,12 +17,19 @@ backend/
     │   └── ollama-entrypoint.sh  # Auto-pulls the Ollama model on startup
     ├── src/                # Source Code
     │   ├── main.py         # FastAPI Gateway & REST Endpoints
-    │   ├── worker.py       # Async Background Event Processor
+    │   ├── worker.py       # Stream consumer (Redis Streams, batched persistence)
+    │   ├── ingest.py       # Redis Streams ingestion substrate (group/DLQ/recovery)
+    │   ├── timescale.py    # Idempotent TimescaleDB hypertable + aggregates migration
+    │   ├── geo.py          # Geohash zone-index (Redis) + candidate pruning
     │   ├── ai_report_worker.py  # Dedicated AI report consumer (Ollama + state machine)
     │   ├── ollama_client.py     # Deterministic LLM client (anti-hallucination)
     │   ├── database.py     # SQLAlchemy Connection & Pool config
     │   ├── models.py       # ORM Models (GeoAlchemy2 + EmergencyReport)
     │   └── schemas.py      # Pydantic DTOs
+    ├── scripts/
+    │   └── load_test.py    # Load generator (N sensors at H Hz, stream or HTTP)
+    ├── docker/
+    │   └── postgres-timescale.Dockerfile  # TimescaleDB + PostGIS DB image
     ├── tests/              # Testing Suite
     │   ├── __init__.py
     │   ├── stress_test.py  # Load testing & ECDSA simulation tool
@@ -46,18 +53,19 @@ The system operates on three decoupled layers:
         * Asynchronous request handling (`async/await`).
         * **Zero-Trust Security:** Enforces ECDSA (NIST256p) signature verification with SHA-256 hashing on every payload.
         * **Polyglot Crypto Support:** Handles both DER (MbedTLS/C++) and RAW (Python/JS) signature formats.
-        * **Non-Blocking:** Offloads valid payloads immediately to a Redis queue (`seismic_events`).
+        * **O(1) enqueue:** Valid payloads are appended to a **Redis Streams** bus (`readings:stream`) instead of touching the database — the API stays fast no matter how many sensors emit.
 
 2.  **Processing Layer (Worker):**
-    * **Role:** Consumes the message queue and analyzes data streams.
+    * **Role:** Drains the stream via consumer groups and persists + analyzes the data.
     * **Features:**
-        * Persists raw telemetry to PostgreSQL.
-        * Implements a sliding window counter in Redis to detect seismic swarms in real-time.
-        * Triggers persistent `Alerts` when predefined thresholds are breached.
+        * **Horizontally scalable:** `docker compose scale worker=N` — Redis balances deliveries across consumers; `XAUTOCLAIM` reclaims entries left pending by crashed workers (at-least-once delivery).
+        * **Batched persistence:** a stream batch (default 64 heartbeats) is committed to PostgreSQL in one transaction.
+        * **Poison-message isolation:** unparseable/failing heartbeats are parked on the `readings:dlq` stream and ACKed, so they can never stall the group.
+        * Triggers persistent `Alerts` when predefined thresholds are breached (Redis `SET NX` cooldown deduplication).
 
 3.  **Persistence Layer:**
-    * **PostgreSQL + PostGIS:** Primary storage for time-series data and geospatial entities (Zones, Sensors).
-    * **Redis:** In-memory data structure store used for message queuing and high-speed counters.
+    * **TimescaleDB + PostGIS (single image):** `readings` is a TimescaleDB *hypertable* chunked on `recorded_at` (continuous aggregate `readings_minute` serves the dashboard rollups; compression + retention). PostGIS remains the authoritative source for zone geometry.
+    * **Redis:** Streams for ingestion buffering, Pub/Sub for real-time alert distribution, geohash zone-index + cooldown keys for the alerting fast path.
 
 ---
 
@@ -118,6 +126,11 @@ Endpoints for provisioning the infrastructure.
 * **GET** `/zones/` - Retrieve available zones.
 * **GET** `/sensors/` - Retrieve registered sensors.
 
+### 📍 Geo-Location (v1.2.1)
+* **GET** `/zones/locate?latitude=..&longitude=..` - Resolve a GPS fix into the smallest containing monitored zone (powers "Detect my zone").
+* **GET** `/zones/{zone_id}/readings` - Fetch the most recent readings emitted by sensors of a single zone (per-zone seismograph feed).
+* **DELETE** `/zones/{zone_id}/readings` - Clear the telemetry emitted by a single zone (returns `{ "deleted": n }`).
+
 ### 📥 Data Ingestion (IoT)
 * **POST** `/readings/` - High-frequency ingestion endpoint.
     * **Payload:** Telemetry data including `value`, `device_timestamp`, and `signature_hex`.
@@ -150,18 +163,36 @@ To handle bursts of traffic during seismic events, the database engine is optimi
 * **Max Overflow:** 60 additional temporary connections (Total capacity: 100 concurrent threads).
 * **Pre-Ping:** Enabled to prevent stale connection errors.
 
+### Scaling (right-sized)
+| Tier | Configuration | Sustained write rate |
+| :--- | :--- | :--- |
+| 150 sensors (test) | 1 worker, default settings | ~30 msg/s (1 reading / 5 s) |
+| 10k sensors | `scale worker=N`, TimescaleDB hypertable | ~2k msg/s (1 Hz each) on 1 Postgres node |
+| 1M sensors | + EMQX federation, Kafka/Redpanda buffer, ClickHouse analytics | beyond single-node; ports are designed, not deployed |
+
+The TimescaleDB migration (`src/timescale.py`) is idempotent and **fails closed**: on a stock PostGIS container every step is skipped with a warning and the service keeps running on the plain relational table. Provisioning happens automatically at startup and via `python -m src.timescale`.
+
+Load generator for capacity planning:
+
+```bash
+# 150 sensors @ 1 Hz into the stream bus (matches the CI requirement)
+python scripts/load_test.py --sensors 150 --hz 1 --duration 60
+# End-to-end through the FastAPI ingress
+python scripts/load_test.py --sensors 150 --hz 1 --mode http --api http://localhost:8000
+```
+
 ---
 
 ## 🧪 Stress Testing
 
-A specialized load testing script is located in `tests/stress_test.py`. It simulates a fleet of 100 concurrent sensors generating cryptographically valid payloads.
+A specialized end-to-end stress suite lives in `tests/stress_test.py`. It simulates a fleet of **150 sensors** (configurable via `NUM_SENSORS`) firehosing cryptographically valid MQTT telemetry, verifies end-to-end persistence, and runs active security attacks (invalid signature + replay) against the API.
 
 **To run the test:**
 
 1.  Ensure the Docker stack is running.
 2.  Install test dependencies:
     ```bash
-    pip install aiohttp ecdsa
+    pip install aiohttp ecdsa aiomqtt
     ```
 3.  Execute the script:
     ```bash
