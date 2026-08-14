@@ -90,6 +90,42 @@ jobs:
         export PYTHONPATH=$PYTHONPATH:.
         python -m pytest tests/integration/ -v --tb=short -x || echo "No integration tests found"
 
+    - name: Run Geo Spatial Integration Tests (real PostGIS + Redis)
+      run: |
+        cd backend
+        docker run -d --name geo-test-pg \
+          -e POSTGRES_DB=quakeguard_test \
+          -e POSTGRES_USER=quakeguard \
+          -e POSTGRES_PASSWORD=ci-postgres-password \
+          -p 55432:5432 postgis/postgis:15-3.4-alpine
+        docker run -d --name geo-test-redis -p 56379:6379 redis:7-alpine
+        echo "Waiting for spatial test infrastructure readiness..."
+        timeout 60s bash -c "until nc -z localhost 55432 && nc -z localhost 56379; do sleep 2; done"
+        DATABASE_URL="postgresql://quakeguard:ci-postgres-password@localhost:55432/quakeguard_test" \
+        REDIS_URL="redis://localhost:56379/0" \
+        python -m pytest tests/integration/test_geo_integration.py -v --tb=short
+        docker rm -f geo-test-pg geo-test-redis
+
+    - name: Run TimescaleDB Integration Tests (real hypertable)
+      run: |
+        cd backend
+        DATABASE_URL="postgresql://quakeguard:ci-postgres-password@localhost:5432/quakeguard_test" \
+        python -m pytest tests/integration/test_timescale_integration.py -v --tb=short
+
+    - name: Run Zone Readings Integration Tests (real PostGIS)
+      run: |
+        cd backend
+        docker run -d --name zone-test-pg \
+          -e POSTGRES_DB=quakeguard_test \
+          -e POSTGRES_USER=quakeguard \
+          -e POSTGRES_PASSWORD=ci-postgres-password \
+          -p 55433:5432 postgis/postgis:15-3.4-alpine
+        echo "Waiting for zone test infrastructure readiness..."
+        timeout 60s bash -c "until nc -z localhost 55433; do sleep 2; done"
+        DATABASE_URL="postgresql://quakeguard:ci-postgres-password@localhost:55433/quakeguard_test" \
+        python -m pytest tests/integration/test_zone_readings.py -v --tb=short
+        docker rm -f zone-test-pg
+
     - name: Execute Critical Stress Test
       env:
         API_URL: "http://localhost:8000"
