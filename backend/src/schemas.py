@@ -51,6 +51,7 @@ class Sensor(SensorBase):
     id: int
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    last_fix_at: Optional[datetime] = None
     # We do not return the public key by default to keep responses clean,
     # but it can be added if needed.
     model_config = ConfigDict(from_attributes=True)
@@ -78,6 +79,8 @@ class Reading(BaseModel):
     value: int
     sensor_id: int
     recorded_at: datetime
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -91,6 +94,18 @@ class DeviceRegisterRequest(BaseModel):
     enrollment_token: str = Field(..., description="The hardcoded factory enrollment token")
     latitude: float = Field(default=None, ge=-90, le=90)
     longitude: float = Field(default=None, ge=-180, le=180)
+
+# ==========================================
+# ALERT SCHEMAS
+# ==========================================
+class Alert(BaseModel):
+    id: int
+    zone_id: int
+    magnitude: float
+    message: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 # ==========================================
 # EMERGENCY REPORT SCHEMAS (AI / Ollama)

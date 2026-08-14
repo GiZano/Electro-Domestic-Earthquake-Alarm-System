@@ -5,7 +5,9 @@ Defines the SQLAlchemy ORM models.
 Updated to support Device Provisioning (MAC Address & Firmware Version).
 """
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float, Text
+from sqlalchemy import (
+    Column, Integer, String, Boolean, DateTime, ForeignKey, Float, Text,
+)
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from geoalchemy2 import Geometry
@@ -46,6 +48,8 @@ class Sensor(Base):
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     location = Column(Geometry('POINT', srid=4326), nullable=True)
+    # GNSS-ready: last reliable fix timestamp (v1.2.1). Null until the first fix.
+    last_fix_at = Column(DateTime(timezone=True), nullable=True)
 
     # --- SECURITY & IDENTITY ---
     # The public key is the primary cryptographic identity
@@ -61,9 +65,16 @@ class Sensor(Base):
 class Reading(Base):
     __tablename__ = "readings"
 
-    id = Column(Integer, primary_key=True, index=True)
-    recorded_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
+    # Composite PK (id, recorded_at): TimescaleDB requires the partitioning
+    # column to be part of every primary/unique key of the hypertable.
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    recorded_at = Column(DateTime(timezone=True), primary_key=True, server_default=func.now(), nullable=False, index=True)
     value = Column(Integer, nullable=False)
+    
+    # GNSS-ready: event coordinates captured at ingestion (v1.2.1) so the worker
+    # can fragment cooldowns per-area and v2.0 can correlate nodes spatially.
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
     
     sensor_id = Column(Integer, ForeignKey("sensors.id"), nullable=False)
 

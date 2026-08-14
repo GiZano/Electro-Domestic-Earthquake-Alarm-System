@@ -97,6 +97,8 @@ class TestReadingsEndpoint:
         assert resp.status_code == 200
 
     def test_get_statistics(self, client, override_db, auth_headers):
+        # No continuous aggregate available -> the COUNT fallback path runs.
+        override_db.execute.return_value.scalar.return_value = False
         override_db.query.return_value.filter.return_value.count.return_value = 42
         resp = client.get("/sensors/1/statistics", headers=auth_headers)
         assert resp.status_code == 200

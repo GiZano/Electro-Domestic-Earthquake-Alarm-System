@@ -1,9 +1,14 @@
 services:
-  # --- DATABASE ---
+  # --- DATABASE (TimescaleDB + PostGIS) ---
   postgres:
-    image: postgis/postgis:15-3.4-alpine
+    build:
+      context: .
+      dockerfile: docker/postgres-timescale.Dockerfile
+    image: quakeguard-postgres-timescale:pg15
     restart: unless-stopped
-    command: postgres -c 'max_connections=200' -c 'shared_buffers=128MB'
+    command: postgres -c 'shared_preload_libraries=timescaledb' -c 'max_connections=200' -c 'shared_buffers=128MB'
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}

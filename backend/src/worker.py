@@ -1,11 +1,25 @@
-import os
 import json
-import time
 import math
+import os
+import socket
+import time
 from datetime import datetime, timezone
 import redis
 from sqlalchemy.orm import Session
 from src.database import SessionLocal, engine
+from src.geo import COOLDOWN_KEY_PREFIX
+from src.ingest import (
+    READINGS_STREAM,
+    READINGS_GROUP,
+    CONSUMER_PREFIX,
+    BATCH_SIZE,
+    BLOCK_MS,
+    ensure_group,
+    read_batch,
+    ack,
+    move_to_dlq,
+    recover_pending,
+)
 from src.models import Reading, Alert, EmergencyReport, Zone
 
 # Redis Config
@@ -42,30 +56,31 @@ def estimate_magnitude(sensor_value: int) -> float:
     # Clamp to physically meaningful range for MEMS sensors
     return max(0.0, min(magnitude, 9.9))
 
-def process_event(event: dict, db: Session):
-    """Inserts a single sensor measurement into PostGIS and triggers alerts with deduplication."""
-    
-    # 1. Save to Database
+def _enrich_event(event: dict, db: Session) -> dict:
+    """Stage one reading (+ optional alert) into the session. Returns a resolution
+    dict consumed by ``_finish_alerts`` after the shared commit. No commit here so
+    a whole stream batch can be flushed in a single transaction."""
     new_entry = Reading(
         value=event.get("value"),
-        sensor_id=event.get("sensor_id")
+        sensor_id=event.get("sensor_id"),
+        latitude=event.get("latitude"),
+        longitude=event.get("longitude"),
     )
     db.add(new_entry)
 
-    # 2. 🚨 ALARM LOGIC: Check if threshold is breached
     sensor_value = event.get("value", 0)
     magnitude = estimate_magnitude(sensor_value)
     zone_id = event.get("zone_id", 0)
-    alert_published = False
     alert_entry = None
-    
-    # Trigger a CRITICAL alert if physical magnitude is 4.5 or higher
+
     if magnitude >= 4.5:
-        cooldown_key = f"alert_cooldown:{zone_id}"
-        
-        # Atomic check-and-set with 60s TTL (Deduplication)
+        area_key = event.get("sensor_geohash") or event.get("geohash")
+        if area_key:
+            cooldown_key = f"{COOLDOWN_KEY_PREFIX}:{area_key}"
+        else:
+            cooldown_key = f"{COOLDOWN_KEY_PREFIX}:zone:{zone_id}"
+
         if redis_sync.set(cooldown_key, "active", nx=True, ex=60):
-            alert_published = True
             alert_entry = Alert(
                 zone_id=zone_id,
                 magnitude=magnitude,
@@ -73,29 +88,56 @@ def process_event(event: dict, db: Session):
             )
             db.add(alert_entry)
         else:
-            print(f"🚫 ALERT SUPPRESSED: Zone {zone_id} is in 60s cooldown.", flush=True)
+            print(f"🚫 ALERT SUPPRESSED: area '{area_key or zone_id}' is in 60s cooldown.", flush=True)
 
-    # 3. Commit atomically: Reading (+ Alert) — flush to obtain IDs before enqueue
-    db.commit()
-    if alert_published and alert_entry is not None:
+    return {
+        "event": event,
+        "magnitude": magnitude,
+        "zone_id": zone_id,
+        "sensor_id": event.get("sensor_id"),
+        "alert": alert_entry,
+    }
+
+def _finish_alerts(db: Session, resolutions: list) -> None:
+    """After the shared commit: publish any CRITICAL alert to the Redis Pub/Sub
+    channel and enqueue AI report generation. Runs per-resolution (alerts are rare)."""
+    for resolution in resolutions:
+        alert_entry = resolution["alert"]
+        if alert_entry is None:
+            continue
         db.refresh(alert_entry)
+        zone_id = resolution["zone_id"]
+        magnitude = resolution["magnitude"]
+        sensor_id = resolution["sensor_id"]
+        event = resolution["event"]
 
-    # 4. Publish alert to Redis (best-effort after DB commit — outbox pattern)
-    if alert_published and alert_entry is not None:
         alert_payload = {
             "type": "CRITICAL",
             "alert_id": alert_entry.id,
             "zone_id": zone_id,
             "magnitude": round(magnitude, 1),
-            "message": f"High seismic activity detected (Sensor {event.get('sensor_id')})!",
+            "message": f"High seismic activity detected (Sensor {sensor_id})!",
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
         redis_sync.publish("quake_alerts", json.dumps(alert_payload))
         print(f"🚨 ALERT PUBLISHED: Zone {zone_id} - Mag {round(magnitude, 1)}", flush=True)
 
-        # 5. 🤖 AI REPORT: enqueue context for the dedicated worker (non-blocking)
         if AI_REPORT_ENABLED:
             enqueue_ai_report(db, event, alert_entry.id, zone_id, magnitude)
+
+def process_event(event: dict, db: Session):
+    """Single-event processing (compatibility + tests). Batch workloads use
+    ``process_batch`` so one transaction covers N readings."""
+    resolution = _enrich_event(event, db)
+    db.commit()
+    _finish_alerts(db, [resolution])
+
+def process_batch(events: list, db: Session):
+    """Process a stream batch in ONE transaction. Cooldown locks are taken
+    per-event (atomic Redis SET NX), DB writes are batched and committed once."""
+    resolutions = [_enrich_event(event, db) for event in events]
+    db.commit()
+    _finish_alerts(db, resolutions)
 
 def enqueue_ai_report(db: Session, event: dict, alert_id: int, zone_id: int, magnitude: float) -> None:
     """Create a PENDING EmergencyReport and enqueue the AI report job.
@@ -133,25 +175,60 @@ def enqueue_ai_report(db: Session, event: dict, alert_id: int, zone_id: int, mag
     print(f"🤖 AI Report enqueued (report_id={report.id})", flush=True)
 
 def run_worker():
-    print("👷 Worker started. Listening for 'seismic_events'...")
+    consumer = f"{CONSUMER_PREFIX}-{socket.gethostname()}-{os.getpid()}"
+    print(f"👷 Worker started. stream='{READINGS_STREAM}' group='{READINGS_GROUP}' consumer='{consumer}'")
     db = SessionLocal()
-    
+
+    # Group must exist before any XREADGROUP; idempotent.
+    ensure_group(redis_sync)
+    # Reclaim entries left pending by a crashed/restarted sibling (at-least-once).
+    try:
+        recovered = recover_pending(redis_sync, consumer)
+        if recovered:
+            print(f"🔁 Reclaimed {recovered} stale pending entr{'y' if recovered == 1 else 'ies'}.", flush=True)
+    except Exception as e:
+        print(f"⚠️ Pending recovery skipped: {e}", flush=True)
+
     while True:
         try:
-            # Block until data is available in the queue
-            result = redis_sync.brpop("seismic_events", timeout=0)
-            if result:
-                _, data = result
-                event = json.loads(data)
-                
+            batch = read_batch(redis_sync, consumer, count=BATCH_SIZE, block_ms=BLOCK_MS)
+            if not batch:
+                continue
+
+            pending = []
+            for message_id, payload in batch:
                 try:
-                    process_event(event, db)
-                    print(f"✅ Processed sensor {event.get('sensor_id')} -> {event.get('value')} (Mag: {estimate_magnitude(event.get('value', 0))})", flush=True)
-                except Exception as e:
-                    print(f"❌ DB Error: {e}. Moving to DLQ.", flush=True)
-                    db.rollback()
-                    redis_sync.lpush("seismic_events_dlq", data)
-                    
+                    event = json.loads(payload)
+                except Exception:
+                    print("❌ Malformed payload -> DLQ.", flush=True)
+                    try:
+                        move_to_dlq(redis_sync, message_id, payload, reason="malformed_json")
+                    except Exception as e:
+                        print(f"❌ DLQ write failed: {e}", flush=True)
+                    continue
+                pending.append((message_id, event, payload))
+
+            if not pending:
+                continue
+
+            try:
+                process_batch([event for _, event, _ in pending], db)
+                ack(redis_sync, [message_id for message_id, _, _ in pending])
+                for _, event, _ in pending:
+                    print(
+                        f"✅ Processed sensor {event.get('sensor_id')} -> {event.get('value')} "
+                        f"(Mag: {estimate_magnitude(event.get('value', 0))})",
+                        flush=True,
+                    )
+            except Exception as e:
+                print(f"❌ Batch DB Error: {e}. Moving batch to DLQ.", flush=True)
+                db.rollback()
+                for message_id, _, payload in pending:
+                    try:
+                        move_to_dlq(redis_sync, message_id, payload, reason=f"process_error: {e}")
+                    except Exception as dlq_err:
+                        print(f"❌ DLQ write failed: {dlq_err}", flush=True)
+
         except Exception as e:
             print(f"❌ Redis Connection Error: {e}", flush=True)
             time.sleep(2)
