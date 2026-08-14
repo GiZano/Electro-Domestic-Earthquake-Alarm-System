@@ -7,7 +7,7 @@ QuakeGuard is a distributed, high-throughput backend system designed for the rea
 The infrastructure is decoupled into three primary tiers:
 
 - *Edge Layer (IoT):* Composed of ESP32-C3 SuperMini microcontrollers interfaced with ADXL345 digital accelerometers[cite: 1]. These nodes execute on-device Digital Signal Processing (DSP) using the STA/LTA (Short Term Average / Long Term Average) algorithm[cite: 1]. 
-- *Core Backend & Processing:* A polyglot backend architecture utilizing FastAPI (Python) as the API gateway[cite: 1]. Validated data is asynchronously offloaded to a Redis message queue (`seismic_events`) and consumed by a background worker[cite: 1]. The worker persists time-series data into a PostgreSQL/PostGIS database and triggers system-wide alerts via Redis Pub/Sub[cite: 1].
+- *Core Backend & Processing:* A polyglot backend architecture utilizing FastAPI (Python) as the API gateway[cite: 1]. Validated data is asynchronously offloaded to a Redis Stream (`readings:stream`) and consumed by horizontally-scalable background workers via consumer groups[cite: 1]. The workers persist time-series data into a PostgreSQL/PostGIS database (provisioned as a TimescaleDB hypertable) and trigger area-scoped alerts via Redis Pub/Sub[cite: 1].
 - *Client Presentation Layer:* A React Native (Expo) mobile application providing users with real-time seismograph telemetry and instantaneous critical event notifications delivered through WebSockets and native push notifications[cite: 1].
 
 == Data Plane and Control Plane
@@ -20,5 +20,5 @@ Following the v1.1.0 cloud migration, the architecture strictly separates the da
 == Key Design Principles
 
 - *Zero-Trust Security:* Every telemetry payload must be cryptographically signed using an ECDSA (NIST256p) private key stored securely in the ESP32's Non-Volatile Storage (NVS)[cite: 1]. The backend validates these signatures (SHA-256) and device timestamps to prevent spoofing and replay attacks[cite: 1].
-- *Asynchronous Decoupling:* The ingestion API is strictly non-blocking. Validated payloads are immediately pushed to Redis, allowing the gateway to acknowledge the IoT device in milliseconds while background workers handle heavy database transactions and magnitude estimations[cite: 1].
-- *Spatial Awareness:* Leveraging PostGIS, the system automatically assigns newly provisioned sensors to geographic macro-regions using polygon containment queries (`ST_Contains`)[cite: 1]. This enables targeted, geographically bounded alert broadcasting[cite: 1].
+- *Asynchronous Decoupling:* The ingestion API is strictly non-blocking. Validated payloads are immediately pushed to the Redis Stream, allowing the gateway to acknowledge the IoT device in milliseconds while background workers handle heavy database transactions and magnitude estimations[cite: 1].
+- *Spatial Awareness:* Leveraging PostGIS, the system automatically assigns newly provisioned sensors to geographic zones using polygon containment[cite: 1]. A geohash-based Redis index (`zoneindex:<geohash>`) pre-computed at seed time provides a fast-path for coordinate-to-zone resolution, with PostGIS `ST_Contains` as the authoritative fallback[cite: 1]. This enables targeted, geographically bounded alert broadcasting with per-area cooldowns[cite: 1].

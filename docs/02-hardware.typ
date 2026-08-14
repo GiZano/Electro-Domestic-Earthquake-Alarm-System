@@ -30,3 +30,13 @@ QuakeGuard implements the industry-standard Short-Term Average / Long-Term Avera
 The firmware utilizes FreeRTOS to decouple time-critical sensor acquisition from network latency[cite: 1].
 - *`sensorTask`:* Pinned to a high priority, it wakes exactly every 10ms to poll the ADXL345 and execute the DSP pipeline[cite: 1]. Upon detecting a seismic event, it pushes a `SeismicEvent` struct to the `eventQueue`[cite: 1].
 - *`networkTask`:* Operates asynchronously at a lower priority[cite: 1]. It consumes the `eventQueue`, synchronizes the event timestamp via NTP (`pool.ntp.org`), signs the payload, and dispatches the MQTT message[cite: 1]. This design ensures that network blocking or Wi-Fi reconnects never halt the continuous monitoring of the accelerometer[cite: 1].
+- *`gnssTask` (optional):* When the GNSS subsystem is compiled in, a dedicated task (priority 2) continuously feeds NMEA frames into the parser so the coordinate pipeline is always live[cite: 1].
+
+== Optional GNSS Subsystem (v1.3 Readiness)
+
+Since v1.2.1 the firmware is *GNSS-ready*: an optional module parses NMEA data from a u-blox / NEO-6M / NEO-M8N receiver over the secondary UART (RX GPIO 0, TX GPIO 1, 9600 baud)[cite: 1]. The module is compiled #strong[only] when `GNSS_ENABLED=1` is present in `esp32_config.env`, so the default build stays hermetic and pulls no `TinyGPSPlus` dependency[cite: 1].
+
+- *Last-Known Fix Persistence:* Every reliable fix is saved into NVS (namespace `quake-gnss`, at most once per 60 seconds to limit flash wear)[cite: 1]. Provisioning therefore reports real coordinates even before the first fix after a cold boot[cite: 1].
+- *Staleness Handling:* A live fix older than 10 seconds is treated as stale and the firmware falls back to the last-known value[cite: 1].
+- *Provisioning Integration:* During `/devices/register`, the node reports the live GNSS fix when available, else the last-known-from-NVS fix; when no fix exists at all, coordinates are omitted so the backend can assign the zone once placed[cite: 1].
+- *Scope Boundary:* NTP + PPS timestamp discipline is explicitly deferred to v1.3 (see ROADMAP) — this module only guarantees the coordinates pipeline is ready for the GNSS upgrade[cite: 1].

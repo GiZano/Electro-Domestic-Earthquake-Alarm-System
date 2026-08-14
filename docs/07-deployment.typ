@@ -11,7 +11,7 @@ To orchestrate the full stack, the host machine must have the following dependen
 
 == Backend Provisioning
 
-The backend services (PostgreSQL, Redis, FastAPI, Worker, and MQTT Bridge) are fully containerized.
+The backend services (PostgreSQL, Redis, FastAPI, Worker, and MQTT Bridge) are fully containerized[cite: 1]. Since v1.2.1 the database image is a single unified TimescaleDB+PostGIS build (`backend/docker/postgres-timescale.Dockerfile`), so the `readings` table is provisioned as a hypertable with spatial extensions enabled in one container. The image explicitly runs as the non-root `postgres` user[cite: 1].
 
 + Navigate to the backend directory:
   ```bash
@@ -27,6 +27,19 @@ The backend services (PostgreSQL, Redis, FastAPI, Worker, and MQTT Bridge) are f
   docker compose up --build -d
   ```
 The API Gateway will be exposed at `http://localhost:8000`, with the OpenAPI Swagger documentation available at `/docs`.
+
+== Horizontal Worker Scaling
+
+Because telemetry is consumed through Redis Streams consumer groups, the worker tier scales horizontally without reconfiguration: messages are balanced across the group automatically[cite: 1].
+```bash
+docker compose up --scale worker=N -d
+```
+
+== Seismic Simulation & Stress Testing
+
+Two companion scripts exercise the ingestion pipeline[cite: 1]:
+- *`scripts/load_test.py`* — a high-concurrency End-to-End (E2E) stress test that simulates a massive seismic event through the real REST path (see the stress test section below).
+- *`scripts/simulate_zone.py`* — streams synthetic per-zone readings straight through the ingestion flow, exercising the per-area cooldown fragmentation and the per-zone seismograph endpoints[cite: 1].
 
 == Edge Node Flashing (ESP32-C3)
 
@@ -76,4 +89,4 @@ export NUM_SENSORS=150
 export CONCURRENCY_LIMIT=50
 python -m tests.stress_test
 ```
-A successful test will conclude with the message `🏆 SYSTEM CERTIFIED`, confirming that the rate limiter, security gates, and Redis deduplication locks are functioning nominally.
+A successful test will conclude with the message `🏆 SYSTEM CERTIFIED`, confirming that the rate limiter, security gates, and per-area cooldown locks are functioning nominally.
