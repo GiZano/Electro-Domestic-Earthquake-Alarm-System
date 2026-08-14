@@ -32,7 +32,7 @@ export function AlertHistoryList() {
             <View style={styles.row}>
               <AlertTriangle size={16} color={colors.alert} />
               <View style={styles.textContainer}>
-                <Text style={styles.message}>{zoneName(item.zone_id)} // MAG {item.magnitude.toFixed(1)}</Text>
+                <Text style={styles.message}>{zoneName(item.zone_id)}{' // MAG '}{item.magnitude.toFixed(1)}</Text>
                 <Text style={styles.time}>{new Date(item.timestamp).toLocaleTimeString()}</Text>
               </View>
               {report && (

@@ -109,8 +109,8 @@ def sample_value(step: int) -> int:
         ramp = [1800, 2600, 3400, 5600, 7600]
         return ramp[min(step - 15, len(ramp) - 1)]
     if step == 6:
-        return random.randint(900, 1600)
-    return random.randint(120, 750)
+        return random.SystemRandom().randint(900, 1600)
+    return random.SystemRandom().randint(120, 750)
 
 
 def main() -> None:
