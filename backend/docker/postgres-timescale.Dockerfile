@@ -6,3 +6,7 @@ FROM timescale/timescaledb-ha:pg15
 
 # shared_preload_libraries=timescaledb is already injected by this image's
 # entrypoint; docker-compose additionally passes it via `command` to be explicit.
+
+# The base image already runs as the non-root `postgres` user (uid 1000);
+# declare it explicitly so the image never falls back to root.
+USER postgres

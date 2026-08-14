@@ -21,6 +21,7 @@ serve multiple logical regions simply by renaming the stream.
 """
 
 import os
+from redis.exceptions import ResponseError
 
 # --- Stream / group topology -------------------------------------------------
 READINGS_STREAM = os.getenv("READINGS_STREAM", "readings:stream")
@@ -36,6 +37,11 @@ BLOCK_MS = int(os.getenv("READINGS_BLOCK_MS", "500"))
 PAYLOAD_FIELD = "payload"
 
 
+def _is_group_exists(exc: Exception) -> bool:
+    """BUSYGROUP (group exists) is the expected steady state -> ignore only it."""
+    return isinstance(exc, ResponseError) or "BUSYGROUP" in str(exc)
+
+
 def ensure_group(client) -> None:
     """Create the consumer group (and stream) if missing. Best-effort: producers
     may legitimately run before any worker, so XADD will create the stream."""
@@ -43,9 +49,9 @@ def ensure_group(client) -> None:
         client.xgroup_create(
             READINGS_STREAM, READINGS_GROUP, id="0", mkstream=True
         )
-    except Exception:
-        # BUSYGROUP (group exists) is the expected steady state -> ignore.
-        pass
+    except Exception as exc:  # noqa: BLE001 - re-raise anything unexpected
+        if not _is_group_exists(exc):
+            raise
 
 
 async def ensure_group_async(client) -> None:
@@ -54,8 +60,9 @@ async def ensure_group_async(client) -> None:
         await client.xgroup_create(
             READINGS_STREAM, READINGS_GROUP, id="0", mkstream=True
         )
-    except Exception:
-        pass
+    except Exception as exc:  # noqa: BLE001 - re-raise anything unexpected
+        if not _is_group_exists(exc):
+            raise
 
 
 def enqueue_reading(client, payload_json: str) -> str:
