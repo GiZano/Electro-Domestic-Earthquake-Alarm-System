@@ -29,4 +29,16 @@ describe("usePreferencesStore", () => {
     usePreferencesStore.getState().toggleNotifications();
     expect(usePreferencesStore.getState().notificationsEnabled).toBe(true);
   });
+
+  it("starts with no home zone (ring for every alert)", () => {
+    expect(usePreferencesStore.getState().homeZoneId).toBeNull();
+  });
+
+  it("sets and clears the home zone", () => {
+    usePreferencesStore.getState().setHomeZoneId(3);
+    expect(usePreferencesStore.getState().homeZoneId).toBe(3);
+
+    usePreferencesStore.getState().setHomeZoneId(null);
+    expect(usePreferencesStore.getState().homeZoneId).toBeNull();
+  });
 });

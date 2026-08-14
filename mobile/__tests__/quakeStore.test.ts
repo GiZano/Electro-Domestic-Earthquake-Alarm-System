@@ -35,7 +35,7 @@ describe("useQuakeStore", () => {
   });
 
   it("fetchSensors handles network error gracefully", async () => {
-    global.fetch = jest.fn().mockRejectedValue(new Error("Network error"));
+    globalThis.fetch = jest.fn().mockRejectedValue(new Error("Network error"));
     await useQuakeStore.getState().fetchSensors();
     expect(useQuakeStore.getState().sensors).toEqual([]);
   });
@@ -44,7 +44,7 @@ describe("useQuakeStore", () => {
     const mockSensors = [
       { id: 1, lat: 41.9, lon: 12.5, status: "Active" },
     ];
-    global.fetch = jest.fn().mockResolvedValue({
+    globalThis.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: jest.fn().mockResolvedValue(mockSensors),
     });
@@ -53,7 +53,7 @@ describe("useQuakeStore", () => {
   });
 
   it("startMonitoring sets up polling interval", () => {
-    const spy = jest.spyOn(global, "setInterval");
+    const spy = jest.spyOn(globalThis, "setInterval");
     useQuakeStore.getState().startMonitoring();
     expect(spy).toHaveBeenCalledTimes(1);
     expect(spy).toHaveBeenCalledWith(expect.any(Function), 2000);
@@ -67,7 +67,7 @@ describe("useQuakeStore", () => {
   });
 
   it("does not start multiple intervals", () => {
-    const spy = jest.spyOn(global, "setInterval");
+    const spy = jest.spyOn(globalThis, "setInterval");
     useQuakeStore.getState().startMonitoring();
     useQuakeStore.getState().startMonitoring();
     expect(spy).toHaveBeenCalledTimes(1);

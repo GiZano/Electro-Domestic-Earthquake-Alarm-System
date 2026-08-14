@@ -5,6 +5,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { WebSocketProvider } from "../context/WebSocketContext";
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { FONTS } from "../theme";
 
 // 1. Import TanStack Query essentials
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -18,6 +19,7 @@ const queryClient = new QueryClient();
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     ...FontAwesome.font,
+    [FONTS.mono]: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
 
   useEffect(() => {

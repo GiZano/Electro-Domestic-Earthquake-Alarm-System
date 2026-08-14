@@ -14,14 +14,19 @@ import * as Device from "expo-device";
 import { API_BASE_URL, MOBILE_WS_TOKEN } from "../constants/config";
 import { useAlertStore } from '../store/useAlertStore';
 import { usePreferencesStore } from '../store/usePreferencesStore';
+import { playAlarm } from "../audio/alarm";
 
 // --- NOTIFICATION HANDLER ---
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: usePreferencesStore.getState().notificationsEnabled,
-    shouldPlaySound: usePreferencesStore.getState().notificationsEnabled,
-    shouldSetBadge: false,
-  }),
+  handleNotification: async () => {
+    const enabled = usePreferencesStore.getState().notificationsEnabled;
+    return {
+      shouldShowBanner: enabled,
+      shouldShowList: enabled,
+      shouldPlaySound: enabled,
+      shouldSetBadge: false,
+    };
+  },
 });
 
 // --- TYPES & INTERFACES ---
@@ -89,13 +94,15 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
         });
       }
       if (Device.isDevice) {
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
-        if (existingStatus !== 'granted') {
-          const { status } = await Notifications.requestPermissionsAsync();
-          finalStatus = status;
+        // SDK 54: expo-notifications no longer depends on expo-modules-core, so
+        // its NotificationPermissionsStatus typings resolve empty. Read the
+        // permission via `granted`, which is present at runtime.
+        const existingGranted = (await Notifications.getPermissionsAsync() as any).granted;
+        let granted = existingGranted;
+        if (!existingGranted) {
+          granted = (await Notifications.requestPermissionsAsync() as any).granted;
         }
-        if (finalStatus !== 'granted') {
+        if (!granted) {
           console.warn('Failed to get push token for push notification!');
           return;
         }
@@ -128,7 +135,13 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
     ws.current.onmessage = (event: WebSocketMessageEvent) => {
       try {
         const message: any = JSON.parse(event.data);
-        const { notificationsEnabled } = usePreferencesStore.getState();
+        const { notificationsEnabled, homeZoneId } = usePreferencesStore.getState();
+
+        // The operator can set a home zone so the phone only rings for their
+        // own area — a quake on the other side of the world stays silently
+        // visible in the activity feed.
+        const ringsForZone = (zoneId: number): boolean =>
+          notificationsEnabled && (homeZoneId == null || zoneId === homeZoneId);
 
         // 🤖 AI Emergency Report (generated asynchronously by the local Ollama worker)
         if (message.type === "EMERGENCY_REPORT") {
@@ -137,7 +150,7 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
           setLastReport(report);
           useAlertStore.getState().addReport(report);
 
-          if (notificationsEnabled) {
+          if (ringsForZone(report.zone_id)) {
             Notifications.scheduleNotificationAsync({
               content: {
                 title: report.status === "COMPLETED" ? "🤖 AI Emergency Report" : "🤖 AI Report Unavailable",
@@ -160,8 +173,9 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
         setLastAlert(alert);
         useAlertStore.getState().addAlert(alert);
 
-        if (alert.type === "CRITICAL" && notificationsEnabled) {
+        if (alert.type === "CRITICAL" && ringsForZone(alert.zone_id)) {
           Vibration.vibrate(SOS_VIBRATION_PATTERN);
+          playAlarm(15000);
           Notifications.scheduleNotificationAsync({
             content: {
               title: "⚠️ CRITICAL SEISMIC ALERT",
