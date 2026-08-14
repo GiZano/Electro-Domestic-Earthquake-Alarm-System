@@ -30,6 +30,7 @@
 #include <vector>
 #include <chrono>
 #include "DetectionCore.h"
+#include "GnssModule.h"
 
 // --------------------------------------------------------------------------
 // HARDWARE & SERVER CONFIGURATION
@@ -211,9 +212,26 @@ bool performProvisioning() {
     doc["public_key_hex"] = crypto().getPublicKeyHex();
     doc["mac_address"] = WiFi.macAddress();
     doc["enrollment_token"] = ENROLLMENT_TOKEN;
-    
+
+#ifdef GNSS_ENABLED
+    // GNSS-ready: report the real fix when available, else the last-known fix
+    // persisted in NVS. If neither exists, omit coordinates -> the backend
+    // keeps its last-known location / assigns "Unknown Region".
+    GnssFix fix;
+    if (gnss().getFix(fix)) {
+        doc["latitude"] = fix.latitude;
+        doc["longitude"] = fix.longitude;
+        Serial.printf("[PROV] Sending fix: %.5f, %.5f (from %s)\n",
+                      fix.latitude, fix.longitude,
+                      fix.from_storage ? "NVS" : "GNSS");
+    } else {
+        Serial.println("[PROV] No GNSS fix available: omitting coordinates");
+    }
+#else
+    // Hardcoded fallback until a GNSS module is attached (see ROADMAP v1.3).
     doc["latitude"] = 41.9028;
     doc["longitude"] = 12.4964;
+#endif
     
     String requestBody;
     serializeJson(doc, requestBody);
@@ -341,6 +359,19 @@ void networkTask(void *pvParameters) { // NOSONAR
 }
 
 // --------------------------------------------------------------------------
+// TASK 3 (OPTIONAL): GNSS ACQUISITION
+// --------------------------------------------------------------------------
+#ifdef GNSS_ENABLED
+void gnssTask(void *pvParameters) { // NOSONAR
+    gnss().begin();
+    for(;;) {
+        gnss().loop();
+        vTaskDelay(pdMS_TO_TICKS(50));
+    }
+}
+#endif
+
+// --------------------------------------------------------------------------
 // MAIN ENTRY POINTS
 // --------------------------------------------------------------------------
 void setup() {
@@ -391,6 +422,9 @@ void setup() {
     eventQueue = xQueueCreate(20, sizeof(SeismicEvent));
     xTaskCreate(sensorTask, "SensorTask", 8192, NULL, 5, NULL);
     xTaskCreate(networkTask, "NetworkTask", 8192, NULL, 1, NULL);
+#ifdef GNSS_ENABLED
+    xTaskCreate(gnssTask, "GnssTask", 8192, NULL, 2, NULL);
+#endif
 
     Serial.println("[SYS] System Running.");
 }
