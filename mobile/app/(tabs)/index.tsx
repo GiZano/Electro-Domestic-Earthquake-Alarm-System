@@ -145,7 +145,12 @@ function ZoneSummaryStrip({ activeNodes, totalNodes, latestMagnitude, isAlertAct
 }>) {
   const styles = createStyles(colors);
   const mag = latestMagnitude ?? 0;
-  const magColor = mag >= 4.5 ? colors.alert : mag >= 4.0 ? colors.caution : colors.live;
+  let magColor = colors.live;
+  if (mag >= 4.5) {
+    magColor = colors.alert;
+  } else if (mag >= 4.0) {
+    magColor = colors.caution;
+  }
 
   return (
     <View style={styles.summaryRow}>
@@ -180,14 +185,14 @@ function NetworkChart({ points, isAlertActive, colors }: Readonly<{
 }>) {
   const styles = createStyles(colors);
   const theme = useMemo(() => createQuakeGuardTheme(colors), [colors]);
-  const last = points[points.length - 1];
-  const lineColor = last
-    ? thresholdOf(last.y) === "alert"
-      ? colors.alert
-      : thresholdOf(last.y) === "caution"
-        ? colors.caution
-        : colors.live
-    : colors.live;
+  const last = points.at(-1);
+  const threshold = last ? thresholdOf(last.y) : "live";
+  let lineColor = colors.live;
+  if (threshold === "alert") {
+    lineColor = colors.alert;
+  } else if (threshold === "caution") {
+    lineColor = colors.caution;
+  }
 
   if (points.length === 0) {
     return (
@@ -308,7 +313,7 @@ export default function MonitorScreen() {
       const list = [...merged.values()].filter(({ t }) => (now - t) / 1000 <= WINDOW_SECONDS);
       if (list.length === 0) return prev;
       return list
-        .sort((a, b) => a.t - b.t)
+        .toSorted((a, b) => a.t - b.t)
         .slice(-WINDOW_MAX)
         .map(({ t, y }) => ({
           // Clamp to the domain so nothing can ever spill past the plot edges.
@@ -360,6 +365,43 @@ export default function MonitorScreen() {
   const loading = loadingSensors || loadingZones || loadingReadings;
   const errored = errorSensors || errorZones || errorReadings;
 
+  let dashboardContent;
+  if (errored) {
+    dashboardContent = <ErrorBanner />;
+  } else if (loading) {
+    dashboardContent = <LoadingSkeleton message="Establishing telemetry link..." />;
+  } else {
+    dashboardContent = (
+      <>
+        <ZoneSelector
+          zones={zones || []}
+          selectedId={selectedZoneId}
+          onSelect={setSelectedZoneId}
+          colors={colors}
+        />
+
+        <View style={styles.chartHeader}>
+          <Text style={styles.chartTitle} numberOfLines={1}>
+            SEISMOGRAPH // {selectedZone?.city?.toUpperCase() ?? "ZONE"}
+          </Text>
+          <Text style={styles.chartSubtitle}>Z-ACCEL // RAW</Text>
+        </View>
+
+        <ZoneSummaryStrip
+          activeNodes={activeSensors}
+          totalNodes={totalSensors}
+          latestMagnitude={latestMagnitude}
+          isAlertActive={isAlertActive}
+          colors={colors}
+        />
+
+        <View style={styles.chartContainer}>
+          <NetworkChart points={window} isAlertActive={isAlertActive} colors={colors} />
+        </View>
+      </>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]} edges={['top']}>
       <ScrollView
@@ -375,39 +417,7 @@ export default function MonitorScreen() {
         <AiReportCard lastReport={lastReport} colors={colors} />
 
         <View style={styles.dashboardCard}>
-          {errored ? (
-            <ErrorBanner />
-          ) : loading ? (
-            <LoadingSkeleton message="Establishing telemetry link..." />
-          ) : (
-            <>
-              <ZoneSelector
-                zones={zones || []}
-                selectedId={selectedZoneId}
-                onSelect={setSelectedZoneId}
-                colors={colors}
-              />
-
-              <View style={styles.chartHeader}>
-                <Text style={styles.chartTitle} numberOfLines={1}>
-                  SEISMOGRAPH // {selectedZone?.city?.toUpperCase() ?? "ZONE"}
-                </Text>
-                <Text style={styles.chartSubtitle}>Z-ACCEL // RAW</Text>
-              </View>
-
-              <ZoneSummaryStrip
-                activeNodes={activeSensors}
-                totalNodes={totalSensors}
-                latestMagnitude={latestMagnitude}
-                isAlertActive={isAlertActive}
-                colors={colors}
-              />
-
-              <View style={styles.chartContainer}>
-                <NetworkChart points={window} isAlertActive={isAlertActive} colors={colors} />
-              </View>
-            </>
-          )}
+          {dashboardContent}
         </View>
 
         <AlertHistoryList />

@@ -76,6 +76,15 @@ def point_to_geohash(latitude: float, longitude: float, precision: int) -> str:
     return "".join(out)
 
 
+def _refine_axis(ranges: list[float], cd: int, mask: int) -> None:
+    """Narrow ``ranges`` to the half-interval selected by one geohash bit."""
+    mid = (ranges[0] + ranges[1]) / 2.0
+    if cd & mask:
+        ranges[0] = mid
+    else:
+        ranges[1] = mid
+
+
 def geohash_bounds(geohash: str) -> tuple[float, float, float, float]:
     """Decode a geohash into ``(lon_min, lat_min, lon_max, lat_max)``."""
     lat_range = [-90.0, 90.0]
@@ -85,17 +94,9 @@ def geohash_bounds(geohash: str) -> tuple[float, float, float, float]:
         cd = _BASE32.index(char)
         for mask in (16, 8, 4, 2, 1):
             if even:
-                mid = (lon_range[0] + lon_range[1]) / 2.0
-                if cd & mask:
-                    lon_range[0] = mid
-                else:
-                    lon_range[1] = mid
+                _refine_axis(lon_range, cd, mask)
             else:
-                mid = (lat_range[0] + lat_range[1]) / 2.0
-                if cd & mask:
-                    lat_range[0] = mid
-                else:
-                    lat_range[1] = mid
+                _refine_axis(lat_range, cd, mask)
             even = not even
     return lon_range[0], lat_range[0], lon_range[1], lat_range[1]
 

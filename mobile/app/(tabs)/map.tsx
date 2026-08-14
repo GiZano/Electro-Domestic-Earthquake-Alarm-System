@@ -71,12 +71,17 @@ export default function MapScreen() {
     );
   }
 
+  let mapStyle: any;
+  if (Platform.OS === "android") {
+    mapStyle = isDark ? darkMapStyle : lightMapStyle;
+  }
+
   return (
     <View style={styles.container}>
       <MapView
         style={styles.map}
         provider={PROVIDER_DEFAULT}
-        customMapStyle={Platform.OS === "android" ? (isDark ? darkMapStyle : lightMapStyle) as any : undefined}
+        customMapStyle={mapStyle}
         initialRegion={{
           latitude: 41.9028,
           longitude: 12.4964,

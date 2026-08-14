@@ -130,7 +130,12 @@ def main() -> None:
         resp = requests.post(f"{API_URL}/readings/", json=payload, headers=headers(), timeout=10)
         status = resp.status_code
         mag = estimate_magnitude(value)
-        flag = " 🚨 CRITICAL!" if mag >= 4.5 else (" ⚠️ caution" if mag >= 4.0 else "")
+        if mag >= 4.5:
+            flag = " 🚨 CRITICAL!"
+        elif mag >= 4.0:
+            flag = " ⚠️ caution"
+        else:
+            flag = ""
         print(f"   t+{step:>2}s  value={value:>5}  M≈{mag:.2f}{flag}  http {status}", flush=True)
         if status != 202:
             print(f"      API: {resp.text}", flush=True)

@@ -22,30 +22,18 @@ from sqlalchemy.orm import Session
 TSDB_RETENTION_DAYS = os.getenv("TSDB_RETENTION_DAYS", "180")
 
 
-def apply_timescale(db: Session) -> dict:
-    """Apply TimescaleDB DDL where possible. Returns a per-step report dict.
-
-    Steps are isolated: a failure in any step never blocks the others nor the
-    application startup.
-    """
-    report = {
-        "timescaledb": False,
-        "hypertable": False,
-        "aggregate": False,
-        "retention": False,
-    }
-
-    # 1. Extension ---------------------------------------------------------
+def _enable_extension(db: Session) -> bool:
     try:
         db.execute(text("CREATE EXTENSION IF NOT EXISTS timescaledb"))
         db.commit()
-        report["timescaledb"] = True
+        return True
     except Exception as e:
         db.rollback()
         print(f"⚠️ TimescaleDB extension unavailable: {e}", flush=True)
-        return report
+        return False
 
-    # 2. Hypertable --------------------------------------------------------
+
+def _create_hypertable(db: Session) -> bool:
     try:
         already_hypertable = db.execute(
             text(
@@ -61,13 +49,15 @@ def apply_timescale(db: Session) -> dict:
                 )
             )
         db.commit()
-        report["hypertable"] = True
         print("✅ readings is a TimescaleDB hypertable (chunked on recorded_at).", flush=True)
+        return True
     except Exception as e:
         db.rollback()
         print(f"⚠️ Hypertable creation skipped: {e}", flush=True)
+        return False
 
-    # 3. Continuous aggregate (per-sensor minute rollups) -------------------
+
+def _create_continuous_aggregate(db: Session) -> bool:
     try:
         db.execute(
             text(
@@ -91,13 +81,15 @@ def apply_timescale(db: Session) -> dict:
             db.commit()
         except Exception:
             db.rollback()  # policy already present or not yet refreshable
-        report["aggregate"] = True
         print("✅ Continuous aggregate readings_minute created.", flush=True)
+        return True
     except Exception as e:
         db.rollback()
         print(f"⚠️ Continuous aggregate skipped: {e}", flush=True)
+        return False
 
-    # 4. Compression + retention -------------------------------------------
+
+def _apply_compression(db: Session) -> None:
     try:
         # Newer TimescaleDB (2.13+/3.x) requires columnstore on the hypertable
         # before a columnstore compression policy can be added.
@@ -114,6 +106,9 @@ def apply_timescale(db: Session) -> dict:
         db.rollback()
         if "already exists" not in str(e).lower():
             print(f"⚠️ Compression policy skipped: {e}", flush=True)
+
+
+def _apply_retention(db: Session) -> bool:
     try:
         db.execute(
             text(
@@ -122,13 +117,42 @@ def apply_timescale(db: Session) -> dict:
             )
         )
         db.commit()
-        report["retention"] = True
+        return True
     except Exception as e:
         db.rollback()
         if "already exists" in str(e).lower():
-            report["retention"] = True
-        else:
-            print(f"⚠️ Retention policy skipped: {e}", flush=True)
+            return True
+        print(f"⚠️ Retention policy skipped: {e}", flush=True)
+        return False
+
+
+def apply_timescale(db: Session) -> dict:
+    """Apply TimescaleDB DDL where possible. Returns a per-step report dict.
+
+    Steps are isolated: a failure in any step never blocks the others nor the
+    application startup.
+    """
+    report = {
+        "timescaledb": False,
+        "hypertable": False,
+        "aggregate": False,
+        "retention": False,
+    }
+
+    # 1. Extension ---------------------------------------------------------
+    if not _enable_extension(db):
+        return report
+    report["timescaledb"] = True
+
+    # 2. Hypertable --------------------------------------------------------
+    report["hypertable"] = _create_hypertable(db)
+
+    # 3. Continuous aggregate (per-sensor minute rollups) -------------------
+    report["aggregate"] = _create_continuous_aggregate(db)
+
+    # 4. Compression + retention -------------------------------------------
+    _apply_compression(db)
+    report["retention"] = _apply_retention(db)
     if report["retention"]:
         print(f"✅ Retention policy set to {TSDB_RETENTION_DAYS} days.", flush=True)
 

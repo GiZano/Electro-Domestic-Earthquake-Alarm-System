@@ -44,6 +44,8 @@ from src.timescale import apply_timescale
 
 PING_QUERY = "SELECT 1"
 
+ZONE_NOT_FOUND = "Zone not found"
+
 # --- SECURE CONFIGURATION ---
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 
@@ -497,7 +499,7 @@ def get_zone_readings(zone_id: int, limit: int = 60, db: Session = Depends(get_d
     """
     zone = db.query(models.Zone).filter(models.Zone.id == zone_id).first()
     if not zone:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zone not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=ZONE_NOT_FOUND)
     limit = max(1, min(limit, 200))
     return (
         db.query(models.Reading)
@@ -519,7 +521,7 @@ def delete_zone_readings(zone_id: int, db: Session = Depends(get_db)):
     """
     zone = db.query(models.Zone).filter(models.Zone.id == zone_id).first()
     if not zone:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zone not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=ZONE_NOT_FOUND)
 
     sensor_ids = [
         row[0]
@@ -545,7 +547,7 @@ def get_zone_alerts(zone_id: int, limit: int = 20, db: Session = Depends(get_db)
     """
     zone = db.query(models.Zone).filter(models.Zone.id == zone_id).first()
     if not zone:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zone not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=ZONE_NOT_FOUND)
     limit = max(1, min(limit, 100))
     return (
         db.query(models.Alert)
