@@ -363,7 +363,11 @@ def locate_zone(latitude: float, longitude: float, db: Session = Depends(get_db)
 def _create_sensor(db: Session, active: bool, zone_id: int | None, latitude: float | None, longitude: float | None, public_key_hex: str, mac_address: str | None = None) -> models.Sensor:
     """Create and persist a Sensor with spatial zone auto-assignment."""
     assigned_zone_id = zone_id or resolve_zone(db, latitude, longitude)
-    point = WKTElement(f"POINT({longitude} {latitude})", srid=4326)
+    # GNSS-ready: coordinates are optional at first boot. Store NULL geometry
+    # when unknown instead of building an invalid "POINT(None None)".
+    point = None
+    if latitude is not None and longitude is not None:
+        point = WKTElement(f"POINT({longitude} {latitude})", srid=4326)
     db_sensor = models.Sensor(
         active=active,
         zone_id=assigned_zone_id,

@@ -60,7 +60,7 @@ class GnssModule {
 public:
   void begin();
   void loop();
-  bool getFix(GnssFix& out) const;
+  bool getFix(GnssFix& out);
 
 private:
   void saveLastKnownFix();
