@@ -17,6 +17,8 @@ import os
 import sys
 
 DEFAULT_MARKER = "[QG:FB]"
+# NOSONAR -- docker-internal HTTP endpoint (fastapi-app) never leaves the
+# private compose network; anything external must pass --api-url with https://
 DEFAULT_API_URL = "http://fastapi-app:8000/readings/"
 
 
@@ -47,8 +49,25 @@ def forward(payload, api_url, api_key, timeout=10):
     import requests
 
     headers = {"X-API-Key": api_key, "Content-Type": "application/json"}
-    response = requests.post(api_url, data=json.dumps(payload), headers=headers, timeout=timeout)
+    response = requests.post(_validate_api_url(api_url), data=json.dumps(payload),
+                             headers=headers, timeout=timeout)
     return response.status_code
+
+
+def _validate_api_url(url):
+    """Reject malformed or unsafe ingestion URLs before any network request.
+
+    The endpoint arrives from a CLI flag or an env var, so it must be validated
+    rather than forwarded verbatim into requests.post (SSRF guard).
+    """
+    from urllib.parse import urlsplit
+
+    parts = urlsplit(url)
+    if parts.scheme not in ("http", "https"):
+        raise ValueError(f"Unsupported scheme {parts.scheme!r}; expected http:// or https://")
+    if not parts.hostname:
+        raise ValueError(f"Missing host in ingestion URL: {url!r}")
+    return url
 
 
 def _run(stream, api_url, api_key, dry_run):

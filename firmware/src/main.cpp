@@ -202,10 +202,13 @@ bool performProvisioning() {
 
     HTTPClient http;
     // SERVER_HOST may be configured with or without a leading scheme; normalize
-    // it so a "https://host" value cannot produce "https://https://host".
+    // it so a "https://host" value cannot produce "https://https://host". The
+    // actual request protocol comes from SERVER_PROTOCOL below.
     String host = String(SERVER_HOST);
-    host.replace("http://", "");
-    host.replace("https://", "");
+    int scheme = host.indexOf("://");
+    if (scheme != -1) {
+        host.remove(0, scheme + 3);
+    }
 
     String url = String(SERVER_PROTOCOL) + "://" + host;
     int serverPort = SERVER_PORT;
