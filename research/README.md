@@ -6,11 +6,8 @@ code** as the ESP32 firmware (`firmware/src/DetectionCore.h`), guaranteeing
 numerical equivalence for the IEEE paper.
 
 ```
-┌─ fetch_itaca.py ─── download accelerograms + P-arrival ground truth
-│                        (ESM public FDSN API via ObsPy, no token;
-│                         realistic synthetic fallback otherwise)
-│
-├─ synthetic.py ─────── generate a synthetic dataset (no network) for CI / smoke tests
+┌─ synthetic.py ─── generate a realistic synthetic dataset (no network) for CI / smoke tests
+│                        (canonical fallback provider; same layout as the future ESM path)
 │
 ├─ calibrate_io.py ── load events/ + ground_truth.json
 │
@@ -26,27 +23,28 @@ numerical equivalence for the IEEE paper.
 
 ## Graceful degradation (I/O contract)
 
-`fetch_itaca.py` emits a **fixed** dataset layout. Downstream modules
+`synthetic.py` emits a **fixed** dataset layout. Downstream modules
 (`metrics.py`, `calibrate.py`, the C++ core) never know whether they process a
 real earthquake or a locally generated mock — that is the point. Resolution:
 
-- **Real path (ESM).** The script queries the **ESM (European Strong-Motion) database**
-  through its **public FDSN web-service** using **ObsPy** (`obspy.fdsn`), downloads the
-  parametric flatfiles and accelerograms, and converts them into the shared layout.
-  No registration token is required, so the real path works headlessly in CI/CD. This
-  replaces the previous ITACA DYNA-1.2 parser (custom code, token-gated portal).
-- **Synthetic fallback (default).** When no network/ESM is available the script
-  generates *realistic* accelerometer-like mocks: white background noise, a
-  high-frequency P impulse, a larger/lower-frequency S arrival, and a 1 G
-  gravity offset (matching the firmware's `sensors_event_t`). The exact
+- **Real path (ESM, to be implemented).** The planned ESM (European
+  Strong-Motion) downloader queries the **public FDSN web-service** using
+  **ObsPy** (`obspy.fdsn`), downloads the parametric flatfiles and accelerograms,
+  and converts them into the shared layout. No registration token is required,
+  so the real path can work headlessly in CI/CD. This replaces the previous
+  ITACA DYNA-1.2 parser (custom code, token-gated portal).
+- **Synthetic fallback (default).** When no network/ESM is available,
+  `synthetic.py` generates *realistic* accelerometer-like mocks: white background
+  noise, a high-frequency P impulse, a larger/lower-frequency S arrival, and a
+  1 G gravity offset (matching the firmware's `sensors_event_t`). The exact
   P-arrival is written to `ground_truth.json` as the reference.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│  fetch_itaca.py                                                         │
-│    ESM reachable? ──yes──▶ ESM FDSN (ObsPy) → flatfiles → t,ax,ay,az    │
-│           │no                       (m/s²)                              │
-│           └──────────▶ realistic synthetic generator ──── P known       │
+│  synthetic.py                                                           │
+│    (fallback) ───────▶ realistic synthetic generator ──── P known       │
+│                                                                         │
+│  ESM downloader (future, ObsPy public FDSN) ───▶ t,ax,ay,az  (m/s²)    │
 └──────────────────────────────▶ (identical layout below) ────────────────┘
 ```
 
@@ -56,11 +54,10 @@ The dataset is **not** committed to git (see `research/README.md` re: license
 and weight). Generate it with:
 
 ```bash
-# real ESM (public FDSN API, no token required)
-python research/fetch_itaca.py research/data
-# or, for a realistic local / CI mock:
-python research/fetch_itaca.py research/data          # same command, no network
-python research/synthetic.py  research/data_synth
+# realistic local / CI mock (no network required)
+python research/synthetic.py research/data_synth
+# real ESM (public FDSN API, no token) — to be implemented (R1 closure)
+# python research/fetch_esm.py research/data
 ```
 
 Layout produced by every path (units **m/s^2**, the same as the firmware
