@@ -1,0 +1,50 @@
+name: Deploy QuakeGuard Page to GitHub Pages Repo
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'docs/web/**'
+      - '.github/workflows/deploy-gh-pages.yml'
+  workflow_dispatch:
+
+jobs:
+  sync-pages:
+    name: Sync docs/web → GiZano.github.io
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout QuakeGuard
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+    - name: Checkout GiZano.github.io (site repo)
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        repository: GiZano/GiZano.github.io
+        ref: main
+        token: ${{ secrets.GIZANO_IO_PAT }}
+        path: site-repo
+
+    - name: Copy QuakeGuard page artifacts
+      run: |
+        cp docs/web/quakeguard.html       site-repo/projects/quakeguard.html
+        cp docs/web/quakeguard.css        site-repo/Style/quakeguard.css
+        cp docs/web/quakeguard.js         site-repo/Script/i18n/quakeguard.js
+        cp docs/web/quakeguard-demo.js    site-repo/Script/quakeguard-demo.js
+        cp -r docs/web/assets/quakeguard/. site-repo/assets/quakeguard/
+        cp -r docs/web/assets/badges/.     site-repo/assets/badges/
+
+    - name: Commit and push if changed
+      run: |
+        cd site-repo
+        git config user.name  "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+        if git diff --quiet; then
+          echo "No changes to deploy — skipping commit."
+          exit 0
+        fi
+
+        git add -A
+        git commit -m "docs(quakeguard): sync v1.2.1 page from QuakeGuard repo"
+        git push origin main

@@ -1,0 +1,39 @@
+WEBVTT
+
+NOTE
+=== QuakeGuard demo captions (Italian) ===
+THIS IS A SCAFFOLD. Each cue below is a placeholder with a sample
+transcript of the pipeline. The TIMING (!) must be aligned to the real
+footage (Media/quakeguard/QuakeGuard.mp4). Steps to finalize:
+  1. Open the video in VLC or a subtitle editor (e.g. Subtitle Edit).
+  2. Pause-play and note the exact start/end timecodes of each spoken/onscreen phrase.
+  3. Replace the cue timings below (and any text) to match.
+Captions are optional, so a time mismatch will never break the page.
+
+1
+00:00:00.000 --> 00:00:04.000
+QuakeGuard: sistema di allarme sismico elettro-domestico.
+
+2
+00:00:04.000 --> 00:00:10.000
+Tre sensori ESP32-C3 raccolgono le vibrazioni e segnalano l'evento.
+
+3
+00:00:10.000 --> 00:00:16.000
+Il payload viene firmato con ECDSA e pubblicato via MQTT su HiveMQ.
+
+4
+00:00:16.000 --> 00:00:22.000
+Il backend FastAPI valida la firma e mette l'evento in coda su Redis.
+
+5
+00:00:22.000 --> 00:00:28.000
+Magnitudo stimata: il worker calcola M a partire dalla PGA.
+
+6
+00:00:28.000 --> 00:00:34.000
+Allerta via WebSocket: la app mobile vibra e mostra la notifica.
+
+7
+00:00:34.000 --> 00:00:40.000
+Il report AI di emergenza viene generato on-premise con Ollama.
