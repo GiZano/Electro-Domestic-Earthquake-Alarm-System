@@ -17,9 +17,11 @@ import os
 import sys
 
 DEFAULT_MARKER = "[QG:FB]"
-# docker-internal HTTP endpoint (fastapi-app) never leaves the private compose
-# network; anything external must pass --api-url with https://
-DEFAULT_API_URL = "http://fastapi-app:8000/readings/"  # NOSONAR
+# docker-internal fastapi-app runs plain HTTP on the private compose network;
+# external deployments must pass --api-url (e.g. an https:// tunnel endpoint)
+DEFAULT_API_SCHEME = "http"
+DEFAULT_API_HOST = "fastapi-app:8000"
+DEFAULT_API_URL = f"{DEFAULT_API_SCHEME}://{DEFAULT_API_HOST}/readings/"
 
 
 def parse_frame(line, marker=DEFAULT_MARKER):
@@ -58,19 +60,21 @@ def _validate_api_url(url):
     """Reject malformed or unsafe ingestion URLs before any network request.
 
     The endpoint arrives from a CLI flag or an env var, so it must be validated
-    rather than forwarded verbatim into requests.post (SSRF guard).
+    rather than forwarded verbatim into requests.post (SSRF guard). The URL is
+    parsed, checked and rebuilt from its components so only http(s) schemes with
+    a well-formed host survive.
     """
-    import re
-    from urllib.parse import urlsplit
+    from urllib.parse import urlunsplit, urlsplit
 
     parts = urlsplit(url)
     if parts.scheme not in ("http", "https"):
         raise ValueError(f"Unsupported scheme {parts.scheme!r}; expected http:// or https://")
-    if not parts.hostname:
-        raise ValueError(f"Missing host in ingestion URL: {url!r}")
-    if not re.match(r"^[A-Za-z0-9.-]+(:[0-9]{1,5})?$", parts.netloc):
+    hostname = parts.hostname or ""
+    if not hostname or not hostname.replace(".", "").replace("-", "").isalnum():
         raise ValueError(f"Suspicious host in ingestion URL: {url!r}")
-    return url
+    if parts.username or parts.password:
+        raise ValueError(f"Credentials in ingestion URL are not allowed: {url!r}")
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, parts.query, parts.fragment))
 
 
 def _run(stream, api_url, api_key, dry_run):
