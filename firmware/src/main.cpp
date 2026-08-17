@@ -46,6 +46,9 @@ constexpr int I2C_CLOCK_SPEED = 100000;
 #ifndef SERVER_PORT
   #define SERVER_PORT 80
 #endif
+#ifndef SERVER_PROTOCOL
+  #define SERVER_PROTOCOL "https"
+#endif
 #ifndef SERVER_PATH
   #define SERVER_PATH "/readings/"
 #endif
@@ -197,21 +200,19 @@ bool performProvisioning() {
         return false;
     }
 
-#ifdef SENSOR_ID
-    if (SENSOR_ID > 0) {
-        Serial.printf("[PROV] Using compile-time SENSOR_ID: %d\n", SENSOR_ID);
-        preferences.begin("quake-config", false);
-        preferences.putInt("sensor_id", SENSOR_ID);
-        preferences.end();
-        globalSensorID = SENSOR_ID;
-        Serial.printf("[PROV] SUCCESS! Assigned Sensor ID: %d\n", globalSensorID);
-        Serial.printf("[PROV] Public key: %s\n", crypto().getPublicKeyHex().c_str());
-        return true;
-    }
-#endif
-
     HTTPClient http;
-    String url = String("https://") + SERVER_HOST + SERVER_REGISTER_PATH;
+    // SERVER_HOST may be configured with or without a leading scheme; normalize
+    // it so a "https://host" value cannot produce "https://https://host".
+    String host = String(SERVER_HOST);
+    host.replace("http://", "");
+    host.replace("https://", "");
+
+    String url = String(SERVER_PROTOCOL) + "://" + host;
+    int serverPort = SERVER_PORT;
+    if (serverPort != 80 && serverPort != 443) {
+        url += ":" + String(serverPort);
+    }
+    url += SERVER_REGISTER_PATH;
 
     Serial.printf("[PROV] Connecting to: %s\n", url.c_str());
     http.begin(url);
@@ -261,6 +262,7 @@ bool performProvisioning() {
             preferences.end();
             globalSensorID = newID;
             Serial.printf("[PROV] SUCCESS! Assigned Sensor ID: %d\n", globalSensorID);
+            Serial.printf("[PROV] Public key: %s\n", crypto().getPublicKeyHex().c_str());
             http.end();
             return true;
         }

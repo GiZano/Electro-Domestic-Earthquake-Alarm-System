@@ -79,24 +79,21 @@ The firmware ships with a **GNSS heartbeats module**, disabled by default. When 
 ### Step 1: Upload Firmware
 Connect the ESP32-C3 via USB and upload the firmware using PlatformIO or Arduino IDE.
 
-### Step 2: Key Extraction (Crucial)
-On the **first boot**, the device will generate a new cryptographic key pair. You must capture the **Public Key** from the Serial Monitor to register the device on the server.
+### Step 2: Automatic Registration (no manual step)
+On the **first boot** the device performs the automated handshake:
 
-1.  Open the Serial Monitor (Baud Rate: **115200**).
-2.  Reset the board.
-3.  Look for the security header:
+1. Generates a fresh **ECDSA key pair** and seals the private key in NVS.
+2. Opens the WiFi captive portal (`QuakeGuard-Setup`) so you can connect it to your network.
+3. POSTs `/devices/register` with its `public_key_hex`, `mac_address`, `enrollment_token` and (GNSS-ready) coordinates.
+4. Receives its `sensor_id` back from the backend and persists it in NVS.
+
+No per-device configuration is needed for distribution — the backend assigns the ID
+and the zone (via PostGIS) at registration time. The serial output shows:
 
 ```text
-[BOOT] QuakeGuard Security System First...
-[SEC] Generating New ECDSA Key Pair...
-[SEC] Keys Generated and Saved to NVS.
-[SEC] DEVICE PUBLIC KEY (HEX): 04a3b2c1... <COPY THIS STRING>
+[PROV] SUCCESS! Assigned Sensor ID: 7
+[PROV] Public key: 3059301306072a8648ce3d0201...
 ```
-
-4.  **Copy the HEX string.** You have a 10-second window before the sensor initialization begins.
-5.  Register this key in your backend database associated with `SENSOR_ID 101`.
-
-**Note:** If the server does not have this key, it will reject data with `403 Forbidden`.
 
 ## 6. LED / Serial Status Codes
 
