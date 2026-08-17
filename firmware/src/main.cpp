@@ -31,6 +31,7 @@
 #include <chrono>
 #include "DetectionCore.h"
 #include "GnssModule.h"
+#include "SerialFallback.h"
 
 // --------------------------------------------------------------------------
 // HARDWARE & SERVER CONFIGURATION
@@ -64,6 +65,13 @@ constexpr int I2C_CLOCK_SPEED = 100000;
   #error "MQTT_PASSWORD is missing! Add it to esp32_config.env"
 #endif
 
+#ifndef SERIAL_FALLBACK_ENABLED
+  #define SERIAL_FALLBACK_ENABLED 1
+#endif
+#ifndef SERIAL_FALLBACK_MARKER
+  #define SERIAL_FALLBACK_MARKER "[QG:FB]"
+#endif
+
 #ifndef ENROLLMENT_TOKEN
   #ifndef __INTELLISENSE__ 
     // 1. If the REAL compiler doesn't see the token, crash the build to protect us!
@@ -91,6 +99,9 @@ struct SeismicEvent {
 constexpr float TRIGGER_RATIO = 1.8f;
 constexpr float NOISE_FLOOR = 0.04f;
 constexpr float HPF_ALPHA = 0.9f;
+
+// v1.2.2: bounded in-memory retention for events with no delivery path.
+constexpr size_t RETENTION_CAPACITY = 100;
 
 // --------------------------------------------------------------------------
 // CRYPTO SUBSYSTEM
@@ -289,71 +300,128 @@ void sensorTask(void *pvParameters) { // NOSONAR
 }
 
 // --------------------------------------------------------------------------
-// TASK 2: NETWORK DISPATCH (MQTT REFACTOR)
+// TASK 2: NETWORK DISPATCH (MQTT + USB SERIAL FALLBACK)
 // --------------------------------------------------------------------------
+static void deliverEvent(PubSubClient& mqttClient, DeliveryPath path, int val, time_t evt_time, const String& sig) {
+    if (path == DeliveryPath::MQTT) {
+        JsonDocument doc;
+        doc["value"] = val;
+        doc["sensor_id"] = globalSensorID;
+        doc["device_timestamp"] = evt_time;
+        doc["signature_hex"] = sig;
+
+        String json;
+        serializeJson(doc, json);
+
+        // FIRE AND FORGET! Milliseconds instead of HTTP round-trips!
+        if (mqttClient.publish("quakeguard/telemetry", json.c_str())) {
+            Serial.println("[NET] MQTT Publish OK.");
+        } else {
+            Serial.println("[NET] MQTT Publish FAILED.");
+        }
+    } else {
+        // USB serial fallback: machine-readable frame on the CDC port.
+        Serial.print(buildSerialFrame(SERIAL_FALLBACK_MARKER, val, globalSensorID,
+                                      (long)evt_time, sig.c_str()).c_str());
+        Serial.println();
+        Serial.println("[NET] Serial Fallback Publish OK.");
+    }
+}
+
 void networkTask(void *pvParameters) { // NOSONAR
     WiFiClientSecure espClient;
     espClient.setInsecure();
     PubSubClient mqttClient(espClient);
-    
+
     mqttClient.setServer(MQTT_BROKER_HOST, MQTT_BROKER_PORT);
 
-    while (WiFi.status() != WL_CONNECTED) {
-        vTaskDelay(pdMS_TO_TICKS(1000));
-    }
-    
+    // NTP sync happens opportunistically; event dispatch never blocks on it.
     configTime(0, 0, "pool.ntp.org", "time.nist.gov");
 
+#if SERIAL_FALLBACK_ENABLED
+    // Software clock anchored at the first successful NTP sync, so retained
+    // events keep a valid wall time even after WiFi drops.
+    time_t epochAtSync = 0;
+    unsigned long millisAtSync = 0;
+    bool timeValid = false;
+
+    RetentionRing<RETENTION_CAPACITY> retention;
+#endif
+
     SeismicEvent receivedEvt;
-    for(;;) {
-        // Keep MQTT connection alive
-        if (!mqttClient.connected()) {
-            Serial.print("[NET] Reconnecting to MQTT Broker...");
-            // Use MAC address as unique client ID
-            String clientId = "QuakeGuard-" + WiFi.macAddress();
-            if (mqttClient.connect(clientId.c_str(), MQTT_USERNAME, MQTT_PASSWORD)) {
-                Serial.println(" Connected!");
-            } else {
-                vTaskDelay(pdMS_TO_TICKS(2000));
-                continue;
-            }
-        }
-        /* 
-         * NOTE: xQueueReceive below blocks for up to 100ms if empty.
-         * This drops the effective mqttClient.loop() frequency to ~10Hz.
-         * For our low-volume anomaly queue and standard 15s keep-alives, 
-         * this is completely safe and saves CPU cycles.
-         */
+    unsigned long lastMqttAttempt = 0;
+
+    for (;;) {
         mqttClient.loop(); // Process incoming keepalives
 
-        // Wait for a seismic event from the queue
+        // Opportunistic MQTT (re)connection, throttled to 5 s: never blocks.
+        bool mqttUp = mqttClient.connected();
+        if (!mqttUp && WiFi.status() == WL_CONNECTED && (millis() - lastMqttAttempt > 5000)) {
+            lastMqttAttempt = millis();
+            String clientId = "QuakeGuard-" + WiFi.macAddress();
+            if (mqttClient.connect(clientId.c_str(), MQTT_USERNAME, MQTT_PASSWORD)) {
+                Serial.println("[NET] MQTT Reconnected.");
+                mqttUp = true;
+            }
+        }
+
+#if SERIAL_FALLBACK_ENABLED
+        if (!timeValid) {
+            time_t t = time(nullptr);
+            if (t > 1600000000) {
+                epochAtSync = t;
+                millisAtSync = millis();
+                timeValid = true;
+                Serial.println("[NET] NTP time synchronized.");
+            }
+        }
+
+        bool usbHost = Serial.isConnected(); // HWCDC: true only with a real USB host
+
+        // Drain retained events to a path that just became available. Events
+        // are re-signed with the current wall time (reporting time) so the
+        // backend's +/-300 s replay window accepts the retransmission.
+        if (retention.size() > 0 && timeValid) {
+            DeliveryPath path = decidePath(mqttUp && timeValid, usbHost, timeValid);
+            if (path == DeliveryPath::MQTT || path == DeliveryPath::SERIAL_CDC) {
+                SerialEvent retainedEvt;
+                while (retention.pop(retainedEvt)) {
+                    time_t report_time = epochAtSync + (millis() - millisAtSync) / 1000;
+                    String payload = String(retainedEvt.value) + ":" + String(report_time);
+                    String sig = crypto().signMessage(payload);
+                    deliverEvent(mqttClient, path, retainedEvt.value, report_time, sig);
+                }
+            }
+        }
+#endif
+
+        // Wait for a seismic event from the queue (up to 100 ms).
         if (xQueueReceive(eventQueue, &receivedEvt, pdMS_TO_TICKS(100)) == pdTRUE) {
-            
             if (globalSensorID == 0) continue; // Unregistered
 
             auto now_chrono = std::chrono::system_clock::now();
             unsigned long age_ms = millis() - receivedEvt.event_millis;
             time_t evt_time = std::chrono::system_clock::to_time_t(now_chrono - std::chrono::milliseconds(age_ms));
-            
+
             auto val = static_cast<int>(receivedEvt.magnitude * 100);
             String payload = String(val) + ":" + String(evt_time);
             String sig = crypto().signMessage(payload);
 
-            JsonDocument doc;
-            doc["value"] = val; 
-            doc["sensor_id"] = globalSensorID; 
-            doc["device_timestamp"] = evt_time; 
-            doc["signature_hex"] = sig;
-            
-            String json; 
-            serializeJson(doc, json);
-
-            // FIRE AND FORGET! Milliseconds instead of HTTP round-trips!
-            if (mqttClient.publish("quakeguard/telemetry", json.c_str())) {
-                Serial.println("[NET] MQTT Publish OK.");
-            } else {
-                Serial.println("[NET] MQTT Publish FAILED.");
+#if SERIAL_FALLBACK_ENABLED
+            DeliveryPath path = decidePath(mqttUp && timeValid, usbHost, timeValid);
+            switch (path) {
+                case DeliveryPath::MQTT:
+                case DeliveryPath::SERIAL_CDC:
+                    deliverEvent(mqttClient, path, val, evt_time, sig);
+                    break;
+                case DeliveryPath::RETAIN:
+                    retention.push({val, (long)evt_time});
+                    Serial.println("[NET] No delivery path: event retained in ring.");
+                    break;
             }
+#else
+            deliverEvent(mqttClient, DeliveryPath::MQTT, val, evt_time, sig);
+#endif
         }
     }
 }

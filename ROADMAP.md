@@ -59,9 +59,11 @@ Geographic zone division designed so the system is ready for the GNSS upgrade (v
 
 Signed telemetry over a serial link (USB CDC) when MQTT/WiFi connectivity is lost, so the host still receives data during offline simulations.
 
-- Second consumer of the existing event queue: signed telemetry over USB CDC when MQTT is unreachable
-- ECDSA-signed payloads, identical signing to the MQTT data plane
-- Host-side bridge collecting serial output and forwarding to the ingestion pipeline
+- ✅ **Second consumer of the existing event queue** — `networkTask` dispatches each event to the first available path: MQTT publish (unchanged data plane), USB serial fallback, or in-memory retention ring when no path exists
+- ✅ **ECDSA-signed payloads, identical signing to the MQTT data plane** — `SerialFallback.h` builds `[QG:FB]{...}` frames with the exact MQTT JSON; retained events are re-signed with the current wall time at drain so the backend ±300 s replay window accepts them
+- ✅ **USB-host-aware retention** — `Serial.isConnected()` (HWCDC) distinguishes a real host from a power-only USB charger: with no host, events are retained in the ring instead of being written to a dead port; drained FIFO when a path becomes available
+- ✅ **Offline wall clock** — software clock anchored at the first NTP sync (`epoch_at_sync` + `millis()`), so timestamps stay valid even after WiFi drops; no frames emitted before time is valid
+- ✅ **Host-side bridge collecting serial output and forwarding to the ingestion pipeline** — `firmware/tools/serial_bridge.py` reads `/dev/ttyACM0`, filters `[QG:FB]` frames, and POSTs them to `/readings/` with `X-API-Key` (same forwarding as the MQTT bridge)
 
 ---
 

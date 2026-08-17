@@ -35,6 +35,23 @@ Due to the specific layout of the ESP32-C3 SuperMini, the I2C bus is forced via 
 * **Integrity:** Every payload is hashed (SHA-256) and signed. The server can verify the origin using the device's Public Key.
 * **Replay Protection:** Timestamps are synchronized via NTP (`pool.ntp.org`) to prevent replay attacks.
 
+### USB Serial Fallback (v1.2.2)
+When the MQTT data plane is unreachable, the node re-certifies each event and emits it over the **USB CDC** port as a machine-readable frame so a co-located host still receives data during offline simulations:
+
+```
+[QG:FB]{"value":250,"sensor_id":42,"device_timestamp":1720000000,"signature_hex":"..."}
+```
+
+* **Identical signing** to the MQTT data plane — the backend ECDSA + replay-window checks apply unchanged.
+* **USB-host aware:** frames are only written while a real USB host is attached (`Serial.isConnected()`, HWCDC). Plugged into a power-only charger, events are **retained in an in-memory ring** (last 100) instead of being sent to a dead port, and are drained FIFO when a path returns.
+* **Offline wall clock:** timestamps come from a software clock anchored at the first NTP sync, so they stay valid after WiFi drops; retained events are re-signed with the current time at drain.
+* **Host bridge:** `tools/serial_bridge.py` reads the CDC device and forwards each frame to the ingestion pipeline:
+  ```bash
+  pip install pyserial requests
+  python tools/serial_bridge.py --port /dev/ttyACM0 --api-key "$IOT_API_KEY"
+  ```
+* **Toggle:** set `SERIAL_FALLBACK_ENABLED=0` in `esp32_config.env` for MQTT-only behaviour.
+
 ## 4. Configuration
 
 Before compiling, ensure the network and server credentials in `src/main.cpp` are updated:
@@ -87,6 +104,8 @@ On the **first boot**, the device will generate a new cryptographic key pair. Yo
 * `[SENSOR] Stabilizing...`: Calibrating the accelerometer baseline (do not move the device).
 * `[SENSOR] EARTHQUAKE DETECTED!`: The STA/LTA ratio exceeded **1.8** and intensity exceeded **0.04G**.
 * `[NET] Transmission Successful`: JSON payload accepted by the server.
+* `[NET] MQTT Publish OK.` / `[NET] Serial Fallback Publish OK.`: event dispatched over the active path.
+* `[NET] No delivery path: event retained in ring.`: MQTT down and no USB host — the event is buffered for later drain.
 
 ## 7. Troubleshooting
 

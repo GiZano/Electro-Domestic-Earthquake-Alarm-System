@@ -58,6 +58,23 @@ jobs:
         /tmp/test_ringbuffer
         g++ -std=c++11 -I src test/test_detection.cpp -lm -o /tmp/test_detection
         /tmp/test_detection
+        g++ -std=c++11 -I src test/test_serial_fallback.cpp -o /tmp/test_serial_fallback
+        /tmp/test_serial_fallback
+
+    - name: Serial Bridge Parser Smoke Test
+      run: |
+        cd firmware/tools
+        python - <<'EOF'
+        import serial_bridge
+        line = '[QG:FB]{"value":250,"sensor_id":42,"device_timestamp":1720000000,"signature_hex":"ab"}'
+        p = serial_bridge.parse_frame(line)
+        assert p == {"value":250,"sensor_id":42,"device_timestamp":1720000000,"signature_hex":"ab"}, p
+        assert serial_bridge.parse_frame("[BOOT] some log line") is None
+        assert serial_bridge.parse_frame("[QG:FB]{not json") is None
+        assert serial_bridge.parse_frame("[QG:FB]{'bad':1}") is None
+        assert serial_bridge.parse_frame("[QG:FB]{}") is None
+        print("Serial bridge parser tests PASSED")
+        EOF
 
     - name: Build Host SIL CLI (same core as firmware)
       run: |

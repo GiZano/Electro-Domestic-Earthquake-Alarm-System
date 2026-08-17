@@ -14,6 +14,8 @@ float scaleLon(double lon) {
 
 }  // namespace quakeguard_gnss
 
+using namespace quakeguard_gnss;
+
 GnssModule& gnss() {
   static GnssModule instance;
   return instance;
@@ -50,7 +52,7 @@ void GnssModule::loop() {
   }
 }
 
-bool GnssModule::getFix(GnssFix& out) const {
+bool GnssModule::getFix(GnssFix& out) {
   out = GnssFix{};
   if (gps_.location.isValid() && gps_.location.age() < GNSS_FIX_MAX_AGE_MS) {
     out.latitude = scaleLat(gps_.location.lat());
