@@ -41,7 +41,7 @@ constexpr int I2C_SCL_PIN = 8;
 constexpr int I2C_CLOCK_SPEED = 100000;
 
 #ifndef SERVER_HOST
-  #define SERVER_HOST "your-tunnel-id.ngrok-free.app"
+  #define SERVER_HOST "your-tunnel-id.trycloudflare.com"
 #endif
 #ifndef SERVER_PORT
   #define SERVER_PORT 80

@@ -66,6 +66,9 @@ Before compiling, ensure the network and server credentials in `src/main.cpp` ar
 #endif
 ```
 
+### HTTPS Tunnel Compatibility (IoT TLS clients)
+The device registers over plain HTTPS using the ESP-IDF **mbedTLS** stack. The ngrok **free-tier** edge terminates TLS handshakes from such clients via **JA3 fingerprinting** (bot-protection) *before* any HTTP header — including `ngrok-skip-browser-warning` — can be read, so the request never reaches the backend (`HTTP Code: -1`, `SSL - The connection indicated an EOF`). For the dev tunnel we use a **Cloudflare quick tunnel** (`cloudflared tunnel --url http://localhost:8000`), whose edge does not fingerprint IoT TLS clients, or a real HTTPS domain in production. Set `SERVER_HOST` (no scheme) and `SERVER_PROTOCOL` accordingly.
+
 ### Enabling the Optional GNSS Module (Experimental)
 The firmware ships with a **GNSS heartbeats module**, disabled by default. When enabled, the device reads a connected UART GNSS receiver, computes a geohash from the current fix, and includes it in every heartbeat sent to the server (used by the geo-spatial zone-alerting feature on the backend).
 

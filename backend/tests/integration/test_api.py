@@ -166,3 +166,24 @@ class TestDeviceRegistration:
             assert resp.status_code == 201
             data = resp.json()
             assert "sensor_id" in data
+
+    def test_register_device_without_coordinates(self, client, override_db):
+        """GNSS-ready: a node with no fix yet must still register.
+        Regression: _create_sensor built 'POINT(None None)' for NULL coords,
+        which PostGIS rejects with a 500 on the INSERT."""
+        with patch("src.main.ENROLLMENT_TOKEN", "valid_token"):
+            override_db.query.return_value.filter.return_value.first.return_value = None
+            resp = client.post(
+                "/devices/register",
+                json={
+                    "public_key_hex": "beef" * 32,
+                    "mac_address": "AA:BB:CC:DD:EE:01",
+                    "enrollment_token": "valid_token",
+                },
+            )
+            assert resp.status_code == 201
+            assert "sensor_id" in resp.json()
+            added = override_db.add.call_args[0][0]
+            assert added.location is None
+            assert added.latitude is None
+            assert added.longitude is None
