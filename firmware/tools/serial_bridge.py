@@ -17,9 +17,9 @@ import os
 import sys
 
 DEFAULT_MARKER = "[QG:FB]"
-# NOSONAR -- docker-internal HTTP endpoint (fastapi-app) never leaves the
-# private compose network; anything external must pass --api-url with https://
-DEFAULT_API_URL = "http://fastapi-app:8000/readings/"
+# docker-internal HTTP endpoint (fastapi-app) never leaves the private compose
+# network; anything external must pass --api-url with https://
+DEFAULT_API_URL = "http://fastapi-app:8000/readings/"  # NOSONAR
 
 
 def parse_frame(line, marker=DEFAULT_MARKER):
@@ -60,6 +60,7 @@ def _validate_api_url(url):
     The endpoint arrives from a CLI flag or an env var, so it must be validated
     rather than forwarded verbatim into requests.post (SSRF guard).
     """
+    import re
     from urllib.parse import urlsplit
 
     parts = urlsplit(url)
@@ -67,6 +68,8 @@ def _validate_api_url(url):
         raise ValueError(f"Unsupported scheme {parts.scheme!r}; expected http:// or https://")
     if not parts.hostname:
         raise ValueError(f"Missing host in ingestion URL: {url!r}")
+    if not re.match(r"^[A-Za-z0-9.-]+(:[0-9]{1,5})?$", parts.netloc):
+        raise ValueError(f"Suspicious host in ingestion URL: {url!r}")
     return url
 
 
@@ -102,6 +105,7 @@ def main(argv=None):
     parser.add_argument("--dry-run", action="store_true",
                         help="Parse and print frames without forwarding")
     args = parser.parse_args(argv)
+    args.api_url = _validate_api_url(args.api_url)
 
     if not args.api_key:
         parser.error("IOT_API_KEY is required (env or --api-key)")
