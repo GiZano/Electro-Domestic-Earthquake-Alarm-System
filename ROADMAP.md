@@ -19,7 +19,7 @@ Edge seismic detection on ESP32 with local alerts.
 Data Plane migration to MQTT Cloud (HiveMQ), REST Control Plane (HTTPS) and TLS security.
 
 - Data Plane: ESP32 → HiveMQ Cloud (port 8883, TLS + username/password)
-- Control Plane: ngrok HTTPS tunnel for REST provisioning
+- Control Plane: HTTPS tunnel for REST provisioning — *Cloudflare quick tunnel* in dev (the ngrok free-tier edge is unusable by ESP32 IoT clients: it terminates ESP-IDF/mbedTLS TLS handshakes via JA3 fingerprinting)
 - `setInsecure()` for TLS handshake on ESP32
 - MQTT Bridge (Python Paho) with TLS
 - Working mobile dashboard with live data
@@ -64,6 +64,7 @@ Signed telemetry over a serial link (USB CDC) when MQTT/WiFi connectivity is los
 - ✅ **USB-host-aware retention** — `Serial.isConnected()` (HWCDC) distinguishes a real host from a power-only USB charger: with no host, events are retained in the ring instead of being written to a dead port; drained FIFO when a path becomes available
 - ✅ **Offline wall clock** — software clock anchored at the first NTP sync (`epoch_at_sync` + `millis()`), so timestamps stay valid even after WiFi drops; no frames emitted before time is valid
 - ✅ **Host-side bridge collecting serial output and forwarding to the ingestion pipeline** — `firmware/tools/serial_bridge.py` reads `/dev/ttyACM0`, filters `[QG:FB]` frames, and POSTs them to `/readings/` with `X-API-Key` (same forwarding as the MQTT bridge)
+- ✅ **Automatic first-boot provisioning** — compile-time `SENSOR_ID` shortcut removed; the node POSTs `/devices/register` (public key + MAC + enrollment token + GNSS-ready coords) and the backend assigns the `sensor_id` and zone. Verified live on hardware. Backend accepts NULL geometry when a node has no GNSS fix yet
 
 ---
 

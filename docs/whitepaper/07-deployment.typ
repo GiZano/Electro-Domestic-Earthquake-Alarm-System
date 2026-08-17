@@ -53,7 +53,7 @@ The firmware strictly requires compile-time secret injection to operate.
   ```bash
   cp esp32_config.env.example esp32_config.env
   ```
-+ Edit `esp32_config.env` to include your local Wi-Fi credentials, the ngrok tunnel URL (or local IP) for the `SERVER_HOST`, and the `ENROLLMENT_TOKEN`.
++ Edit `esp32_config.env` to include your local Wi-Fi credentials, the HTTPS tunnel URL (a *Cloudflare quick tunnel*, `https://<random>.trycloudflare.com`, or a real domain) for the `SERVER_HOST`, and the `ENROLLMENT_TOKEN`. Note: an ngrok *free-tier* tunnel does not work for the node — its edge terminates ESP-IDF (mbedTLS) TLS handshakes via JA3 fingerprinting before any HTTP header can be read.
 + Connect the ESP32-C3 via USB and trigger the PlatformIO upload sequence.
 + Open the Serial Monitor at `115200` baud. On its first boot, the device will generate its ECDSA keys, connect to the network, and automatically register with the backend.
 

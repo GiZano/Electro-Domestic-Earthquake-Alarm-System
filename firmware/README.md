@@ -69,6 +69,12 @@ Before compiling, ensure the network and server credentials in `src/main.cpp` ar
 ### HTTPS Tunnel Compatibility (IoT TLS clients)
 The device registers over plain HTTPS using the ESP-IDF **mbedTLS** stack. The ngrok **free-tier** edge terminates TLS handshakes from such clients via **JA3 fingerprinting** (bot-protection) *before* any HTTP header — including `ngrok-skip-browser-warning` — can be read, so the request never reaches the backend (`HTTP Code: -1`, `SSL - The connection indicated an EOF`). For the dev tunnel we use a **Cloudflare quick tunnel** (`cloudflared tunnel --url http://localhost:8000`), whose edge does not fingerprint IoT TLS clients, or a real HTTPS domain in production. Set `SERVER_HOST` (no scheme) and `SERVER_PROTOCOL` accordingly.
 
+> **Dev tunnel lifecycle (ephemeral).** The quick tunnel is account-less and has no uptime guarantee: it dies with the `cloudflared` process and the URL changes at **every restart**. The node only calls the HTTP endpoint at **first boot** (provisioning); after that it publishes over MQTT. If you erase the node's NVS (re-provisioning) or build fresh, restart the tunnel and update `SERVER_HOST` (firmware) and `EXPO_PUBLIC_API_BASE_URL` (mobile) with the new URL:
+> ```bash
+> ~/bin/cloudflared tunnel --url http://localhost:8000 --no-autoupdate --protocol http2
+> ```
+> `--protocol http2` is required on networks that block the default QUIC edge connection. For a stable URL, use a named Cloudflare tunnel with your own domain.
+
 ### Enabling the Optional GNSS Module (Experimental)
 The firmware ships with a **GNSS heartbeats module**, disabled by default. When enabled, the device reads a connected UART GNSS receiver, computes a geohash from the current fix, and includes it in every heartbeat sent to the server (used by the geo-spatial zone-alerting feature on the backend).
 

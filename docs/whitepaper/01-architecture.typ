@@ -15,7 +15,7 @@ The infrastructure is decoupled into three primary tiers:
 Following the v1.1.0 cloud migration, the architecture strictly separates the data and control pipelines:
 
 - *Data Plane (Telemetry):* Flows exclusively through a HiveMQ Cloud Serverless broker on port 8883[cite: 1]. Communication is fully authenticated and TLS-encrypted[cite: 1]. A Python-based MQTT bridge (`mqtt_subscriber.py`) subscribes to the `quakeguard/telemetry` topic and forwards payloads to the internal FastAPI ingestion pipeline via HTTP POST[cite: 1].
-- *Control Plane (Provisioning & Management):* Device onboarding, cryptographic handshakes, and REST retrieval operations are routed through an ngrok HTTPS tunnel, directly exposing the FastAPI endpoints (e.g., `/devices/register`)[cite: 1].
+- *Control Plane (Provisioning & Management):* Device onboarding, cryptographic handshakes, and REST retrieval operations are routed through an HTTPS tunnel to the FastAPI endpoints (e.g., `/devices/register`)[cite: 1]. In development the tunnel is a *Cloudflare quick tunnel* (`cloudflared tunnel --url http://localhost:8000`); production should use a real HTTPS domain. The ngrok free-tier edge is not used because its bot-protection terminates ESP-IDF (mbedTLS) TLS handshakes via JA3 fingerprinting *before* any HTTP header can be read, so IoT clients never reach the backend.
 
 == Key Design Principles
 
