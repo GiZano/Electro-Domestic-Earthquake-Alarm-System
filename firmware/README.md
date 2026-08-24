@@ -35,6 +35,23 @@ Due to the specific layout of the ESP32-C3 SuperMini, the I2C bus is forced via 
 * **Integrity:** Every payload is hashed (SHA-256) and signed. The server can verify the origin using the device's Public Key.
 * **Replay Protection:** Timestamps are synchronized via NTP (`pool.ntp.org`) to prevent replay attacks.
 
+### USB Serial Fallback (v1.2.2)
+When the MQTT data plane is unreachable, the node re-certifies each event and emits it over the **USB CDC** port as a machine-readable frame so a co-located host still receives data during offline simulations:
+
+```
+[QG:FB]{"value":250,"sensor_id":42,"device_timestamp":1720000000,"signature_hex":"..."}
+```
+
+* **Identical signing** to the MQTT data plane — the backend ECDSA + replay-window checks apply unchanged.
+* **USB-host aware:** frames are only written while a real USB host is attached (`Serial.isConnected()`, HWCDC). Plugged into a power-only charger, events are **retained in an in-memory ring** (last 100) instead of being sent to a dead port, and are drained FIFO when a path returns.
+* **Offline wall clock:** timestamps come from a software clock anchored at the first NTP sync, so they stay valid after WiFi drops; retained events are re-signed with the current time at drain.
+* **Host bridge:** `tools/serial_bridge.py` reads the CDC device and forwards each frame to the ingestion pipeline:
+  ```bash
+  pip install pyserial requests
+  python tools/serial_bridge.py --port /dev/ttyACM0 --api-key "$IOT_API_KEY"
+  ```
+* **Toggle:** set `SERIAL_FALLBACK_ENABLED=0` in `esp32_config.env` for MQTT-only behaviour.
+
 ## 4. Configuration
 
 Before compiling, ensure the network and server credentials in `src/main.cpp` are updated:
@@ -49,6 +66,15 @@ Before compiling, ensure the network and server credentials in `src/main.cpp` ar
 #endif
 ```
 
+### HTTPS Tunnel Compatibility (IoT TLS clients)
+The device registers over plain HTTPS using the ESP-IDF **mbedTLS** stack. The ngrok **free-tier** edge terminates TLS handshakes from such clients via **JA3 fingerprinting** (bot-protection) *before* any HTTP header — including `ngrok-skip-browser-warning` — can be read, so the request never reaches the backend (`HTTP Code: -1`, `SSL - The connection indicated an EOF`). For the dev tunnel we use a **Cloudflare quick tunnel** (`cloudflared tunnel --url http://localhost:8000`), whose edge does not fingerprint IoT TLS clients, or a real HTTPS domain in production. Set `SERVER_HOST` (no scheme) and `SERVER_PROTOCOL` accordingly.
+
+> **Dev tunnel lifecycle (ephemeral).** The quick tunnel is account-less and has no uptime guarantee: it dies with the `cloudflared` process and the URL changes at **every restart**. The node only calls the HTTP endpoint at **first boot** (provisioning); after that it publishes over MQTT. If you erase the node's NVS (re-provisioning) or build fresh, restart the tunnel and update `SERVER_HOST` (firmware) and `EXPO_PUBLIC_API_BASE_URL` (mobile) with the new URL:
+> ```bash
+> ~/bin/cloudflared tunnel --url http://localhost:8000 --no-autoupdate --protocol http2
+> ```
+> `--protocol http2` is required on networks that block the default QUIC edge connection. For a stable URL, use a named Cloudflare tunnel with your own domain.
+
 ### Enabling the Optional GNSS Module (Experimental)
 The firmware ships with a **GNSS heartbeats module**, disabled by default. When enabled, the device reads a connected UART GNSS receiver, computes a geohash from the current fix, and includes it in every heartbeat sent to the server (used by the geo-spatial zone-alerting feature on the backend).
 
@@ -62,24 +88,21 @@ The firmware ships with a **GNSS heartbeats module**, disabled by default. When 
 ### Step 1: Upload Firmware
 Connect the ESP32-C3 via USB and upload the firmware using PlatformIO or Arduino IDE.
 
-### Step 2: Key Extraction (Crucial)
-On the **first boot**, the device will generate a new cryptographic key pair. You must capture the **Public Key** from the Serial Monitor to register the device on the server.
+### Step 2: Automatic Registration (no manual step)
+On the **first boot** the device performs the automated handshake:
 
-1.  Open the Serial Monitor (Baud Rate: **115200**).
-2.  Reset the board.
-3.  Look for the security header:
+1. Generates a fresh **ECDSA key pair** and seals the private key in NVS.
+2. Opens the WiFi captive portal (`QuakeGuard-Setup`) so you can connect it to your network.
+3. POSTs `/devices/register` with its `public_key_hex`, `mac_address`, `enrollment_token` and (GNSS-ready) coordinates.
+4. Receives its `sensor_id` back from the backend and persists it in NVS.
+
+No per-device configuration is needed for distribution — the backend assigns the ID
+and the zone (via PostGIS) at registration time. The serial output shows:
 
 ```text
-[BOOT] QuakeGuard Security System First...
-[SEC] Generating New ECDSA Key Pair...
-[SEC] Keys Generated and Saved to NVS.
-[SEC] DEVICE PUBLIC KEY (HEX): 04a3b2c1... <COPY THIS STRING>
+[PROV] SUCCESS! Assigned Sensor ID: 7
+[PROV] Public key: 3059301306072a8648ce3d0201...
 ```
-
-4.  **Copy the HEX string.** You have a 10-second window before the sensor initialization begins.
-5.  Register this key in your backend database associated with `SENSOR_ID 101`.
-
-**Note:** If the server does not have this key, it will reject data with `403 Forbidden`.
 
 ## 6. LED / Serial Status Codes
 
@@ -87,6 +110,8 @@ On the **first boot**, the device will generate a new cryptographic key pair. Yo
 * `[SENSOR] Stabilizing...`: Calibrating the accelerometer baseline (do not move the device).
 * `[SENSOR] EARTHQUAKE DETECTED!`: The STA/LTA ratio exceeded **1.8** and intensity exceeded **0.04G**.
 * `[NET] Transmission Successful`: JSON payload accepted by the server.
+* `[NET] MQTT Publish OK.` / `[NET] Serial Fallback Publish OK.`: event dispatched over the active path.
+* `[NET] No delivery path: event retained in ring.`: MQTT down and no USB host — the event is buffered for later drain.
 
 ## 7. Troubleshooting
 

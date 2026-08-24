@@ -473,20 +473,38 @@
     <section id="roadmap" class="qg-section">
         <div class="container">
             <div class="row justify-content-center">
-                <div class="col-lg-8">
-                    <div class="text-center mb-5">
+                <div class="col-lg-10">
+                    <div class="text-center mb-4">
                         <span class="qg-eyebrow" data-i18n="roadmap_eyebrow">Where it&rsquo;s going</span>
                         <h2 class="qg-title" data-i18n="roadmap">Roadmap</h2>
                         <div class="accent-bar mx-auto"></div>
                     </div>
-                    <div class="road">
-                        <div class="road-item done"><span class="ver" data-i18n="road_1_label">v1.0 · Released</span><p data-i18n="road_1"><strong>Edge seismic detection</strong> on ESP32-C3 and local alerts.</p></div>
-                        <div class="road-item done"><span class="ver" data-i18n="road_11_label">v1.1 · Released</span><p data-i18n="road_11"><strong>HiveMQ Cloud MQTT (TLS)</strong>, ngrok HTTPS tunnel, security hardening.</p></div>
-                        <div class="road-item done wip"><span class="ver" data-i18n="road_12_label">v1.2.1 · Current</span><p data-i18n="road_12"><strong>Geo-Zoning &amp; GNSS-Ready</strong>: Redis Streams ingestion, TimescaleDB persistence, per-area dedup cooldown and on-premise AI emergency reports.</p></div>
-                        <div class="road-item"><span class="ver" data-i18n="road_122_label">v1.2.2 · Cleanup</span><p data-i18n="road_122">SonarCloud cleanup and quality-gate fixes (PR #368).</p></div>
-                        <div class="road-item"><span class="ver" data-i18n="road_13_label">v1.3 · GNSS (in progress)</span><p data-i18n="road_13">GNSS module already done (NEO-6M/M8N, NVS last-known fix); NTP + PPS time sync still pending.</p></div>
-                        <div class="road-item"><span class="ver" data-i18n="road_20_label">v2.0 · Triangulation</span><p data-i18n="road_20">Multi-node spatial correlation + AI reports for <strong>epicenter calculation</strong>.</p></div>
-                        <div class="road-item"><span class="ver" data-i18n="road_21_label">v2.1 · Dashboards</span><p data-i18n="road_21"><strong>Grafana</strong> live visualization of seismic telemetry.</p></div>
+                    <div class="text-center mb-5">
+                        <a href="https://github.com/GiZano/QuakeGuard/blob/main/ROADMAP.md" target="_blank" rel="noopener noreferrer" class="btn btn-qg-ghost"><i class="fas fa-map-signs me-2"></i><span data-i18n="roadmap_details">See the detailed roadmap</span></a>
+                    </div>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <h3 class="text-center mb-4" style="color:#fff;" data-i18n="roadmap_dev">Development</h3>
+                            <div class="road">
+                                <div class="road-item done"><span class="ver" data-i18n="road_1_label">v1.0 · Released</span><p data-i18n="road_1"><strong>Edge seismic detection</strong> on ESP32-C3 and local alerts.</p></div>
+                                <div class="road-item done"><span class="ver" data-i18n="road_11_label">v1.1 · Released</span><p data-i18n="road_11"><strong>HiveMQ Cloud MQTT (TLS)</strong>, ngrok HTTPS tunnel, security hardening.</p></div>
+                                <div class="road-item done"><span class="ver" data-i18n="road_120_label">v1.2.0 · Released</span><p data-i18n="road_120"><strong>On-Premise AI Reports</strong> — Ollama generates emergency reports on-premise, pushed over WebSocket.</p></div>
+                                <div class="road-item done wip"><span class="ver" data-i18n="road_12_label">v1.2.1 · Current</span><p data-i18n="road_12"><strong>Geo-Zoning &amp; Cooldown Fragmentation (GNSS-ready)</strong> — geohash Redis fast-path zone resolution, per-area cooldown locks, PostGIS <code style="color:#00f5ff">ST_Contains</code> as source of truth.</p></div>
+                                <div class="road-item"><span class="ver" data-i18n="road_122_label">v1.2.2 · Serial fallback</span><p data-i18n="road_122"><strong>Zero-Trust Serial Fallback</strong> — ECDSA-signed telemetry over USB CDC when MQTT/WiFi is unreachable.</p></div>
+                                <div class="road-item"><span class="ver" data-i18n="road_13_label">v1.3 · Synchronized GNSS</span><p data-i18n="road_13">Optional GNSS module (NEO-6M/M8N), NTP + PPS timestamps, real coordinates replacing the hardcoded fix, ADXL345 calibration.</p></div>
+                                <div class="road-item"><span class="ver" data-i18n="road_20_label">v2.0 · Triangulation</span><p data-i18n="road_20">Multi-node spatial correlation + AI reports for <strong>epicenter calculation</strong>.</p></div>
+                                <div class="road-item"><span class="ver" data-i18n="road_21_label">v2.1 · Dashboards</span><p data-i18n="road_21"><strong>Grafana</strong> live visualization of seismic telemetry.</p></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h3 class="text-center mb-4" style="color:#fff;" data-i18n="roadmap_res">Research</h3>
+                            <div class="road">
+                                <div class="road-item done"><span class="ver" data-i18n="r1_label">R1 · Done</span><p data-i18n="r1"><strong>SIL STA/LTA cross-validation</strong> — pure C++ core, host orchestrator, metrics and trigger calibration on the synthetic fallback. Real ESM ground-truth validation remains.</p></div>
+                                <div class="road-item wip"><span class="ver" data-i18n="r2_label">R2 · Next</span><p data-i18n="r2"><strong>AI benchmarking</strong> — P50/P99 latency of the local Ollama worker, hallucination rate, privacy/latency vs cloud baseline.</p></div>
+                                <div class="road-item"><span class="ver" data-i18n="r3_label">R3 · Planned</span><p data-i18n="r3"><strong>Dissemination</strong> — open validation dataset (Zenodo DOI) + technical paper / preprint.</p></div>
+                            </div>
+                            <p class="small text-muted mt-3" data-i18n="roadmap_res_note">R1 is the blocking prerequisite for the v2.2.0 Edge AI tier and runs in parallel with v1.3 (GNSS).</p>
+                        </div>
                     </div>
                 </div>
             </div>

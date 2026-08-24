@@ -15,7 +15,7 @@
 ![Docker](https://img.shields.io/badge/Docker-Containerization-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Local AI](https://img.shields.io/badge/Local_AI-Ollama_%7C_Llama_3.2-000000?style=for-the-badge&logo=meta&logoColor=white)
 ![HiveMQ](https://img.shields.io/badge/HiveMQ-Cloud_MQTT-FFC107?style=for-the-badge&logo=mqtt&logoColor=black)
-![ngrok](https://img.shields.io/badge/ngrok-HTTPS_Tunnel-1F1E37?style=for-the-badge&logo=ngrok&logoColor=white)
+![Cloudflare](https://img.shields.io/badge/Cloudflare-HTTP2_Tunnel-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
 
 ![CI Backend](https://github.com/GiZano/QuakeGuard/actions/workflows/backend-ci.yml/badge.svg)
 ![CI Frontend](https://github.com/GiZano/QuakeGuard/actions/workflows/frontend-ci.yml/badge.svg)
