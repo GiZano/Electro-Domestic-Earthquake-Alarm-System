@@ -34,7 +34,7 @@
 
 > 📚 **Technical Specification:** A comprehensive architecture whitepaper is available in the `docs/` directory, compiled via Typst. For a browsable, topic-by-topic reference, check out the [project Wiki](https://github.com/GiZano/QuakeGuard/wiki).
 
-![QuakeGuard Logo](docs/assets/logo/png/github-banner.png)
+![QuakeGuard Logo](docs/web/assets/quakeguard/github-banner.png)
 
 
 </div>
