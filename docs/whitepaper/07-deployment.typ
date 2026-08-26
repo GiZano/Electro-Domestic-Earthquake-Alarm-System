@@ -11,7 +11,7 @@ To orchestrate the full stack, the host machine must have the following dependen
 
 == Backend Provisioning
 
-The backend services (PostgreSQL, Redis, FastAPI, Worker, and MQTT Bridge) are fully containerized[cite: 1]. Since v1.2.1 the database image is a single unified TimescaleDB+PostGIS build (`backend/docker/postgres-timescale.Dockerfile`), so the `readings` table is provisioned as a hypertable with spatial extensions enabled in one container. The image explicitly runs as the non-root `postgres` user[cite: 1].
+The backend services (PostgreSQL, Redis, FastAPI, Worker, and MQTT Bridge) are fully containerized[cite: 1]. Since v1.2.2 the database image is a single unified TimescaleDB+PostGIS build (`backend/docker/postgres-timescale.Dockerfile`), so the `readings` table is provisioned as a hypertable with spatial extensions enabled in one container. The image explicitly runs as the non-root `postgres` user[cite: 1].
 
 + Navigate to the backend directory:
   ```bash

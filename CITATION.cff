@@ -10,12 +10,12 @@ authors:
     given-names: "Riccardo"
     alias: "riccardo0731"
 title: "QuakeGuard"
-version: 1.2.1
+version: 1.2.2
 identifiers:
   - type: doi
     value: "10.5281/zenodo.21814890"
     description: "Software archive (v1.2.1)"
-date-released: 2026-08-14
+date-released: 2026-08-26
 url: "https://giovanni-zanotti.is-a.dev/Pages/Works/quakeguard/"
 repository-code: "https://github.com/GiZano/QuakeGuard"
 license: "AGPL-3.0"
@@ -27,7 +27,8 @@ abstract: >-
   mitigates the "Thundering Herd" concurrency problem via Redis asynchronous queues, 
   and delivers real-time haptic alerts to a React Native mobile client via WebSockets.
   Since v1.2.0 it also generates privacy-first, on-premise AI emergency reports
-  from confirmed alerts via a local Ollama LLM.
+  from confirmed alerts via a local Ollama LLM. Since v1.2.2 it adds zero-trust
+  USB serial fallback for edge telemetry when MQTT is unreachable.
 keywords:
   - earthquake-early-warning
   - iot

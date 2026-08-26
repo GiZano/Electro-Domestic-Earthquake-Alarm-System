@@ -404,7 +404,7 @@ void networkTask(void *pvParameters) { // NOSONAR
         if (xQueueReceive(eventQueue, &receivedEvt, pdMS_TO_TICKS(100)) == pdTRUE) {
             if (globalSensorID == 0) continue; // Unregistered
 
-            auto now_chrono = std::chrono::system_clock::now();
+            const std::chrono::system_clock::time_point now_chrono = std::chrono::system_clock::now();
             unsigned long age_ms = millis() - receivedEvt.event_millis;
             time_t evt_time = std::chrono::system_clock::to_time_t(now_chrono - std::chrono::milliseconds(age_ms));
 
@@ -420,7 +420,7 @@ void networkTask(void *pvParameters) { // NOSONAR
                     deliverEvent(mqttClient, path, val, evt_time, sig);
                     break;
                 case DeliveryPath::RETAIN:
-                    retention.push({val, (long)evt_time});
+                    retention.push({val, static_cast<long>(evt_time)});
                     Serial.println("[NET] No delivery path: event retained in ring.");
                     break;
             }

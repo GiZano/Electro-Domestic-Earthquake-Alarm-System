@@ -139,18 +139,16 @@ def process_batch(events: list, db: Session):
     db.commit()
     _finish_alerts(db, resolutions)
 
-def enqueue_ai_report(db: Session, event: dict, alert_id: int, zone_id: int, magnitude: float) -> None:
-    """Create a PENDING EmergencyReport and enqueue the AI report job.
+def _resolve_zone_name(db: Session, zone_id: int) -> str:
+    """Resolve zone name from zone_id, return 'Unknown Region' if not found."""
+    if not zone_id:
+        return "Unknown Region"
+    zone = db.query(Zone).filter(Zone.id == zone_id).first()
+    return zone.city if zone is not None else "Unknown Region"
 
-    The DB row is written first so the state machine is observable (PENDING) even
-    before the dedicated AI worker processes the job. The AI worker transitions it
-    to COMPLETED or FAILED and broadcasts the result over WebSocket.
-    """
-    zone_name = "Unknown Region"
-    zone = db.query(Zone).filter(Zone.id == zone_id).first() if zone_id else None
-    if zone is not None:
-        zone_name = zone.city
 
+def _create_pending_report(db: Session, alert_id: int, zone_id: int, magnitude: float) -> EmergencyReport:
+    """Create and persist a PENDING EmergencyReport, return the saved instance."""
     report = EmergencyReport(
         alert_id=alert_id,
         zone_id=zone_id,
@@ -160,17 +158,33 @@ def enqueue_ai_report(db: Session, event: dict, alert_id: int, zone_id: int, mag
     db.add(report)
     db.commit()
     db.refresh(report)
+    return report
 
-    ai_payload = {
+
+def _build_ai_payload(report: EmergencyReport, event: dict, zone_name: str) -> dict:
+    """Build the AI report job payload for the queue."""
+    return {
         "report_id": report.id,
-        "alert_id": alert_id,
-        "zone_id": zone_id,
+        "alert_id": report.alert_id,
+        "zone_id": report.zone_id,
         "zone_name": zone_name,
-        "magnitude": round(magnitude, 1),
+        "magnitude": round(report.magnitude, 1),
         "sensor_id": event.get("sensor_id"),
         "value": event.get("value"),
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+
+
+def enqueue_ai_report(db: Session, event: dict, alert_id: int, zone_id: int, magnitude: float) -> None:
+    """Create a PENDING EmergencyReport and enqueue the AI report job.
+
+    The DB row is written first so the state machine is observable (PENDING) even
+    before the dedicated AI worker processes the job. The AI worker transitions it
+    to COMPLETED or FAILED and broadcasts the result over WebSocket.
+    """
+    zone_name = _resolve_zone_name(db, zone_id)
+    report = _create_pending_report(db, alert_id, zone_id, magnitude)
+    ai_payload = _build_ai_payload(report, event, zone_name)
     redis_sync.lpush(AI_REPORT_QUEUE, json.dumps(ai_payload))
     print(f"🤖 AI Report enqueued (report_id={report.id})", flush=True)
 

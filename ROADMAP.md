@@ -39,7 +39,7 @@ On-premise AI integration (LLM in the backend) to generate textual emergency rep
 
 ---
 
-## v1.2.1 — Geo-Zoning & Cooldown Fragmentation (GNSS-ready) (Current)
+## v1.2.1 — Geo-Zoning & Cooldown Fragmentation (GNSS-ready) (Released)
 
 Geographic zone division designed so the system is ready for the GNSS upgrade (v1.3). The alert cooldown is fragmented from the coarse macro-region level down to a per-area geohash granularity, and the zone-assignment hot path is offloaded from PostGIS queries to a Redis geohash index — with PostGIS kept as the single source of truth.
 
@@ -55,7 +55,7 @@ Geographic zone division designed so the system is ready for the GNSS upgrade (v
 
 ---
 
-## v1.2.2 — Zero-Trust Serial Fallback
+## v1.2.2 — Zero-Trust Serial Fallback (Current)
 
 Signed telemetry over a serial link (USB CDC) when MQTT/WiFi connectivity is lost, so the host still receives data during offline simulations.
 

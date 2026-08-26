@@ -74,6 +74,8 @@ export default function MapScreen() {
   let mapStyle: any;
   if (Platform.OS === "android") {
     mapStyle = isDark ? darkMapStyle : lightMapStyle;
+  } else {
+    mapStyle = undefined;
   }
 
   return (
