@@ -71,7 +71,9 @@ export default function MapScreen() {
     );
   }
 
-  const mapStyle = Platform.OS === "android" ? (isDark ? darkMapStyle : lightMapStyle) : undefined;
+  const mapStyle = Platform.OS === "android"
+    ? (isDark ? darkMapStyle : lightMapStyle)
+    : undefined;
 
   return (
     <View style={styles.container}>

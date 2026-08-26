@@ -408,7 +408,7 @@ void networkTask(void *pvParameters) { // NOSONAR
             unsigned long age_ms = millis() - receivedEvt.event_millis;
             time_t evt_time = std::chrono::system_clock::to_time_t(now_chrono - std::chrono::milliseconds(age_ms));
 
-            int val = static_cast<int>(receivedEvt.magnitude * 100);
+            auto val = static_cast<int>(receivedEvt.magnitude * 100);
             String payload = String(val) + ":" + String(evt_time);
             String sig = crypto().signMessage(payload);
 

@@ -185,11 +185,13 @@ function NetworkChart({ points, isAlertActive, colors }: Readonly<{
 }>) {
   const styles = createStyles(colors);
   const theme = useMemo(() => createQuakeGuardTheme(colors), [colors]);
-  const last = points[points.length - 1];
+  const last = points.at(-1);
   const threshold = last ? thresholdOf(last.y) : "live";
-  const lineColor = threshold === "alert"
+  const isAlert = threshold === "alert";
+  const isCaution = threshold === "caution";
+  const lineColor = isAlert
     ? colors.alert
-    : threshold === "caution"
+    : isCaution
       ? colors.caution
       : colors.live;
 
