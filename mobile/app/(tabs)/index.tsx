@@ -189,11 +189,12 @@ function NetworkChart({ points, isAlertActive, colors }: Readonly<{
   const threshold = last ? thresholdOf(last.y) : "live";
   const isAlert = threshold === "alert";
   const isCaution = threshold === "caution";
-  const lineColor = isAlert
-    ? colors.alert
-    : isCaution
-      ? colors.caution
-      : colors.live;
+  let lineColor = colors.live;
+  if (isAlert) {
+    lineColor = colors.alert;
+  } else if (isCaution) {
+    lineColor = colors.caution;
+  }
 
   if (points.length === 0) {
     return (
