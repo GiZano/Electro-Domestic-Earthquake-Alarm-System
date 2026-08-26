@@ -48,6 +48,15 @@ a:hover { color: var(--qg-orange); }
     padding: 0.5rem 1rem !important;
 }
 .navbar-glass .nav-link:hover { color: var(--qg-orange) !important; }
+
+/* Dropdown toggle as button (accessibility fix for role=button) */
+.navbar-glass .dropdown-toggle {
+    background: none;
+    border: none;
+    padding: 0.5rem 1rem !important;
+}
+.navbar-glass .dropdown-toggle:hover { color: var(--qg-orange) !important; }
+.navbar-glass .dropdown-toggle:focus { box-shadow: none; outline: none; }
 .navbar-glass .dropdown-menu {
     background-color: rgba(3, 15, 32, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.1);

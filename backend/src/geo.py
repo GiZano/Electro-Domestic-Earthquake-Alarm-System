@@ -133,10 +133,12 @@ def _cells_in_bbox(lat_min: float, lon_min: float, lat_max: float, lon_max: floa
     lat_start = max(0, math.floor((lat_min + 90.0) / lat_step))
     lat_end = min((1 << lat_bits) - 1, math.floor((lat_max + 90.0) / lat_step))
 
+    def _cell_geohash(lon_i: int, lat_i: int) -> str:
+        return _cell_indices_to_geohash(lon_i, lat_i, precision)
+
     cells = []
     for lat_i in range(lat_start, lat_end + 1):
-        for lon_i in range(lon_start, lon_end + 1):
-            cells.append(_cell_indices_to_geohash(lon_i, lat_i, precision))
+        cells.extend(_cell_geohash(lon_i, lat_i) for lon_i in range(lon_start, lon_end + 1))
     return cells
 
 

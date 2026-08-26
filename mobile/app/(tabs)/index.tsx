@@ -185,14 +185,13 @@ function NetworkChart({ points, isAlertActive, colors }: Readonly<{
 }>) {
   const styles = createStyles(colors);
   const theme = useMemo(() => createQuakeGuardTheme(colors), [colors]);
-  const last = points.at(-1);
+  const last = points[points.length - 1];
   const threshold = last ? thresholdOf(last.y) : "live";
-  let lineColor = colors.live;
-  if (threshold === "alert") {
-    lineColor = colors.alert;
-  } else if (threshold === "caution") {
-    lineColor = colors.caution;
-  }
+  const lineColor = threshold === "alert"
+    ? colors.alert
+    : threshold === "caution"
+      ? colors.caution
+      : colors.live;
 
   if (points.length === 0) {
     return (
@@ -312,8 +311,8 @@ export default function MonitorScreen() {
       }
       const list = [...merged.values()].filter(({ t }) => (now - t) / 1000 <= WINDOW_SECONDS);
       if (list.length === 0) return prev;
-      return list
-        .toSorted((a, b) => a.t - b.t)
+      return [...list]
+        .sort((a, b) => a.t - b.t)
         .slice(-WINDOW_MAX)
         .map(({ t, y }) => ({
           // Clamp to the domain so nothing can ever spill past the plot edges.

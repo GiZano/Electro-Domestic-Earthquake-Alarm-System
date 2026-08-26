@@ -288,7 +288,7 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.versionFooter}>QuakeGuard v1.2.1</Text>
+        <Text style={styles.versionFooter}>QuakeGuard v1.2.2</Text>
       </ScrollView>
     </SafeAreaView>
   );

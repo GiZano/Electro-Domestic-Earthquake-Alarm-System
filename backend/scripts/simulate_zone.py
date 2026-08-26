@@ -53,6 +53,15 @@ def estimate_magnitude(value: int) -> float:
     return max(0.0, min(math.log10(pga) + B_OFFSET, 9.9))
 
 
+def _magnitude_flag(mag: float) -> str:
+    """Return the emoji flag for a given magnitude."""
+    if mag >= 4.5:
+        return " 🚨 CRITICAL!"
+    if mag >= 4.0:
+        return " ⚠️ caution"
+    return ""
+
+
 def headers() -> dict:
     if not IOT_API_KEY:
         raise RuntimeError("IOT_API_KEY not set")
@@ -130,12 +139,7 @@ def main() -> None:
         resp = requests.post(f"{API_URL}/readings/", json=payload, headers=headers(), timeout=10)
         status = resp.status_code
         mag = estimate_magnitude(value)
-        if mag >= 4.5:
-            flag = " 🚨 CRITICAL!"
-        elif mag >= 4.0:
-            flag = " ⚠️ caution"
-        else:
-            flag = ""
+        flag = _magnitude_flag(mag)
         print(f"   t+{step:>2}s  value={value:>5}  M≈{mag:.2f}{flag}  http {status}", flush=True)
         if status != 202:
             print(f"      API: {resp.text}", flush=True)

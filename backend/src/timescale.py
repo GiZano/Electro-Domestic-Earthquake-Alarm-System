@@ -126,6 +126,32 @@ def _apply_retention(db: Session) -> bool:
         return False
 
 
+def _run_extension_step(db: Session, report: dict) -> bool:
+    """Step 1: Enable TimescaleDB extension."""
+    if not _enable_extension(db):
+        return False
+    report["timescaledb"] = True
+    return True
+
+
+def _run_hypertable_step(db: Session, report: dict) -> None:
+    """Step 2: Create hypertable."""
+    report["hypertable"] = _create_hypertable(db)
+
+
+def _run_aggregate_step(db: Session, report: dict) -> None:
+    """Step 3: Create continuous aggregate."""
+    report["aggregate"] = _create_continuous_aggregate(db)
+
+
+def _run_compression_retention_steps(db: Session, report: dict) -> None:
+    """Step 4: Apply compression and retention policies."""
+    _apply_compression(db)
+    report["retention"] = _apply_retention(db)
+    if report["retention"]:
+        print(f"✅ Retention policy set to {TSDB_RETENTION_DAYS} days.", flush=True)
+
+
 def apply_timescale(db: Session) -> dict:
     """Apply TimescaleDB DDL where possible. Returns a per-step report dict.
 
@@ -139,22 +165,12 @@ def apply_timescale(db: Session) -> dict:
         "retention": False,
     }
 
-    # 1. Extension ---------------------------------------------------------
-    if not _enable_extension(db):
+    if not _run_extension_step(db, report):
         return report
-    report["timescaledb"] = True
 
-    # 2. Hypertable --------------------------------------------------------
-    report["hypertable"] = _create_hypertable(db)
-
-    # 3. Continuous aggregate (per-sensor minute rollups) -------------------
-    report["aggregate"] = _create_continuous_aggregate(db)
-
-    # 4. Compression + retention -------------------------------------------
-    _apply_compression(db)
-    report["retention"] = _apply_retention(db)
-    if report["retention"]:
-        print(f"✅ Retention policy set to {TSDB_RETENTION_DAYS} days.", flush=True)
+    _run_hypertable_step(db, report)
+    _run_aggregate_step(db, report)
+    _run_compression_retention_steps(db, report)
 
     return report
 

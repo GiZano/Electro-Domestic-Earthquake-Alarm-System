@@ -79,20 +79,16 @@ inline std::string buildSerialFrame(const std::string& marker,
                                     int sensorId,
                                     long deviceTimestamp,
                                     const std::string& signatureHex) {
-    char buf[24];
     std::string frame;
-    frame.reserve(marker.size() + 16 + 16 + 16 + 24 + signatureHex.size());
+    frame.reserve(marker.size() + 64 + signatureHex.size());
 
     frame += marker;
     frame += "{\"value\":";
-    std::snprintf(buf, sizeof(buf), "%d", value); // NOSONAR(cpp:S6494)
-    frame += buf;
+    frame += std::to_string(value);
     frame += ",\"sensor_id\":";
-    std::snprintf(buf, sizeof(buf), "%d", sensorId); // NOSONAR(cpp:S6494)
-    frame += buf;
+    frame += std::to_string(sensorId);
     frame += ",\"device_timestamp\":";
-    std::snprintf(buf, sizeof(buf), "%ld", deviceTimestamp); // NOSONAR(cpp:S6494)
-    frame += buf;
+    frame += std::to_string(deviceTimestamp);
     frame += ",\"signature_hex\":\"";
     frame += signatureHex;
     frame += "\"}";

@@ -46,5 +46,5 @@ jobs:
         fi
 
         git add -A
-        git commit -m "docs(quakeguard): sync v1.2.1 page from QuakeGuard repo"
+        git commit -m "docs(quakeguard): sync v1.2.2 page from QuakeGuard repo"
         git push origin main
