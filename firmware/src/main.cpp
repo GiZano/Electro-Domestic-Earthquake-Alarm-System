@@ -301,7 +301,14 @@ bool performProvisioning() {
 #endif
     }
 #else
+#ifdef GNSS_FALLBACK_LAT
+    doc["latitude"] = GNSS_FALLBACK_LAT;
+    doc["longitude"] = GNSS_FALLBACK_LON;
+    Serial.printf("[PROV] GNSS disabled, using ENV fallback coords: %.5f, %.5f\n",
+                  (double)GNSS_FALLBACK_LAT, (double)GNSS_FALLBACK_LON);
+#else
     Serial.println("[PROV] GNSS disabled: omitting coordinates (backend assigns Unknown Region)");
+#endif
 #endif
     
     String requestBody;
