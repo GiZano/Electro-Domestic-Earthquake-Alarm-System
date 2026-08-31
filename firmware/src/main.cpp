@@ -315,9 +315,8 @@ static void drainRetention(RetentionRing<RETENTION_CAPACITY>& retention,
                            bool mqttUp, bool usbHost, bool timeValid,
                            time_t epochAtSync, unsigned long millisAtSync) {
     if (retention.empty() || !timeValid) return;
-    using enum DeliveryPath;
-    DeliveryPath path = decidePath(mqttUp && timeValid, usbHost, timeValid);
-    if (path != MQTT && path != SERIAL_CDC) return;
+    DeliveryPath path = decidePath(mqttUp && timeValid, usbHost, timeValid); // NOSONAR(cpp:S5811) - using enum requires C++20
+    if (path != DeliveryPath::MQTT && path != DeliveryPath::SERIAL_CDC) return;
     SerialEvent retainedEvt;
     while (retention.pop(retainedEvt)) {
         time_t report_time = epochAtSync + (millis() - millisAtSync) / 1000;
@@ -329,8 +328,7 @@ static void drainRetention(RetentionRing<RETENTION_CAPACITY>& retention,
 #endif
 
 static void deliverEvent(PubSubClient& mqttClient, DeliveryPath path, int val, time_t evt_time, const String& sig) {
-    using enum DeliveryPath;
-    if (path == MQTT) {
+    if (path == DeliveryPath::MQTT) { // NOSONAR(cpp:S5811)
         JsonDocument doc;
         doc["value"] = val;
         doc["sensor_id"] = globalSensorID;
@@ -426,24 +424,20 @@ void networkTask(void *pvParameters) { // NOSONAR
 
 #if SERIAL_FALLBACK_ENABLED
             {
-                using enum DeliveryPath;
-                DeliveryPath path = decidePath(mqttUp && timeValid, usbHost, timeValid);
+                DeliveryPath path = decidePath(mqttUp && timeValid, usbHost, timeValid); // NOSONAR(cpp:S5811)
                 switch (path) {
-                    case MQTT:
-                    case SERIAL_CDC:
+                    case DeliveryPath::MQTT: // NOSONAR(cpp:S5811)
+                    case DeliveryPath::SERIAL_CDC:
                         deliverEvent(mqttClient, path, val, evt_time, sig);
                         break;
-                    case RETAIN:
+                    case DeliveryPath::RETAIN:
                         retention.push({val, static_cast<long>(evt_time)});
                         Serial.println("[NET] No delivery path: event retained in ring.");
                         break;
                 }
             }
 #else
-            {
-                using enum DeliveryPath;
-                deliverEvent(mqttClient, MQTT, val, evt_time, sig);
-            }
+            deliverEvent(mqttClient, DeliveryPath::MQTT, val, evt_time, sig); // NOSONAR(cpp:S5811)
 #endif
         }
     }

@@ -3,7 +3,6 @@
 #include <array>
 #include <cstdio>
 #include <string>
-#include <string_view>
 
 #ifndef SERIAL_FALLBACK_MARKER
 #define SERIAL_FALLBACK_MARKER "[QG:FB]"
@@ -68,19 +67,18 @@ enum class DeliveryPath {
 };
 
 // Pure routing decision shared by firmware and host validation.
-inline DeliveryPath decidePath(bool mqttReachable, bool usbHostPresent, bool timeValid) {
-    using enum DeliveryPath;
-    if (mqttReachable) return MQTT;
-    if (usbHostPresent && timeValid) return SERIAL_CDC;
-    return RETAIN;
+inline DeliveryPath decidePath(bool mqttReachable, bool usbHostPresent, bool timeValid) { // NOSONAR(cpp:S5811) - using enum requires C++20, ESP32 toolchain is C++11
+    if (mqttReachable) return DeliveryPath::MQTT;
+    if (usbHostPresent && timeValid) return DeliveryPath::SERIAL_CDC;
+    return DeliveryPath::RETAIN;
 }
 
 // Build a [QG:FB] serial frame carrying the exact MQTT data-plane payload.
-inline std::string buildSerialFrame(std::string_view marker,
+inline std::string buildSerialFrame(const std::string& marker, // NOSONAR(cpp:S995) - string_view requires C++17, ESP32 toolchain is C++11
                                     int value,
                                     int sensorId,
                                     long deviceTimestamp,
-                                    std::string_view signatureHex) {
+                                    const std::string& signatureHex) { // NOSONAR(cpp:S995)
     std::string frame;
     frame.reserve(marker.size() + 64 + signatureHex.size());
 
