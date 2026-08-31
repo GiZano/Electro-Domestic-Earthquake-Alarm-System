@@ -27,11 +27,11 @@ numerical equivalence for the IEEE paper.
 (`metrics.py`, `calibrate.py`, the C++ core) never know whether they process a
 real earthquake or a locally generated mock — that is the point. Resolution:
 
-- **Real path (ESM).** The ESM (European Strong-Motion) downloader queries the
+- **Real path (INGV FDSN).** The INGV downloader queries the
   **public FDSN web-service** using **ObsPy** (`obspy.clients.fdsn`), downloads
-  the parametric flatfiles and accelerograms, and converts them into the shared
-  layout. No registration token is required, so the real path can work
-  headlessly in CI/CD. This replaces the previous ITACA DYNA-1.2 parser.
+  the open waveforms from the **IV** and **MN** networks (for the same historical events),
+  and converts them into the shared layout. No registration token is required, so the real path can work
+  headlessly in CI/CD. This replaces the previous ITACA/ESM parsers, as the IT network waveforms are restricted.
 - **Synthetic fallback (default).** When no network/ESM is available,
   `synthetic.py` generates *realistic* accelerometer-like mocks: white background
   noise, a high-frequency P impulse, a larger/lower-frequency S arrival, and a
@@ -43,7 +43,7 @@ real earthquake or a locally generated mock — that is the point. Resolution:
 │  synthetic.py                                                           │
 │    (fallback) ───────▶ realistic synthetic generator ──── P known       │
 │                                                                         │
-│  download_esm.py (ObsPy public FDSN) ───▶ t,ax,ay,az  (m/s²)           │
+│  download_esm.py (ObsPy public INGV FDSN) ───▶ t,ax,ay,az  (m/s²)      │
 └──────────────────────────────▶ (identical layout below) ────────────────┘
 ```
 
@@ -55,7 +55,7 @@ and weight). Generate it with:
 ```bash
 # realistic local / CI mock (no network required)
 python research/synthetic.py research/data_synth
-# real ESM (public FDSN API, no token)
+# real INGV FDSN (public API, open networks IV/MN, no token)
 python research/download_esm.py research/data
 ```
 
@@ -93,22 +93,13 @@ Acceleration (m/s²) = Acceleration (Gal) / 100
 
 ## Licensing & the real Zenodo dataset
 
-- **ESM = CC-BY-4.0 (parametric flatfiles).** ESM distributes its parametric
-  flatfiles (magnitude, station coordinates, PGA, distances) under **CC-BY-4.0**.
+- **INGV (IV/MN Networks) = Open Data.** The INGV FDSN web service distributes continuous waveforms for the IV and MN networks as open data.
   The **derived calibration dataset** (parsed events + ground truth in the shared
   layout) is therefore **re-distributable**: it can be published as an open
-  validation artifact on Zenodo with its own DOI. Cite ESM in `CITATION.cff`.
-- **ITACA = CC-BY-NC-ND-4.0.** ITACA forbids redistribution and modification of
-  its data. The derived, converted accelerograms must *not* be redistributed as a
-  modified dataset. The elegant resolution:
-  * fetch the raw data on-the-fly on the user's machine (the code, not the data,
-    is distributed);
-  * process it locally; publish only the **aggregate results** (ROC, F1,
-    false-alarm rates, optimal calibration parameters) — these are research
-    outputs, not derivatives of the seismic data;
-  * cite ITACA formally (CC-BY attribution) in the paper and in `CITATION.cff`.
+  validation artifact on Zenodo with its own DOI. Cite INGV in `CITATION.cff`.
+- **ITACA / ESM = Restricted.** The IT network forbids free redistribution of continuous raw waveforms without logging into their portal. By using the IV/MN networks, we bypassed this block.
 - **License re-verification gate.** Before publishing ANY derived artifact,
-  re-check the current ITACA/ESM license terms (they can change) and update
+  re-check the current INGV license terms (they can change) and update
   `CITATION.cff` accordingly at release time.
 - **QuakeGuard MEMS Dataset (yours).** The Zenodo dataset with its own DOI is
   the accelerogram recorded by your physical ESP32-C3 nodes (Tier A) — your own
