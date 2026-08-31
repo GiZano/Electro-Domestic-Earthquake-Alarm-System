@@ -1,11 +1,12 @@
 /**
  * Project: QuakeGuard - Professional Seismic Node
- * Version: 3.3.0-PROV-REFACTORED
- * Target Hardware: ESP32-C3 SuperMini + ADXL345
+ * Version: 1.3.0-GNSS-PPS
+ * Target Hardware: ESP32-C3 SuperMini + ADXL345 + NEO-6M (JLCPCB)
  * Author: GiZano
  *
  * CHANGELOG:
- * - Merged v3.2.0 Automated Device Handshake (Provisioning) with v3.0.0 FreeRTOS Refactoring.
+ * - v1.3.0: GNSS on UART1 RX 5 / TX 4 (JLCPCB J4), PPS on GPIO 2, fallback coords via .env,
+ *   LED blue (10) PWM dimmed + red (3) 3s quake pulse + boot self-test, NTP+PPS discipline prep.
  */
 
 #include <Arduino.h>
@@ -531,7 +532,7 @@ void setup() {
     digitalWrite(LED_RED_PIN, LOW);
     ledBootTest(); // verify wiring: 2x blink both LEDs
 
-    Serial.println("\n\n[BOOT] QuakeGuard v3.3 PROV-REFACTORED");
+    Serial.println("\n\n[BOOT] QuakeGuard v1.3.0 GNSS+PPS+LED");
     
     crypto().init();
     
@@ -564,13 +565,24 @@ void setup() {
     Wire.setClock(I2C_CLOCK_SPEED); 
     delay(100); 
 
-    if(!accel.begin(0x53) && !accel.begin(0x1D)) {
-        Serial.println("[FATAL] Sensor Hardware Error.");
-        while(true) vTaskDelay(100);
+    // ADXL345 init with retry — JLCPCB J3 on GPIO 7/8, allow cold-boot settling
+    bool adxlOk = false;
+    for (int attempt = 0; attempt < 3; attempt++) {
+        if (accel.begin(0x53) || accel.begin(0x1D)) { adxlOk = true; break; }
+        Serial.printf("[SENSOR] ADXL init failed, retry %d/3...\n", attempt + 1);
+        // blink red rapidly to signal I2C issue
+        for (int i = 0; i < 3; i++) { digitalWrite(LED_RED_PIN, HIGH); delay(80); digitalWrite(LED_RED_PIN, LOW); delay(80); }
+        delay(500);
     }
-    
-    accel.setDataRate(ADXL345_DATARATE_100_HZ);
-    accel.setRange(ADXL345_RANGE_16_G);
+    if (!adxlOk) {
+        Serial.println("[FATAL] Sensor Hardware Error — check J3 wiring, 3.3V, SDA 7/SCL 8, or try re-seating ADXL module.");
+        // do not halt forever: keep networkTask alive so blue LED and provisioning can be observed
+        digitalWrite(LED_RED_PIN, HIGH); // solid red = sensor fault
+        // still create tasks, sensorTask will keep reporting error via Serial
+    } else {
+        accel.setDataRate(ADXL345_DATARATE_100_HZ);
+        accel.setRange(ADXL345_RANGE_16_G);
+    }
 
     eventQueue = xQueueCreate(20, sizeof(SeismicEvent));
     xTaskCreate(sensorTask, "SensorTask", 8192, NULL, 5, NULL);
