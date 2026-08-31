@@ -33,6 +33,7 @@
 #include "DetectionCore.h"
 #include "GnssModule.h"
 #include "SerialFallback.h"
+#include "Calibration.h"
 
 // --------------------------------------------------------------------------
 // HARDWARE & SERVER CONFIGURATION
@@ -300,9 +301,7 @@ bool performProvisioning() {
 #endif
     }
 #else
-    // Hardcoded fallback until a GNSS module is attached (see ROADMAP v1.3).
-    doc["latitude"] = 41.9028;
-    doc["longitude"] = 12.4964;
+    Serial.println("[PROV] GNSS disabled: omitting coordinates (backend assigns Unknown Region)");
 #endif
     
     String requestBody;
@@ -462,6 +461,22 @@ void networkTask(void *pvParameters) { // NOSONAR
             }
         }
 
+#ifdef GNSS_ENABLED
+        if (timeValid && gnss().hasPpsFix()) {
+            // PPS discipline: the PPS pulse marks exactly the top of the second.
+            // We can realign our millisAtSync to the last PPS pulse to achieve ms precision.
+            static unsigned long lastDisciplinedPps = 0;
+            unsigned long ppsMs = gnss().getLastPpsMs();
+            if (ppsMs != lastDisciplinedPps) {
+                // Determine which second this PPS corresponds to by rounding to nearest second
+                time_t ppsEpoch = epochAtSync + (ppsMs - millisAtSync + 500) / 1000;
+                epochAtSync = ppsEpoch;
+                millisAtSync = ppsMs;
+                lastDisciplinedPps = ppsMs;
+            }
+        }
+#endif
+
         bool usbHost = Serial.isConnected(); // HWCDC: true only with a real USB host
 
         // Drain retained events to a path that just became available. Events
@@ -582,6 +597,7 @@ void setup() {
     } else {
         accel.setDataRate(ADXL345_DATARATE_100_HZ);
         accel.setRange(ADXL345_RANGE_16_G);
+        calibrateADXL345(accel);
     }
 
     eventQueue = xQueueCreate(20, sizeof(SeismicEvent));
