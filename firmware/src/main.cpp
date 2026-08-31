@@ -204,8 +204,8 @@ bool performProvisioning() {
     // SERVER_HOST may be configured with or without a leading scheme; normalize
     // it so a "https://host" value cannot produce "https://https://host". The
     // actual request protocol comes from SERVER_PROTOCOL below.
-    String host = String(SERVER_HOST);
-    int scheme = host.indexOf("://");
+    auto host = String(SERVER_HOST);
+    auto scheme = host.indexOf("://");
     if (scheme != -1) {
         host.remove(0, scheme + 3);
     }
@@ -307,8 +307,30 @@ void sensorTask(void *pvParameters) { // NOSONAR
 // --------------------------------------------------------------------------
 // TASK 2: NETWORK DISPATCH (MQTT + USB SERIAL FALLBACK)
 // --------------------------------------------------------------------------
+static void deliverEvent(PubSubClient& mqttClient, DeliveryPath path, int val, time_t evt_time, const String& sig);
+
+#if SERIAL_FALLBACK_ENABLED
+static void drainRetention(RetentionRing<RETENTION_CAPACITY>& retention,
+                           PubSubClient& mqttClient,
+                           bool mqttUp, bool usbHost, bool timeValid,
+                           time_t epochAtSync, unsigned long millisAtSync) {
+    if (retention.empty() || !timeValid) return;
+    using enum DeliveryPath;
+    DeliveryPath path = decidePath(mqttUp && timeValid, usbHost, timeValid);
+    if (path != MQTT && path != SERIAL_CDC) return;
+    SerialEvent retainedEvt;
+    while (retention.pop(retainedEvt)) {
+        time_t report_time = epochAtSync + (millis() - millisAtSync) / 1000;
+        String payload = String(retainedEvt.value) + ":" + String(report_time);
+        String sig = crypto().signMessage(payload);
+        deliverEvent(mqttClient, path, retainedEvt.value, report_time, sig);
+    }
+}
+#endif
+
 static void deliverEvent(PubSubClient& mqttClient, DeliveryPath path, int val, time_t evt_time, const String& sig) {
-    if (path == DeliveryPath::MQTT) {
+    using enum DeliveryPath;
+    if (path == MQTT) {
         JsonDocument doc;
         doc["value"] = val;
         doc["sensor_id"] = globalSensorID;
@@ -372,7 +394,8 @@ void networkTask(void *pvParameters) { // NOSONAR
 
 #if SERIAL_FALLBACK_ENABLED
         if (!timeValid) {
-            time_t t = time(nullptr);
+            auto now = std::chrono::system_clock::now();
+            time_t t = std::chrono::system_clock::to_time_t(now);
             if (t > 1600000000) {
                 epochAtSync = t;
                 millisAtSync = millis();
@@ -386,18 +409,7 @@ void networkTask(void *pvParameters) { // NOSONAR
         // Drain retained events to a path that just became available. Events
         // are re-signed with the current wall time (reporting time) so the
         // backend's +/-300 s replay window accepts the retransmission.
-        if (retention.size() > 0 && timeValid) {
-            DeliveryPath path = decidePath(mqttUp && timeValid, usbHost, timeValid);
-            if (path == DeliveryPath::MQTT || path == DeliveryPath::SERIAL_CDC) {
-                SerialEvent retainedEvt;
-                while (retention.pop(retainedEvt)) {
-                    time_t report_time = epochAtSync + (millis() - millisAtSync) / 1000;
-                    String payload = String(retainedEvt.value) + ":" + String(report_time);
-                    String sig = crypto().signMessage(payload);
-                    deliverEvent(mqttClient, path, retainedEvt.value, report_time, sig);
-                }
-            }
-        }
+        drainRetention(retention, mqttClient, mqttUp, usbHost, timeValid, epochAtSync, millisAtSync);
 #endif
 
         // Wait for a seismic event from the queue (up to 100 ms).
@@ -413,19 +425,25 @@ void networkTask(void *pvParameters) { // NOSONAR
             String sig = crypto().signMessage(payload);
 
 #if SERIAL_FALLBACK_ENABLED
-            DeliveryPath path = decidePath(mqttUp && timeValid, usbHost, timeValid);
-            switch (path) {
-                case DeliveryPath::MQTT:
-                case DeliveryPath::SERIAL_CDC:
-                    deliverEvent(mqttClient, path, val, evt_time, sig);
-                    break;
-                case DeliveryPath::RETAIN:
-                    retention.push({val, static_cast<long>(evt_time)});
-                    Serial.println("[NET] No delivery path: event retained in ring.");
-                    break;
+            {
+                using enum DeliveryPath;
+                DeliveryPath path = decidePath(mqttUp && timeValid, usbHost, timeValid);
+                switch (path) {
+                    case MQTT:
+                    case SERIAL_CDC:
+                        deliverEvent(mqttClient, path, val, evt_time, sig);
+                        break;
+                    case RETAIN:
+                        retention.push({val, static_cast<long>(evt_time)});
+                        Serial.println("[NET] No delivery path: event retained in ring.");
+                        break;
+                }
             }
 #else
-            deliverEvent(mqttClient, DeliveryPath::MQTT, val, evt_time, sig);
+            {
+                using enum DeliveryPath;
+                deliverEvent(mqttClient, MQTT, val, evt_time, sig);
+            }
 #endif
         }
     }

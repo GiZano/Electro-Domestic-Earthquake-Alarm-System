@@ -9,16 +9,14 @@ int main() {
         std::string frame = buildSerialFrame("[QG:FB]", 250, 42, 1720000000L,
                                              "0123456789abcdef0123456789abcdef");
         std::string expected =
-            "[QG:FB]{\"value\":250,\"sensor_id\":42,\"device_timestamp\":1720000000,"
-            "\"signature_hex\":\"0123456789abcdef0123456789abcdef\"}";
+            R"([QG:FB]{"value":250,"sensor_id":42,"device_timestamp":1720000000,"signature_hex":"0123456789abcdef0123456789abcdef"})";
         CHECK(frame == expected, "serial frame matches MQTT payload layout");
     }
 
     // Negative values (ADXL345 vibration) must be preserved
     {
         std::string frame = buildSerialFrame("[QG:FB]", -8192, 7, 1700000000L, "sig");
-        CHECK(frame == "[QG:FB]{\"value\":-8192,\"sensor_id\":7,\"device_timestamp\":1700000000,"
-                       "\"signature_hex\":\"sig\"}",
+        CHECK(frame == R"([QG:FB]{"value":-8192,"sensor_id":7,"device_timestamp":1700000000,"signature_hex":"sig"})",
               "negative value survives the frame builder");
     }
 
