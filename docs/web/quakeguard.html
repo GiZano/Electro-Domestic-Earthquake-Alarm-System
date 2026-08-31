@@ -14,7 +14,7 @@
           "alternateName": "QuakeGuard \u2014 Electro-Domestic Seismic Alarm System",
           "applicationCategory": "IoTApplication",
           "operatingSystem": "Web, ESP32-C3, React Native (Android/iOS)",
-          "softwareVersion": "1.2.2",
+          "softwareVersion": "1.3.0",
           "url": "https://giovanni-zanotti.is-a.dev/projects/quakeguard.html",
           "description": "Full-stack IoT architecture for real-time earthquake detection and early warning. ESP32-C3 + ADXL345 edge sensors with on-device STA/LTA and optional GNSS, ECDSA-signed telemetry over MQTT or USB CDC serial fallback (Zero-Trust), FastAPI + Redis Streams + TimescaleDB/PostGIS backend with per-area geo-zoning, and a React Native app with on-premise AI emergency reports (Ollama).",
           "codeRepository": "https://github.com/GiZano/QuakeGuard",
@@ -138,7 +138,7 @@
                         A full-stack IoT architecture for real-time detection, analysis and reporting of seismic events.
                         Everyday household appliances — washing machines, TVs, refrigerators — become a distributed
                         earthquake early-warning network that alerts you <strong style="color:#fff">before the shaking arrives</strong>.
-                        <strong style="color:#fff">v1.2.2 Zero-Trust Serial Fallback</strong> — ECDSA-signed telemetry over USB CDC
+                        <strong style="color:#fff">v1.3.0 GNSS Precision & SIL Validation</strong> — NTP hardware PPS discipline, ADXL345 calibration, real INGV FDSN validation, and Zero-Trust Serial Fallback
                         when MQTT/WiFi is unreachable, with host-aware retention and automatic first-boot provisioning — privacy-first,
                         seismic telemetry never leaves the machine.
                     </p>
@@ -485,7 +485,7 @@
                                 <div class="road-item done"><span class="ver" data-i18n="road_120_label">v1.2.0 · Released</span><p data-i18n="road_120"><strong>On-Premise AI Reports</strong> — Ollama generates emergency reports on-premise, pushed over WebSocket.</p></div>
                                 <div class="road-item done"><span class="ver" data-i18n="road_12_label">v1.2.1 · Released</span><p data-i18n="road_12"><strong>Geo-Zoning &amp; Cooldown Fragmentation (GNSS-ready)</strong> — geohash Redis fast-path zone resolution, per-area cooldown locks, PostGIS <code style="color:#00f5ff">ST_Contains</code> as source of truth.</p></div>
                                 <div class="road-item done"><span class="ver" data-i18n="road_122_label">v1.2.2 · Released</span><p data-i18n="road_122"><strong>Zero-Trust Serial Fallback</strong> — ECDSA-signed telemetry over USB CDC when MQTT/WiFi is unreachable, with host-aware retention and automatic first-boot provisioning.</p></div>
-                                <div class="road-item"><span class="ver" data-i18n="road_13_label">v1.3 · Synchronized GNSS</span><p data-i18n="road_13">Optional GNSS module (NEO-6M/M8N), NTP + PPS timestamps, real coordinates replacing the hardcoded fix, ADXL345 calibration.</p></div>
+                                <div class="road-item done"><span class="ver" data-i18n="road_13_label">v1.3.0 · Released</span><p data-i18n="road_13">Optional GNSS module (NEO-6M/M8N), NTP + PPS timestamps, real coordinates replacing the hardcoded fix, ADXL345 calibration.</p></div>
                                 <div class="road-item"><span class="ver" data-i18n="road_20_label">v2.0 · Triangulation</span><p data-i18n="road_20">Multi-node spatial correlation + AI reports for <strong>epicenter calculation</strong>.</p></div>
                                 <div class="road-item"><span class="ver" data-i18n="road_21_label">v2.1 · Dashboards</span><p data-i18n="road_21"><strong>Grafana</strong> live visualization of seismic telemetry.</p></div>
                             </div>
