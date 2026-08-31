@@ -140,7 +140,7 @@ window.I18N_DATA = (function () {
         road_120: { en: '<strong>On-Premise AI Reports</strong> — Ollama generates emergency reports on-premise, pushed over WebSocket.', it: '<strong>Report AI On-Premise</strong> — Ollama genera i report di emergenza on-premise, inviati via WebSocket.' },
         road_12_label: { en: 'v1.2.1 · Released', it: 'v1.2.1 · Rilasciata' },
         road_12: { en: '<strong>Geo-Zoning &amp; Cooldown Fragmentation (GNSS-ready)</strong> — geohash Redis fast-path zone resolution, per-area cooldown locks, PostGIS <code>ST_Contains</code> as source of truth.', it: '<strong>Geo-Zoning e frammentazione del cooldown (GNSS-ready)</strong> — risoluzione zona via indice geohash Redis fast-path, lock di cooldown per area, PostGIS <code>ST_Contains</code> come fonte di verità.' },
-        road_122_label: { en: 'v1.2.2 · Current', it: 'v1.2.2 · Attuale' },
+        road_122_label: { en: 'v1.2.2 · Released', it: 'v1.2.2 · Rilasciata' },
         road_122: { en: '<strong>Zero-Trust Serial Fallback</strong> — ECDSA-signed telemetry over USB CDC when MQTT/WiFi is unreachable, plus automatic first-boot registration (<code>SENSOR_ID</code> removed).', it: '<strong>Zero-Trust Serial Fallback</strong> — telemetria firmata ECDSA su USB CDC quando MQTT/WiFi non è raggiungibile, più la registrazione automatica al primo boot (<code>SENSOR_ID</code> rimosso).' },
         road_13_label: { en: 'v1.3 · Synchronized GNSS', it: 'v1.3 · GNSS sincronizzato' },
         road_13: { en: 'Optional GNSS module (NEO-6M/M8N), NTP + PPS timestamps, real coordinates replacing the hardcoded fix, ADXL345 calibration.', it: 'Modulo GNSS opzionale (NEO-6M/M8N), timestamp NTP + PPS, coordinate reali al posto del fix hardcoded, calibrazione ADXL345.' },
