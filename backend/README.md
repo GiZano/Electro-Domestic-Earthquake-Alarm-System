@@ -99,15 +99,20 @@ docker-compose up -d --build
 
 The API will be accessible at: `http://localhost:8000`
 
-### 3. Optional — Enable AI Emergency Reports
-To run the on-premise AI report pipeline (local Ollama + dedicated worker), start the stack with the `ai` profile:
+### 3. Optional — Enable AI Emergency Reports (Hybrid Edge AI)
+To maximize performance and avoid Docker virtualization overhead for GPU drivers, QuakeGuard uses a hybrid Edge AI architecture (following NVIDIA Jetson/Tesla FSD best practices). The AI model runs natively on the host OS, while the `ai-worker` runs in Docker.
 
-```bash
-cd api
-docker-compose --profile ai up -d --build
-```
+1. Install Ollama natively on your Linux host machine:
+   `curl -fsSL https://ollama.com/install.sh | sh`
+2. Download the model:
+   `ollama pull llama3.2:1b`
+3. Start the Docker stack with the `ai` profile:
+   ```bash
+   cd api
+   docker-compose --profile ai up -d --build
+   ```
 
-The Ollama service auto-pulls the configured model (`OLLAMA_MODEL`, default `llama3.2:1b`) on first startup. Reports are generated entirely on the host — telemetry never leaves your machine.
+The `ai-worker` container will automatically connect to your native Ollama instance using the host network. Reports are generated entirely on the host — telemetry never leaves your machine.
 
 ### 4. API Documentation
 Interactive Swagger UI is available at:

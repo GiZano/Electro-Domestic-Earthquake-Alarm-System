@@ -85,13 +85,13 @@ export default function MapScreen() {
         provider={PROVIDER_DEFAULT}
         customMapStyle={mapStyle}
         initialRegion={{
-          latitude: 41.9028,
-          longitude: 12.4964,
+          latitude: 45.4642,
+          longitude: 9.1900,
           latitudeDelta: 5,
           longitudeDelta: 5,
         }}
       >
-        {sensors?.map((sensor: any) => (
+        {sensors?.filter((s: any) => s.latitude != null && s.longitude != null).map((sensor: any) => (
           <Marker
             key={sensor.id}
             coordinate={{ latitude: sensor.latitude, longitude: sensor.longitude }}

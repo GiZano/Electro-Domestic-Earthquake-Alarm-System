@@ -52,6 +52,11 @@ jobs:
         cd mobile
         npx --no-install eslint . --ext .js,.jsx,.ts,.tsx
 
+    - name: TypeScript Type Check
+      run: |
+        cd mobile
+        npx tsc --noEmit
+
     - name: Run Jest Unit Tests
       run: |
         cd mobile

@@ -29,7 +29,7 @@ void GnssModule::begin() {
   serial_.begin(GPS_SERIAL_BAUD, SERIAL_8N1, GPS_SERIAL_RX_PIN, GPS_SERIAL_TX_PIN);
   Serial.printf("[GNSS] Module started (UART RX=%d TX=%d, baud=%d, PPS=%d)\n",
                 GPS_SERIAL_RX_PIN, GPS_SERIAL_TX_PIN, GPS_SERIAL_BAUD, GPS_PPS_PIN);
-  // PPS on GPIO 2 (J4-5) — JLCPCB wired, v1.3 will discipline NTP+PPS
+  // PPS on GPIO 2 (J4-5) — JLCPCB wired, v2.0.0 disciplines NTP+PPS
   pinMode(GPS_PPS_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(GPS_PPS_PIN), onPpsIsr, RISING);
   Serial.printf("[GNSS] PPS listener armed on GPIO %d\n", GPS_PPS_PIN);
@@ -44,7 +44,7 @@ void GnssModule::loop() {
   while (serial_.available()) {
     gps_.encode(serial_.read());
   }
-  // PPS pulse logging (GPIO 2, J4-5) — v1.3 discipline will use this timestamp
+  // PPS pulse logging (GPIO 2, J4-5) — v2.0.0 discipline will use this timestamp
   static unsigned long lastLoggedPps = 0;
   unsigned long pps = lastPpsMs_;
   if (pps != 0 && pps != lastLoggedPps) {

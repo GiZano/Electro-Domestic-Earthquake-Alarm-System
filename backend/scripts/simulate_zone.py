@@ -30,9 +30,9 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 IOT_API_KEY = os.getenv("IOT_API_KEY", "")
-ZONE_NAME = os.getenv("ZONE_NAME", "TEST ZONE")
-SENSOR_LAT = float(os.getenv("SENSOR_LAT", "41.9028"))
-SENSOR_LON = float(os.getenv("SENSOR_LON", "12.4964"))
+ZONE_NAME = os.getenv("ZONE_NAME", "Italy - North")
+SENSOR_LAT = float(os.getenv("SENSOR_LAT", "45.4642"))
+SENSOR_LON = float(os.getenv("SENSOR_LON", "9.1900"))
 DURATION_SECONDS = int(os.getenv("DURATION_SECONDS", "20"))
 
 

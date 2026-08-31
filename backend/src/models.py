@@ -48,7 +48,7 @@ class Sensor(Base):
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     location = Column(Geometry('POINT', srid=4326), nullable=True)
-    # GNSS-ready: last reliable fix timestamp (v1.2.1). Null until the first fix.
+    # GNSS-ready: last reliable fix timestamp . Null until the first fix.
     last_fix_at = Column(DateTime(timezone=True), nullable=True)
 
     # --- SECURITY & IDENTITY ---
@@ -71,7 +71,7 @@ class Reading(Base):
     recorded_at = Column(DateTime(timezone=True), primary_key=True, server_default=func.now(), nullable=False, index=True)
     value = Column(Integer, nullable=False)
     
-    # GNSS-ready: event coordinates captured at ingestion (v1.2.1) so the worker
+    # GNSS-ready: event coordinates captured at ingestion  so the worker
     # can fragment cooldowns per-area and v2.0 can correlate nodes spatially.
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
@@ -89,6 +89,12 @@ class Alert(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     magnitude = Column(Float, nullable=False) 
     message = Column(String(255), nullable=True)
+
+    # Triangulation (v2.0)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    origin_time = Column(DateTime(timezone=True), nullable=True)
+    is_triangulated = Column(Boolean, default=False, nullable=False)
 
     zone = relationship("Zone")
 

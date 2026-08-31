@@ -92,29 +92,31 @@ services:
       fastapi-app:
         condition: service_healthy
 
-# --- LOCAL OLLAMA (AI Emergency Reports, v1.2.0) ---
+  # --- LOCAL OLLAMA (AI Emergency Reports) ---
   # Runs entirely on-premise inside the Docker network: telemetry never leaves the host.
   # Enabled via `--profile ai` (kept out of default `up` so CI stays hermetic).
-  ollama:
-    image: ollama/ollama:latest
-    restart: unless-stopped
-    profiles: ["ai"]
-    entrypoint: ["/bin/sh"]
-    command: ["/usr/local/bin/ollama-entrypoint.sh"]
-    environment:
-      - OLLAMA_HOST=0.0.0.0
-      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-5m}
-      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:1b}
-    volumes:
-      - ollama_data:/root/.ollama
-      - ./init-scripts/ollama-entrypoint.sh:/usr/local/bin/ollama-entrypoint.sh:ro
-    ports:
-      - "${OLLAMA_PORT:-11434}:11434"
-    healthcheck:
-      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
+  # 
+  # OLLAMA DOCKER CONTAINER COMMENTED OUT TO SAVE BANDWIDTH (USING NATIVE LINUX HOST)
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   restart: unless-stopped
+  #   profiles: ["ai"]
+  #   entrypoint: ["/bin/sh"]
+  #   command: ["/usr/local/bin/ollama-entrypoint.sh"]
+  #   environment:
+  #     - OLLAMA_HOST=0.0.0.0
+  #     - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-5m}
+  #     - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:1b}
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #     - ./init-scripts/ollama-entrypoint.sh:/usr/local/bin/ollama-entrypoint.sh:ro
+  #   ports:
+  #     - "${OLLAMA_PORT:-11434}:11434"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 12
 
   # --- AI REPORT WORKER (v1.2.0) ---
   # Dedicated consumer of the ai_report_queue; generates reports via local Ollama.
@@ -123,20 +125,14 @@ services:
     restart: always
     profiles: ["ai"]
     command: python src/ai_report_worker.py
+    network_mode: "host" # Forces the container to use host network to reach native Ollama
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - REDIS_URL=redis://redis:6379/0
-      - OLLAMA_HOST=${OLLAMA_HOST:-http://ollama:11434}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@127.0.0.1:5432/${POSTGRES_DB:-quakeguard}
+      - REDIS_URL=redis://127.0.0.1:6379/0
+      - OLLAMA_HOST=http://127.0.0.1:11434 # Points to the native Linux Ollama instance
       - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:1b}
       - OLLAMA_TIMEOUT=${OLLAMA_TIMEOUT:-30}
       - PYTHONUNBUFFERED=1
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-      ollama:
-        condition: service_healthy
 
 volumes:
   postgres_data:

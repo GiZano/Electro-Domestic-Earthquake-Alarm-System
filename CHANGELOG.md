@@ -5,16 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.3.0] - 2026-08-31
+## [2.0.0] - 2026-09-01
 ### Added
+- **Hybrid Networking Architecture:** Transitioned from pure cloud to a Local-First / Cloud-Hybrid architecture for robust exhibition reliability.
+- **Local Factory Provisioning:** Provisioning now uses local HTTP to bypass ESP32 mbedTLS memory limitations with large Let's Encrypt tunnel certificates.
+- **DevOps Orchestration:** Introduced `scripts/quakeguard_init.sh` (Ptyxis 3-window orchestrator) and `scripts/tunnel_init.sh` (automated Cloudflare quick-tunnel generation with dynamic `.env` injection and automatic firmware rebuild).
 - **Synchronized GNSS & Timing:** Implemented `NTP + PPS` (GPIO 2) discipline for millisecond-accurate time synchronization, replacing the hardcoded fix.
 - **ADXL345 Hardware Calibration:** Introduced boot-time routine computing static offsets from 100 samples and writing biases directly to hardware registers (`OFSX`, `OFSY`, `OFSZ`).
 - **SIL Validation (INGV FDSN):** Integrated ObsPy and FDSN queries to INGV for algorithmic validation on public, reproducible open data. ROC curve documented, completing the R1 validation milestone.
+- **Hardware Documentation:** Documented diagnostic LED patterns (including Serial Fallback) and integrated Proprietary Hardware (v2.0.0 PCB) assembly visuals into the whitepaper and website.
 
 ### Changed
-- Refactored `firmware/esp32_config.env.example` as the standard configuration template.
-- Resolved SonarCloud maintainability warnings in `Calibration.h` and `download_esm.py`, ensuring full Quality Gate compliance.
-- Version artifacts bumped to v1.3.0 across documentation, web assets, and citation file.
+- Shifted default fallback GNSS coordinates (simulated and IoT) to Milan (Italy North) for regional alignment.
+- Refactored `firmware/esp32_config.env.example` as the standard configuration template, reflecting the new Local IP architecture.
+- Version artifacts bumped to v2.0.0 across documentation and web assets.
+
+### Fixed
+- **UnboundLocalError in Backend Worker:** Fixed a bug where a sub-threshold seismic event (`magnitude < 4.5`) would trigger an `UnboundLocalError` on `triangulation_data`, leading to batch rollback and empty dashboard graphs.
+- **Subnet DNS Patch:** Removed erroneous `WiFi.config` in firmware that forced `INADDR_NONE` on the subnet mask, causing local routing failures (errno 118).
+- **Mobile Map Crash:** Resolved a critical React Native `AIRMapMarker` rendering crash by implementing a strict null/undefined coordinate filter in the sensor mapping array.
+- **Mobile UI Polish:** Updated the `MAG` badge to default to `0.00` (instead of `N/A`) and implemented dynamic Y-axis domain scaling (0 to 5+) for the `VictoryChart` seismograph.
 
 ## [1.2.2] - 2026-08-31
 ### Added

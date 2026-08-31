@@ -35,7 +35,7 @@ Due to the specific layout of the ESP32-C3 SuperMini, the I2C bus is forced via 
 * **Integrity:** Every payload is hashed (SHA-256) and signed. The server can verify the origin using the device's Public Key.
 * **Replay Protection:** Timestamps are synchronized via NTP (`pool.ntp.org`) to prevent replay attacks.
 
-### USB Serial Fallback (v1.2.2)
+### USB Serial Fallback 
 When the MQTT data plane is unreachable, the node re-certifies each event and emits it over the **USB CDC** port as a machine-readable frame so a co-located host still receives data during offline simulations:
 
 ```

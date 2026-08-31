@@ -5,10 +5,10 @@ QuakeGuard takes the security of its IoT early warning infrastructure very serio
 
 | Version | Supported          | Notes |
 | ------- | ------------------ | ----- |
-| 1.3.x   | :white_check_mark: | Current stable release (GNSS Precision & SIL Validation). |
-| 1.2.x   | :white_check_mark: | Prior stable release (Cloud MQTT + TLS + on-premise AI reports). |
+| 2.0.x   | :white_check_mark: | Current stable release (Hybrid Network Architecture, GNSS Precision & SIL Validation). |
+| 1.3.x   | :white_check_mark: | Prior stable release (GNSS Precision & SIL Validation). |
+| 1.2.x   | :x:                | Deprecated. (Cloud MQTT + TLS + on-premise AI reports). |
 | 1.1.x   | :x:                | Deprecated. Cloud MQTT + TLS. |
-| 1.0.x   | :x:                | Deprecated. Local network only. |
 | < 1.0   | :x:                | Pre-release prototypes. |
 
 ## Reporting a Vulnerability
