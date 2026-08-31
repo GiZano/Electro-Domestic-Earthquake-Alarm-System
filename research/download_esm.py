@@ -13,13 +13,15 @@ This script fulfills the R1 (SIL Validation) requirements by:
 import argparse
 import csv
 import json
+import sys
 from pathlib import Path
 
-try:
-    from obspy import UTCDateTime
-    from obspy.clients.fdsn import Client
-except ImportError:
-    raise ImportError("ObsPy is required. Install it via 'pip install obspy'")
+# Setup local path for imports
+sys.path.append(str(Path(__file__).parent))
+from synthetic import build_synthetic_dataset
+
+from obspy import UTCDateTime
+from obspy.clients.fdsn import Client
 
 GRAVITY = 9.80665
 
@@ -75,14 +77,10 @@ def download_and_process(out_dir: Path):
                                       starttime=start_time, endtime=end_time, level="response")
             st = client.get_waveforms(network=net, station=sta, location="*", channel="H*", 
                                       starttime=start_time, endtime=end_time)
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:  # NOSONAR pylint: disable=broad-except
             print(f"  [ERROR] FDSN fetch failed for {ev_id}: {e}")
             print("  [INFO] ESM (esm-db.eu) does not expose a public FDSN dataselect endpoint, and IT network waveforms are restricted on EIDA.")
             print("  [INFO] Falling back to realistic synthetic data to continue SIL validation pipeline...")
-            import sys
-            sys.path.append(str(Path(__file__).parent))
-            # pylint: disable=import-outside-toplevel
-            from synthetic import build_synthetic_dataset
             build_synthetic_dataset(out_dir, n_events=len(EVENTS))
             return
             
