@@ -17,7 +17,9 @@ inline void calibrateADXL345(Adafruit_ADXL345_Unified& accel) {
     // Allow sensor to stabilize
     delay(1000);
 
-    float sumX = 0, sumY = 0, sumZ = 0;
+    float sumX = 0;
+    float sumY = 0;
+    float sumZ = 0;
     const int numSamples = 100;
     
     for (int i = 0; i < numSamples; i++) {

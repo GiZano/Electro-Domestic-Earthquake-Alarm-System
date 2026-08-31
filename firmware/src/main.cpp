@@ -95,7 +95,7 @@ static int globalSensorID = 0;
 Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
 
 // LED state (v1.3) — blue dimmed via PWM, red 3 s pulse
-static volatile unsigned long g_redLedOffAt = 0;
+static volatile unsigned long g_redLedOffAt = 0; // NOSONAR
 static constexpr int BLUE_BRIGHT = 100; // 0-255, ~40% per dimmare leggermente il blu (era 255)
 
 inline void triggerQuakeLed() {
