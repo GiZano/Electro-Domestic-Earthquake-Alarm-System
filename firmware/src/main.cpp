@@ -424,9 +424,9 @@ void networkTask(void *pvParameters) { // NOSONAR
 
 #if SERIAL_FALLBACK_ENABLED
             {
-                DeliveryPath path = decidePath(mqttUp && timeValid, usbHost, timeValid); // NOSONAR(cpp:S5811)
-                switch (path) {
-                    case DeliveryPath::MQTT: // NOSONAR(cpp:S5811)
+                DeliveryPath path = decidePath(mqttUp && timeValid, usbHost, timeValid);
+                switch (path) { // NOSONAR(cpp:S5811) - using enum requires C++20, ESP32 gnu++11
+                    case DeliveryPath::MQTT:
                     case DeliveryPath::SERIAL_CDC:
                         deliverEvent(mqttClient, path, val, evt_time, sig);
                         break;
