@@ -26,22 +26,22 @@ except ImportError:
 GRAVITY = 9.80665
 
 # Event dictionary defining the exact requested baselines.
+# Using public EIDA networks (IV, MN) via INGV instead of restricted IT network
 # format: (Origin Time UTC, Network, Station, P_arrival_offset_from_origin)
 EVENTS = {
     # 1. L'Aquila 2009 (Near-fault su roccia)
-    "1895389_aquila": ("2009-04-06T01:32:40", "IT", "AQV", 2.0),
+    "1895389_aquila": ("2009-04-06T01:32:40", "MN", "AQU", 2.0),
     
     # 2. Emilia 2012 (Risonanza sedimentaria, emergent P-wave)
-    "772691_emilia": ("2012-05-20T02:03:50", "IT", "MRN", 4.0),
+    "772691_emilia": ("2012-05-20T02:03:50", "IV", "MODE", 4.0),
     
     # 3a. Amatrice 2016 (Shadow zone - Mainshock)
-    "7073641_amatrice": ("2016-08-24T01:36:32", "IT", "AMT", 2.0),
+    "7073641_amatrice": ("2016-08-24T01:36:32", "IV", "NRCA", 2.0),
     
     # 3b. Norcia 2016 (Shadow zone - Aftershocks ravvicinati)
-    "8863681_norcia": ("2016-10-30T06:40:17", "IT", "FEMA", 3.0),
+    "8863681_norcia": ("2016-10-30T06:40:17", "IV", "FEMA", 3.0),
     
     # 4. Salizzole 2020 (Micro-sismicità, Noise floor baseline)
-    # Using a distant station (e.g., in Bergamo or Brescia, typically IV network)
     "7461_salizzole": ("2020-12-29T14:36:57", "IV", "BRMO", 15.0),
 }
 
@@ -58,7 +58,7 @@ def download_and_process(out_dir: Path):
     events_dir.mkdir(parents=True, exist_ok=True)
     
     from obspy.clients.fdsn import Client
-    client = Client("http://esm-db.eu")
+    client = Client("INGV")
     ground_truth = []
     
     print("Starting SIL FDSN dataset download and processing...")
@@ -71,10 +71,10 @@ def download_and_process(out_dir: Path):
         
         print(f"Fetching {ev_id} ({sta}) from {start_time} to {end_time}...")
         try:
-            # High-Gain Accelerometers (HN*)
-            inv = client.get_stations(network=net, station=sta, location="*", channel="HN*",
+            # High-Gain/Broadband Accelerometers/Seismometers (H*)
+            inv = client.get_stations(network=net, station=sta, location="*", channel="H*",
                                       starttime=start_time, endtime=end_time, level="response")
-            st = client.get_waveforms(network=net, station=sta, location="*", channel="HN*", 
+            st = client.get_waveforms(network=net, station=sta, location="*", channel="H*", 
                                       starttime=start_time, endtime=end_time)
         except Exception as e:
             print(f"  [ERROR] FDSN fetch failed for {ev_id}: {e}")
@@ -98,11 +98,12 @@ def download_and_process(out_dir: Path):
         
         # Sort and extract components
         st.sort(keys=['channel'])
-        # Usually channels are HNE (x/y), HNN (x/y), HNZ (z)
+        
+        # Try to find exactly one trace per component (E, N, Z)
         try:
-            tr_e = st.select(component="E")[0]
-            tr_n = st.select(component="N")[0]
-            tr_z = st.select(component="Z")[0]
+            tr_e = [t for t in st if t.stats.channel.endswith('E')][0]
+            tr_n = [t for t in st if t.stats.channel.endswith('N')][0]
+            tr_z = [t for t in st if t.stats.channel.endswith('Z')][0]
         except IndexError:
             print(f"  [ERROR] Missing expected components for {ev_id}. Skipping.")
             continue
