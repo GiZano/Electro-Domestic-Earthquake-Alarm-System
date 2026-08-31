@@ -13,7 +13,6 @@ This script fulfills the R1 (SIL Validation) requirements by:
 import argparse
 import csv
 import json
-import math
 from pathlib import Path
 
 try:
@@ -46,18 +45,19 @@ EVENTS = {
 }
 
 def write_accelerogram_csv(path: Path, times: list, ax: list, ay: list, az: list):
+    """Write time-series acceleration data to a CSV file."""
     with path.open("w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["# t,ax,ay,az"])
-        for i in range(len(times)):
-            writer.writerow([f"{times[i]:.6f}", f"{ax[i]:.6f}", f"{ay[i]:.6f}", f"{az[i]:.6f}"])
+        for i, t_val in enumerate(times):
+            writer.writerow([f"{t_val:.6f}", f"{ax[i]:.6f}", f"{ay[i]:.6f}", f"{az[i]:.6f}"])
 
 def download_and_process(out_dir: Path):
+    """Download FDSN data, apply signal processing, and save to output directory."""
     out_dir = Path(out_dir).resolve()
     events_dir = out_dir / "events"
     events_dir.mkdir(parents=True, exist_ok=True)
     
-    from obspy.clients.fdsn import Client
     client = Client("INGV")
     ground_truth = []
     
@@ -76,24 +76,25 @@ def download_and_process(out_dir: Path):
                                       starttime=start_time, endtime=end_time, level="response")
             st = client.get_waveforms(network=net, station=sta, location="*", channel="H*", 
                                       starttime=start_time, endtime=end_time)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             print(f"  [ERROR] FDSN fetch failed for {ev_id}: {e}")
-            print(f"  [INFO] ESM (esm-db.eu) does not expose a public FDSN dataselect endpoint, and IT network waveforms are restricted on EIDA.")
-            print(f"  [INFO] Falling back to realistic synthetic data to continue SIL validation pipeline...")
+            print("  [INFO] ESM (esm-db.eu) does not expose a public FDSN dataselect endpoint, and IT network waveforms are restricted on EIDA.")
+            print("  [INFO] Falling back to realistic synthetic data to continue SIL validation pipeline...")
             import sys
             sys.path.append(str(Path(__file__).parent))
+            # pylint: disable=import-outside-toplevel
             from synthetic import build_synthetic_dataset
             build_synthetic_dataset(out_dir, n_events=len(EVENTS))
             return
             
-        print(f"  Removing instrumental response (ACC)...")
+        print("  Removing instrumental response (ACC)...")
         # output="ACC" converts to m/s^2 directly
         st.remove_response(inventory=inv, output="ACC", pre_filt=[0.1, 0.5, 30.0, 40.0], water_level=60)
         
-        print(f"  Applying causal bandpass (1-20 Hz)...")
+        print("  Applying causal bandpass (1-20 Hz)...")
         st.filter("bandpass", freqmin=1.0, freqmax=20.0, corners=4, zerophase=False)
         
-        print(f"  Resampling to 100 Hz (anti-aliasing)...")
+        print("  Resampling to 100 Hz (anti-aliasing)...")
         st.interpolate(sampling_rate=100.0, method="lanczos", a=20)
         
         # Sort and extract components
@@ -132,6 +133,7 @@ def download_and_process(out_dir: Path):
     print("Done.")
 
 def main(argv=None):
+    """Parse CLI arguments and run the download pipeline."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("out_dir", type=Path, help="output dataset dir")
     args = parser.parse_args(argv)
