@@ -67,30 +67,30 @@ enum class DeliveryPath {
 };
 
 // Pure routing decision shared by firmware and host validation.
-inline DeliveryPath decidePath(bool mqttReachable, bool usbHostPresent, bool timeValid) {
+inline DeliveryPath decidePath(bool mqttReachable, bool usbHostPresent, bool timeValid) { // NOSONAR(cpp:S5811) - using enum requires C++20, ESP32 toolchain is C++11
     if (mqttReachable) return DeliveryPath::MQTT;
     if (usbHostPresent && timeValid) return DeliveryPath::SERIAL_CDC;
     return DeliveryPath::RETAIN;
 }
 
 // Build a [QG:FB] serial frame carrying the exact MQTT data-plane payload.
-inline std::string buildSerialFrame(const std::string& marker,
+inline std::string buildSerialFrame(const std::string& marker, // NOSONAR(cpp:S995) - string_view requires C++17, ESP32 toolchain is C++11
                                     int value,
                                     int sensorId,
                                     long deviceTimestamp,
-                                    const std::string& signatureHex) {
+                                    const std::string& signatureHex) { // NOSONAR(cpp:S995)
     std::string frame;
     frame.reserve(marker.size() + 64 + signatureHex.size());
 
     frame += marker;
-    frame += "{\"value\":";
+    frame += R"({"value":)";
     frame += std::to_string(value);
-    frame += ",\"sensor_id\":";
+    frame += R"(,"sensor_id":)";
     frame += std::to_string(sensorId);
-    frame += ",\"device_timestamp\":";
+    frame += R"(,"device_timestamp":)";
     frame += std::to_string(deviceTimestamp);
-    frame += ",\"signature_hex\":\"";
+    frame += R"(,"signature_hex":")";
     frame += signatureHex;
-    frame += "\"}";
+    frame += R"("})";
     return frame;
 }

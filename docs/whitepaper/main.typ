@@ -29,7 +29,7 @@
   #v(0.2cm)
   #text(size: 14pt)[Technical Architecture & Protocol Specification]\
   #v(2cm)
-  #text(size: 12pt)[Release: *v1.2.2* (Geo-Zoning & GNSS-Ready Nodes)]\
+  #text(size: 12pt)[Release: *v1.2.2* (Zero-Trust Serial Fallback)]\
   #v(0.5cm)
   #text(size: 12pt)[Core Maintainers: \@GiZano, \@riccardo0731]\
   #v(3cm)

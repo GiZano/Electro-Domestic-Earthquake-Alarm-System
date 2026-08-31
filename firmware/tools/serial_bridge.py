@@ -120,9 +120,16 @@ def main(argv=None):
 
     import serial  # imported lazily so parse_frame/forward work without pyserial
 
-    with serial.Serial(args.port, args.baud, timeout=1) as ser:
-        print(f"🔌 Listening on {args.port} @ {args.baud} baud...")
-        _run(ser, args.api_url, args.api_key, args.dry_run)
+    try:
+        with serial.Serial(args.port, args.baud, timeout=1) as ser:
+            print(f"🔌 Listening on {args.port} @ {args.baud} baud...")
+            _run(ser, args.api_url, args.api_key, args.dry_run)
+    except serial.SerialException as exc:
+        print(f"❌ Serial port open failed: {exc}", file=sys.stderr)
+        return 2
+    except OSError as exc:
+        print(f"❌ Serial port error: {exc}", file=sys.stderr)
+        return 2
     return 0
 
 

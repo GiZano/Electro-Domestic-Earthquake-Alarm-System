@@ -55,7 +55,7 @@ Geographic zone division designed so the system is ready for the GNSS upgrade (v
 
 ---
 
-## v1.2.2 — Zero-Trust Serial Fallback (Current)
+## v1.2.2 — Zero-Trust Serial Fallback (Released)
 
 Signed telemetry over a serial link (USB CDC) when MQTT/WiFi connectivity is lost, so the host still receives data during offline simulations.
 

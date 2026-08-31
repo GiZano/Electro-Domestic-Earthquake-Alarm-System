@@ -15,6 +15,10 @@ On the ESP32-C3, the `networkTask` handles the MQTT transmission asynchronously[
 - To support TLS on resource-constrained hardware, the firmware utilizes `WiFiClientSecure::setInsecure()` combined with the `PubSubClient` library[cite: 1]. 
 - When a `SeismicEvent` is popped from the FreeRTOS queue, the firmware packages the JSON and fires the payload to the broker[cite: 1]. This "fire-and-forget" approach reduces transmission blocking time to milliseconds, ensuring the `sensorTask` is never starved of CPU cycles[cite: 1].
 
+== Host Serial Bridge — Second Ingestion Path (v1.2.2)
+
+When MQTT is unreachable the host can collect `[QG:FB]` frames over USB CDC and forward them to the same ingestion pipeline. `firmware/tools/serial_bridge.py` tails `/dev/ttyACM0` (default `SERIAL_PORT`), filters lines starting with `[QG:FB]`, parses the JSON suffix and POSTs it to `/readings/` with `X-API-Key` — identical security gates as the MQTT bridge[cite: 1]. URL validation (`_validate_api_url`) restricts schemes to `http/https`, rejects embedded credentials and non-alphanumeric hostnames (SSRF guard), and `parse_frame()` returns `None` on boot-log noise so the reader never crashes on malformed lines[cite: 1]. A `dry-run` and `--stdin` mode plus the `iot-ci.yml` parser smoke test keep the bridge testable without hardware[cite: 1].
+
 == Internal MQTT Bridge Service
 
 To securely ingest the MQTT data into the backend without exposing the FastAPI worker directly to the public internet, QuakeGuard employs a dedicated bridging microservice (`mqtt_subscriber.py`)[cite: 1].

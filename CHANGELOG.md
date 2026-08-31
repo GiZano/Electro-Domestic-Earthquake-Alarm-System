@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.2] - 2026-08-26
+## [1.2.2] - 2026-08-31
 ### Added
 - **Zero-Trust USB Serial Fallback:** ECDSA-signed telemetry over USB CDC (`[QG:FB]` frames) when MQTT/WiFi is unreachable. Pure C++ core shared by firmware (`networkTask`) and host SIL validation (`test_serial_fallback.cpp`).
 - **Host Serial Bridge:** `firmware/tools/serial_bridge.py` reads CDC frames and forwards to ingestion API with SSRF-safe URL validation.

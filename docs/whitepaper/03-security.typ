@@ -18,9 +18,9 @@ Before transmitting any seismic data, an unregistered sensor must complete an au
 
 == Payload Authentication & Integrity
 
-When a seismic event triggers the DSP pipeline, the firmware constructs a string containing the measured magnitude and the current NTP-synchronized Unix timestamp (format: `value:timestamp`)[cite: 1]. This string is hashed via SHA-256 and signed with the device's private key[cite: 1]. 
+When a seismic event triggers the DSP pipeline, the firmware constructs a string containing the measured magnitude and the current timestamp (format: `value:timestamp`)[cite: 1]. Under normal operation the timestamp is the NTP-synchronized wall time; when the serial fallback drains the retention ring it is the software wall clock `epochAtSync + millis()` at drain time, and the payload is *re-signed* with the current time so the backend's replay window accepts it[cite: 1]. This string is hashed via SHA-256 and signed with the device's private key[cite: 1]. 
 
-The resulting JSON payload includes the data, the timestamp, and the `signature_hex`[cite: 1]. Once received by the backend, the `validate_iot_payload` dependency pipeline enforces four security gates[cite: 1]:
+The resulting JSON payload includes the data, the timestamp, and the `signature_hex` — identical on the MQTT and serial data planes (`[QG:FB]` frames carry the same JSON behind the marker)[cite: 1]. Once received by the backend, the `validate_iot_payload` dependency pipeline enforces four security gates[cite: 1]:
 - *API Key Verification:* Validates the `X-API-Key` header using a constant-time comparison (`hmac.compare_digest`) to prevent timing attacks[cite: 1].
 - *Sensor Status:* Confirms the sensor ID exists and is marked as `active` in the PostgreSQL database[cite: 1].
 - *Anti-Replay Protection:* Compares the device's timestamp against the server's UTC time. Payloads older than a 300-second threshold are outright rejected with a `403 Forbidden` error[cite: 1].
