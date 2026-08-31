@@ -44,9 +44,9 @@ Since v1.2.2 the edge node tolerates complete MQTT/WiFi loss without losing cryp
 
 == Optional GNSS Subsystem (v1.3 Readiness)
 
-Since v1.2.1 the firmware is *GNSS-ready*: an optional module parses NMEA data from a u-blox / NEO-6M / NEO-M8N receiver over the secondary UART (RX GPIO 0, TX GPIO 1, 9600 baud)[cite: 1]. The module is compiled #strong[only] when `GNSS_ENABLED=1` is present in `esp32_config.env`, so the default build stays hermetic and pulls no `TinyGPSPlus` dependency[cite: 1].
+Since v1.2.1 the firmware is *GNSS-ready*: an optional module parses NMEA data from a u-blox / NEO-6M / NEO-M8N receiver over the secondary UART (RX GPIO 5, TX GPIO 4, 9600 baud on the JLCPCB — `J4-3→GPIO5`, `J4-4→GPIO4`, `J4-5→GPIO2 PPS` for v1.3) at 9600 baud[cite: 1]. The module is compiled #strong[only] when `GNSS_ENABLED=1` is present in `esp32_config.env`, so the default build stays hermetic and pulls no `TinyGPSPlus` dependency[cite: 1]. Defaults in `GnssModule.h` are `RX 5 / TX 4` to match the fabricated PCB; they remain overridable via `GPS_SERIAL_RX_PIN`/`TX_PIN` in `esp32_config.env` through `extra_script.py`[cite: 1].
 
 - *Last-Known Fix Persistence:* Every reliable fix is saved into NVS (namespace `quake-gnss`, at most once per 60 seconds to limit flash wear)[cite: 1]. Provisioning therefore reports real coordinates even before the first fix after a cold boot[cite: 1].
 - *Staleness Handling:* A live fix older than 10 seconds is treated as stale and the firmware falls back to the last-known value[cite: 1].
-- *Provisioning Integration:* During `/devices/register`, the node reports the live GNSS fix when available, else the last-known-from-NVS fix; when no fix exists at all, coordinates are omitted so the backend can assign the zone once placed[cite: 1].
+- *Provisioning Integration:* During `/devices/register`, the node reports the live GNSS fix when available, else the last-known-from-NVS fix; when neither exists it uses `GNSS_FALLBACK_LAT`/`LON` from `esp32_config.env` if defined (indoor/cantina testing), otherwise coordinates are omitted so the backend can assign the zone once placed[cite: 1].
 - *Scope Boundary:* NTP + PPS timestamp discipline is explicitly deferred to v1.3 (see ROADMAP) — this module only guarantees the coordinates pipeline is ready for the GNSS upgrade[cite: 1].

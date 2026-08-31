@@ -21,11 +21,18 @@ GnssModule& gnss() {
   return instance;
 }
 
+volatile unsigned long GnssModule::lastPpsMs_ = 0;
+void IRAM_ATTR GnssModule::onPpsIsr() { lastPpsMs_ = millis(); }
+
 void GnssModule::begin() {
   loadLastKnownFix();
   serial_.begin(GPS_SERIAL_BAUD, SERIAL_8N1, GPS_SERIAL_RX_PIN, GPS_SERIAL_TX_PIN);
-  Serial.printf("[GNSS] Module started (UART RX=%d TX=%d, baud=%d)\n",
-                GPS_SERIAL_RX_PIN, GPS_SERIAL_TX_PIN, GPS_SERIAL_BAUD);
+  Serial.printf("[GNSS] Module started (UART RX=%d TX=%d, baud=%d, PPS=%d)\n",
+                GPS_SERIAL_RX_PIN, GPS_SERIAL_TX_PIN, GPS_SERIAL_BAUD, GPS_PPS_PIN);
+  // PPS on GPIO 2 (J4-5) — JLCPCB wired, v1.3 will discipline NTP+PPS
+  pinMode(GPS_PPS_PIN, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(GPS_PPS_PIN), onPpsIsr, RISING);
+  Serial.printf("[GNSS] PPS listener armed on GPIO %d\n", GPS_PPS_PIN);
   if (last_known_valid_) {
     Serial.printf("[GNSS] Last-known fix loaded: %.5f, %.5f\n", last_known_lat_, last_known_lon_);
   } else {
@@ -36,6 +43,13 @@ void GnssModule::begin() {
 void GnssModule::loop() {
   while (serial_.available()) {
     gps_.encode(serial_.read());
+  }
+  // PPS pulse logging (GPIO 2, J4-5) — v1.3 discipline will use this timestamp
+  static unsigned long lastLoggedPps = 0;
+  unsigned long pps = lastPpsMs_;
+  if (pps != 0 && pps != lastLoggedPps) {
+    Serial.printf("[GNSS] PPS pulse @ %lu ms (GPIO %d)\n", pps, GPS_PPS_PIN);
+    lastLoggedPps = pps;
   }
 
   // Persist a newly observed valid fix (throttled for NVS wear levelling).

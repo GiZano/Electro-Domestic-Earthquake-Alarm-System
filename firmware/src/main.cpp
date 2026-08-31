@@ -40,6 +40,9 @@ constexpr int I2C_SDA_PIN = 7;
 constexpr int I2C_SCL_PIN = 8;
 constexpr int I2C_CLOCK_SPEED = 100000;
 
+constexpr int LED_BLUE_PIN = 10; // connection state: double->wifi, single->server, solid->connected
+constexpr int LED_RED_PIN = 3;  // quake detected: on 3 s
+
 #ifndef SERVER_HOST
   #define SERVER_HOST "your-tunnel-id.trycloudflare.com"
 #endif
@@ -88,6 +91,52 @@ constexpr int I2C_CLOCK_SPEED = 100000;
 // Global Dynamic Sensor ID
 static int globalSensorID = 0;
 Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);
+
+// LED state (v1.3) — blue dimmed via PWM, red 3 s pulse
+static volatile unsigned long g_redLedOffAt = 0;
+static constexpr int BLUE_BRIGHT = 100; // 0-255, ~40% per dimmare leggermente il blu (era 255)
+
+inline void triggerQuakeLed() {
+    digitalWrite(LED_RED_PIN, HIGH);
+    Serial.println("[LED] Red ON (quake) for 3 s");
+    g_redLedOffAt = millis() + 3000;
+}
+
+inline void updateConnectionLed(bool wifiConnected, bool serverConnected) {
+    // Red LED auto-off
+    if (g_redLedOffAt != 0 && (long)(millis() - g_redLedOffAt) >= 0) {
+        digitalWrite(LED_RED_PIN, LOW);
+        g_redLedOffAt = 0;
+        Serial.println("[LED] Red OFF");
+    }
+    // Blue LED: PWM dimmed (analogWrite) — double blink WiFi, single blink server, solid connected
+    if (!wifiConnected) {
+        unsigned long phase = millis() % 1000;
+        bool on = (phase < 100) || (phase >= 200 && phase < 300);
+        analogWrite(LED_BLUE_PIN, on ? BLUE_BRIGHT : 0);
+    } else if (!serverConnected) {
+        unsigned long phase = millis() % 1000;
+        bool on = (phase < 200);
+        analogWrite(LED_BLUE_PIN, on ? BLUE_BRIGHT : 0);
+    } else {
+        analogWrite(LED_BLUE_PIN, BLUE_BRIGHT);
+    }
+}
+
+// Boot self-test: blink both LEDs to verify wiring (red active-HIGH: GPIO3->R3->D3->GND)
+inline void ledBootTest() {
+    Serial.println("[LED] Boot test: blue + red");
+    for (int i = 0; i < 2; i++) {
+        digitalWrite(LED_BLUE_PIN, HIGH); // full bright for test
+        digitalWrite(LED_RED_PIN, HIGH);
+        delay(250);
+        digitalWrite(LED_BLUE_PIN, LOW);
+        digitalWrite(LED_RED_PIN, LOW);
+        delay(250);
+    }
+    // leave both off, updateConnectionLed will drive blue from now on
+    analogWrite(LED_BLUE_PIN, 0);
+}
 
 // --------------------------------------------------------------------------
 // RTOS & DSP DEFINITIONS
@@ -230,8 +279,8 @@ bool performProvisioning() {
 
 #ifdef GNSS_ENABLED
     // GNSS-ready: report the real fix when available, else the last-known fix
-    // persisted in NVS. If neither exists, omit coordinates -> the backend
-    // keeps its last-known location / assigns "Unknown Region".
+    // persisted in NVS. If neither exists, use fallback coords from .env
+    // (cantina testing) or omit -> backend assigns "Unknown Region".
     GnssFix fix;
     if (gnss().getFix(fix)) {
         doc["latitude"] = fix.latitude;
@@ -240,7 +289,14 @@ bool performProvisioning() {
                       fix.latitude, fix.longitude,
                       fix.from_storage ? "NVS" : "GNSS");
     } else {
+#ifdef GNSS_FALLBACK_LAT
+        doc["latitude"] = GNSS_FALLBACK_LAT;
+        doc["longitude"] = GNSS_FALLBACK_LON;
+        Serial.printf("[PROV] Using fallback coords: %.5f, %.5f (GNSS no-fix, cantina)\n",
+                      (double)GNSS_FALLBACK_LAT, (double)GNSS_FALLBACK_LON);
+#else
         Serial.println("[PROV] No GNSS fix available: omitting coordinates");
+#endif
     }
 #else
     // Hardcoded fallback until a GNSS module is attached (see ROADMAP v1.3).
@@ -323,6 +379,7 @@ static void drainRetention(RetentionRing<RETENTION_CAPACITY>& retention,
         String payload = String(retainedEvt.value) + ":" + String(report_time);
         String sig = crypto().signMessage(payload);
         deliverEvent(mqttClient, path, retainedEvt.value, report_time, sig);
+        triggerQuakeLed();
     }
 }
 #endif
@@ -381,6 +438,8 @@ void networkTask(void *pvParameters) { // NOSONAR
 
         // Opportunistic MQTT (re)connection, throttled to 5 s: never blocks.
         bool mqttUp = mqttClient.connected();
+        // Blue LED: double blink WiFi, single blink server, solid connected (also handles red auto-off)
+        updateConnectionLed(WiFi.status() == WL_CONNECTED, mqttUp);
         if (!mqttUp && WiFi.status() == WL_CONNECTED && (millis() - lastMqttAttempt > 5000)) {
             lastMqttAttempt = millis();
             String clientId = "QuakeGuard-" + WiFi.macAddress();
@@ -429,6 +488,7 @@ void networkTask(void *pvParameters) { // NOSONAR
                     case DeliveryPath::MQTT:
                     case DeliveryPath::SERIAL_CDC:
                         deliverEvent(mqttClient, path, val, evt_time, sig);
+                        triggerQuakeLed();
                         break;
                     case DeliveryPath::RETAIN:
                         retention.push({val, static_cast<long>(evt_time)});
@@ -438,6 +498,7 @@ void networkTask(void *pvParameters) { // NOSONAR
             }
 #else
             deliverEvent(mqttClient, DeliveryPath::MQTT, val, evt_time, sig); // NOSONAR(cpp:S5811)
+            triggerQuakeLed();
 #endif
         }
     }
@@ -462,6 +523,13 @@ void gnssTask(void *pvParameters) { // NOSONAR
 void setup() {
     Serial.begin(115200);
     delay(2000); 
+
+    // LEDs: blue (10) connection state, red (3) quake indicator
+    pinMode(LED_BLUE_PIN, OUTPUT);
+    pinMode(LED_RED_PIN, OUTPUT);
+    digitalWrite(LED_BLUE_PIN, LOW);
+    digitalWrite(LED_RED_PIN, LOW);
+    ledBootTest(); // verify wiring: 2x blink both LEDs
 
     Serial.println("\n\n[BOOT] QuakeGuard v3.3 PROV-REFACTORED");
     
