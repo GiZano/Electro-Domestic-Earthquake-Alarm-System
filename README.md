@@ -418,7 +418,7 @@ QuakeGuard/
 | **v1.1** | ✅ Released — HiveMQ Cloud MQTT (TLS), ngrok HTTPS tunnel, security hardening |
 | **v1.2** | ✅ Released — On-Premise AI Worker (Local Ollama / Llama 3.2) for privacy-preserving emergency reports |
 | **v1.2.1** | ✅ Released — Geo-Zoning & Cooldown Fragmentation — geohash Redis zone index (FastAPI/PostGIS source of truth), per-area cooldown, GNSS-ready data model (`Sensor.last_fix_at`, `Reading.lat/lon`), per-zone live seismograph |
-| **v1.2.2** | ✅ Current — Zero-Trust Serial Fallback — signed telemetry over USB CDC (serial) when MQTT is unreachable |
+| **v1.2.2** | ✅ Released — Zero-Trust Serial Fallback — signed telemetry over USB CDC (serial) when MQTT is unreachable |
 | **v1.3** | GNSS sync — accurate node timestamps, GPS coordinate resolution, ADXL345 calibration |
 | **v2.0** | Triangulation — multi-node spatial correlation + AI reports for epicenter calculation |
 | **v2.1** | Data Dashboards — Grafana dashboards for real-time visualization of seismic telemetry |

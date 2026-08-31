@@ -32,6 +32,16 @@ The firmware utilizes FreeRTOS to decouple time-critical sensor acquisition from
 - *`networkTask`:* Operates asynchronously at a lower priority[cite: 1]. It consumes the `eventQueue`, synchronizes the event timestamp via NTP (`pool.ntp.org`), signs the payload, and dispatches the MQTT message[cite: 1]. This design ensures that network blocking or Wi-Fi reconnects never halt the continuous monitoring of the accelerometer[cite: 1].
 - *`gnssTask` (optional):* When the GNSS subsystem is compiled in, a dedicated task (priority 2) continuously feeds NMEA frames into the parser so the coordinate pipeline is always live[cite: 1].
 
+== Zero-Trust Serial Fallback (v1.2.2)
+
+Since v1.2.2 the edge node tolerates complete MQTT/WiFi loss without losing cryptographically-attested telemetry[cite: 1]. The `networkTask` becomes a *first-available-path* dispatcher: `MQTT → USB CDC Serial → Retention Ring`[cite: 1].
+
+- *Framing:* `SerialFallback.h` builds `[QG:FB]{...}` frames whose JSON is *byte-identical* to the MQTT payload (`value`, `sensor_id`, `device_timestamp`, `signature_hex`)[cite: 1]. The marker lets the host bridge filter CDC noise without parsing every line[cite: 1].
+- *Host-aware routing:* `Serial.isConnected()` (HWCDC, `ARDUINO_USB_CDC_ON_BOOT=1`) distinguishes a real USB host from a power-only charger; with no host the event is retained rather than written to a dead port[cite: 1]. The pure routing function `decidePath(mqttReachable, usbHostPresent, timeValid)` is shared between the firmware and the host SIL test suite[cite: 1].
+- *Retention & drain:* A bounded `RetentionRing<100>` holds events in FIFO order (oldest overwritten on overflow). When a path becomes reachable the ring is drained in order; each retained event is *re-signed* with the current wall time at drain so the backend ±300 s anti-replay window accepts the retransmission[cite: 1].
+- *Offline wall clock:* NTP is opportunistic (`pool.ntp.org` via `configTime`). At the first successful sync the firmware anchors `epochAtSync + millis()`; subsequent timestamps remain valid after WiFi drops and no frame is emitted before `timeValid`[cite: 1].
+- *Host bridge:* `firmware/tools/serial_bridge.py` reads `/dev/ttyACM0`, filters `[QG:FB]` lines via `parse_frame()`, validates the ingestion URL against SSRF (`_validate_api_url`), and POSTs to `/readings/` with `X-API-Key` — the same forwarding path as `mqtt_subscriber.py`[cite: 1]. A `test_serial_fallback.cpp` suite covers `buildSerialFrame`, `decidePath` and ring semantics on the host[cite: 1].
+
 == Optional GNSS Subsystem (v1.3 Readiness)
 
 Since v1.2.1 the firmware is *GNSS-ready*: an optional module parses NMEA data from a u-blox / NEO-6M / NEO-M8N receiver over the secondary UART (RX GPIO 0, TX GPIO 1, 9600 baud)[cite: 1]. The module is compiled #strong[only] when `GNSS_ENABLED=1` is present in `esp32_config.env`, so the default build stays hermetic and pulls no `TinyGPSPlus` dependency[cite: 1].
