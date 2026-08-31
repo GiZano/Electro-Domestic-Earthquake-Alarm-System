@@ -18,7 +18,6 @@ from pathlib import Path
 try:
     from obspy import UTCDateTime
     from obspy.clients.fdsn import Client
-    import obspy
 except ImportError:
     raise ImportError("ObsPy is required. Install it via 'pip install obspy'")
 
@@ -46,7 +45,7 @@ EVENTS = {
 
 def write_accelerogram_csv(path: Path, times: list, ax: list, ay: list, az: list):
     """Write time-series acceleration data to a CSV file."""
-    with path.open("w", newline="") as f:
+    with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["# t,ax,ay,az"])
         for i, t_val in enumerate(times):
@@ -127,7 +126,7 @@ def download_and_process(out_dir: Path):
         ground_truth.append({"event_id": ev_id, "p_arrival_s": p_arrival_s})
         
     gt_path = out_dir / "ground_truth.json"
-    with gt_path.open("w") as f:
+    with gt_path.open("w", encoding="utf-8") as f:
         json.dump(ground_truth, f, indent=2)
     print(f"Ground truth saved to {gt_path}")
     print("Done.")
