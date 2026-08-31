@@ -419,7 +419,7 @@ QuakeGuard/
 | **v1.2** | ✅ Released — On-Premise AI Worker (Local Ollama / Llama 3.2) for privacy-preserving emergency reports |
 | **v1.2.1** | ✅ Released — Geo-Zoning & Cooldown Fragmentation — geohash Redis zone index (FastAPI/PostGIS source of truth), per-area cooldown, GNSS-ready data model (`Sensor.last_fix_at`, `Reading.lat/lon`), per-zone live seismograph |
 | **v1.2.2** | ✅ Released — Zero-Trust Serial Fallback — signed telemetry over USB CDC (serial) when MQTT is unreachable |
-| **v1.3** | GNSS sync — accurate node timestamps, GPS coordinate resolution, ADXL345 calibration |
+| **v1.3.0** | ✅ Released — GNSS sync, accurate node timestamps via NTP + PPS, ADXL345 calibration, and SIL validation with real INGV FDSN data |
 | **v2.0** | Triangulation — multi-node spatial correlation + AI reports for epicenter calculation |
 | **v2.1** | Data Dashboards — Grafana dashboards for real-time visualization of seismic telemetry |
 | **v2.1.1** | Timeseries DB & Mobile Fix — migration to TimescaleDB/InfluxDB; per-sensor chart isolation in React Native mobile |

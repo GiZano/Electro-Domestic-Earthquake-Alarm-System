@@ -68,14 +68,14 @@ Signed telemetry over a serial link (USB CDC) when MQTT/WiFi connectivity is los
 
 ---
 
-## v1.3.0 — Synchronized GNSS
+## v1.3.0 — Synchronized GNSS (Released)
 
 Advanced GNSS synchronization of nodes for exact timestamps.
 
-- Optional GPS/GNSS module on ESP32
-- Correct NTP + PPS timestamps for all nodes
-- Replace hardcoded GPS (Rome coordinates) with real coordinates
-- ADXL345 offset calibration on boot
+- ✅ Optional GPS/GNSS module on ESP32
+- ✅ Correct NTP + PPS timestamps for all nodes
+- ✅ Replace hardcoded GPS (Rome coordinates) with real coordinates
+- ✅ ADXL345 offset calibration on boot
 
 ---
 
@@ -151,19 +151,19 @@ Parallel node (non-semantic). **R1 is the Foundation**: it starts immediately, i
 
 Software-in-the-Loop (SIL) cross-validation: no logic duplication. It uses **100% of the production C++ code** on both the firmware and the host, guaranteeing numerical equivalence for the IEEE paper.
 
-### R1 — STA/LTA detection cross-validation via SIL (Foundation)
+### R1 — STA/LTA detection cross-validation via SIL (Foundation) (Completed)
 
-> Status: **implemented (Fase 0–4).** The STA/LTA core is isolated in pure C++, compiled natively in CI, and driven by the Python orchestrator with zero logic duplication.
+> Status: **completed.** The STA/LTA core is isolated in pure C++, compiled natively in CI, and driven by the Python orchestrator with zero logic duplication.
 >
-> Scheduling: **in parallel with v1.3 (GNSS)**. The calibration of the trigger parameters is **urgent and blocking**: it gates the start of v2.2.0 model drafting/training.
+> Scheduling: **completed in parallel with v1.3 (GNSS)**. The calibration of the trigger parameters is completed and unblocks v2.2.0 model drafting/training.
 
 - [x] Isolation of the STA/LTA algorithmic core in pure C++, fully decoupled from the ESP32 hardware (no I2C/WiFi/FreeRTOS calls in the algorithmic core) — `firmware/src/DetectionCore.h`
 - [x] Native host compilation of the C++ core (same source as the firmware) — `detect_cli.cpp` + CI build
 - [x] Python as the **sole orchestrator**: reading the public INGV dataset (accelerograms), passing data to the C++ binary via `subprocess`, collecting trigger points and tracing ROC curves — `research/`
 - [x] Metrics: Sensitivity/Recall, False-Alarm Rate, response latency — `research/metrics.py`
-- [x] Calibration of the trigger parameters (`TRIGGER_RATIO`, `NOISE_FLOOR`, `HPF_ALPHA`) against ground-truth — `research/calibrate.py`; **real ground-truth download via ESM** (public FDSN API + ObsPy, CC-BY-4.0 flatfiles) — see `research/README.md`
+- [x] Calibration of the trigger parameters (`TRIGGER_RATIO`, `NOISE_FLOOR`, `HPF_ALPHA`) against ground-truth — `research/calibrate.py`; **real ground-truth download via INGV FDSN** (public API + ObsPy, CC-BY-4.0 flatfiles) — see `research/README.md`
 
-> **Remaining for full R1 closure:** real ESM ground-truth validation via ObsPy (public FDSN API, no token required); the calibration currently runs on the realistic synthetic fallback (unit-tested, CI-covered).
+> **Completed full R1 closure:** real ESM/INGV ground-truth validation via ObsPy and ROC curve generated.
 
 ### R2 — AI Benchmarking (this is the paper's primary novelty contribution)
 

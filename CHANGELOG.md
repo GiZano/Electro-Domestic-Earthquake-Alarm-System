@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-08-31
+### Added
+- **Synchronized GNSS & Timing:** Implemented `NTP + PPS` (GPIO 2) discipline for millisecond-accurate time synchronization, replacing the hardcoded fix.
+- **ADXL345 Hardware Calibration:** Introduced boot-time routine computing static offsets from 100 samples and writing biases directly to hardware registers (`OFSX`, `OFSY`, `OFSZ`).
+- **SIL Validation (INGV FDSN):** Integrated ObsPy and FDSN queries to INGV for algorithmic validation on public, reproducible open data. ROC curve documented, completing the R1 validation milestone.
+
+### Changed
+- Refactored `firmware/esp32_config.env.example` as the standard configuration template.
+- Resolved SonarCloud maintainability warnings in `Calibration.h` and `download_esm.py`, ensuring full Quality Gate compliance.
+- Version artifacts bumped to v1.3.0 across documentation, web assets, and citation file.
+
 ## [1.2.2] - 2026-08-31
 ### Added
 - **Zero-Trust USB Serial Fallback:** ECDSA-signed telemetry over USB CDC (`[QG:FB]` frames) when MQTT/WiFi is unreachable. Pure C++ core shared by firmware (`networkTask`) and host SIL validation (`test_serial_fallback.cpp`).
