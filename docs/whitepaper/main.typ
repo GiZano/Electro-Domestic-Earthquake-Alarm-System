@@ -9,7 +9,7 @@
   header: context {
     // Utilizza la nuova sintassi context nativa di Typst
     if counter(page).get().first() > 1 {
-      align(right)[_QuakeGuard v1.2.2 - Technical Architecture_]
+      align(right)[_QuakeGuard v1.3.0 - Technical Architecture_]
     }
   },
   numbering: "1",
@@ -29,7 +29,7 @@
   #v(0.2cm)
   #text(size: 14pt)[Technical Architecture & Protocol Specification]\
   #v(2cm)
-  #text(size: 12pt)[Release: *v1.2.2* (Zero-Trust Serial Fallback)]\
+  #text(size: 12pt)[Release: *v1.3.0* (GNSS NTP Discipline & SIL Validation)]\
   #v(0.5cm)
   #text(size: 12pt)[Core Maintainers: \@GiZano, \@riccardo0731]\
   #v(3cm)
