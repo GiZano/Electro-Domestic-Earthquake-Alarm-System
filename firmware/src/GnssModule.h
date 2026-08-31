@@ -27,13 +27,16 @@
 #include <TinyGPSPlus.h>
 
 #ifndef GPS_SERIAL_RX_PIN
-  #define GPS_SERIAL_RX_PIN 0
+  #define GPS_SERIAL_RX_PIN 5
 #endif
 #ifndef GPS_SERIAL_TX_PIN
-  #define GPS_SERIAL_TX_PIN 1
+  #define GPS_SERIAL_TX_PIN 4
 #endif
 #ifndef GPS_SERIAL_BAUD
   #define GPS_SERIAL_BAUD 9600
+#endif
+#ifndef GPS_PPS_PIN
+  #define GPS_PPS_PIN 2
 #endif
 
 namespace quakeguard_gnss {
@@ -61,10 +64,14 @@ public:
   void begin();
   void loop();
   bool getFix(GnssFix& out);
+  // PPS (v1.3) — returns millis() of last PPS pulse, 0 if never seen
+  unsigned long getLastPpsMs() const { return lastPpsMs_; }
+  bool hasPpsFix() const { return lastPpsMs_ != 0 && (millis() - lastPpsMs_) < 2000; }
 
 private:
   void saveLastKnownFix();
   void loadLastKnownFix();
+  static void IRAM_ATTR onPpsIsr();
 
   HardwareSerial serial_{1};
   TinyGPSPlus gps_;
@@ -74,6 +81,7 @@ private:
   float last_known_lat_ = 0.0f;
   float last_known_lon_ = 0.0f;
   unsigned long last_save_ms_ = 0;
+  static volatile unsigned long lastPpsMs_;
 };
 
 GnssModule& gnss();

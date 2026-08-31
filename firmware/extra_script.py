@@ -16,7 +16,9 @@ if os.path.isfile(config_path):
                 if "=" in line:
                     key, value = line.strip().split("=", 1)
                     value = value.strip().strip('"').strip("'")
-                    if value.isdigit():
+                    # keep numeric defines unquoted (int, float, negative) for C++ #define
+                    stripped = value.lstrip("-").replace(".", "", 1)
+                    if stripped.isdigit() and stripped != "":
                         env_value = value
                     else:
                         env_value = f'\\"{value}\\"'

@@ -1,3 +1,4 @@
 # QuakeGuard SIL research (R1) — runtime dependencies (runtime only).
-# Plotting requires matplotlib; everything else uses the Python stdlib.
+# Plotting requires matplotlib; ESM download requires obspy.
 matplotlib>=3.8
+obspy>=1.4
