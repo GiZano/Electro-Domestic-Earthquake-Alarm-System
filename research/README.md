@@ -27,12 +27,11 @@ numerical equivalence for the IEEE paper.
 (`metrics.py`, `calibrate.py`, the C++ core) never know whether they process a
 real earthquake or a locally generated mock — that is the point. Resolution:
 
-- **Real path (ESM, to be implemented).** The planned ESM (European
-  Strong-Motion) downloader queries the **public FDSN web-service** using
-  **ObsPy** (`obspy.fdsn`), downloads the parametric flatfiles and accelerograms,
-  and converts them into the shared layout. No registration token is required,
-  so the real path can work headlessly in CI/CD. This replaces the previous
-  ITACA DYNA-1.2 parser (custom code, token-gated portal).
+- **Real path (ESM).** The ESM (European Strong-Motion) downloader queries the
+  **public FDSN web-service** using **ObsPy** (`obspy.clients.fdsn`), downloads
+  the parametric flatfiles and accelerograms, and converts them into the shared
+  layout. No registration token is required, so the real path can work
+  headlessly in CI/CD. This replaces the previous ITACA DYNA-1.2 parser.
 - **Synthetic fallback (default).** When no network/ESM is available,
   `synthetic.py` generates *realistic* accelerometer-like mocks: white background
   noise, a high-frequency P impulse, a larger/lower-frequency S arrival, and a
@@ -44,7 +43,7 @@ real earthquake or a locally generated mock — that is the point. Resolution:
 │  synthetic.py                                                           │
 │    (fallback) ───────▶ realistic synthetic generator ──── P known       │
 │                                                                         │
-│  ESM downloader (future, ObsPy public FDSN) ───▶ t,ax,ay,az  (m/s²)    │
+│  download_esm.py (ObsPy public FDSN) ───▶ t,ax,ay,az  (m/s²)           │
 └──────────────────────────────▶ (identical layout below) ────────────────┘
 ```
 
@@ -56,8 +55,8 @@ and weight). Generate it with:
 ```bash
 # realistic local / CI mock (no network required)
 python research/synthetic.py research/data_synth
-# real ESM (public FDSN API, no token) — to be implemented (R1 closure)
-# python research/fetch_esm.py research/data
+# real ESM (public FDSN API, no token)
+python research/download_esm.py research/data
 ```
 
 Layout produced by every path (units **m/s^2**, the same as the firmware
