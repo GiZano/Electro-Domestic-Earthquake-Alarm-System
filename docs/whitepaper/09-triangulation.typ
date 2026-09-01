@@ -1,6 +1,14 @@
 = Epicenter Triangulation Algorithm
 
-In QuakeGuard v2.0.0, the backend actively performs multi-node spatial and temporal correlation. When an earthquake triggers multiple sensors within the same geographical zone, the ingestion pipeline intercepts these concurrent alerts and feeds them into the triangulation engine (`backend/src/triangulation.py`) to compute a single, unified seismic event.
+In QuakeGuard v2.0.0, the backend actively performs multi-node spatial and temporal correlation to transform isolated sensor triggers into a cohesive, verified seismic event.
+
+== Temporal & Spatial Correlation Engine
+
+Before calculating the physical epicenter, the ingestion worker (`backend/src/worker.py`) groups the incoming telemetry via a distributed state machine backed by Redis:
+
+1. *Temporal Window:* When a valid trigger arrives, its payload is appended to a Redis List specific to its geographical area, and the list's Time-To-Live (TTL) is refreshed to 60 seconds. This creates a sliding temporal buffer that captures the seismic wavefront as it propagates across multiple sensors.
+2. *Quorum Consensus:* To eliminate isolated false positives (e.g., localized heavy impacts or tampering), the correlation engine requires a minimum quorum of 3 independent sensors (`llen(buffer_key) == 3`).
+3. *Execution:* The moment the quorum is reached within the 60-second window, the worker flushes the payload cluster to the triangulation function to compute the unified epicenter and trigger the downstream AI reporting services.
 
 == Mathematical Model (v2.0 MVP)
 
