@@ -10,26 +10,10 @@ The infrastructure is decoupled into three primary tiers:
 - *Core Backend & Processing:* A polyglot backend architecture utilizing FastAPI (Python) as the API gateway[cite: 1]. Validated data is asynchronously offloaded to a Redis Stream (`readings:stream`) and consumed by horizontally-scalable background workers via consumer groups[cite: 1]. The workers persist time-series data into a PostgreSQL/PostGIS database (provisioned as a TimescaleDB hypertable) and trigger area-scoped alerts via Redis Pub/Sub[cite: 1].
 - *Client Presentation Layer:* A React Native (Expo) mobile application providing users with real-time seismograph telemetry and instantaneous critical event notifications delivered through WebSockets and native push notifications[cite: 1].
 
-#align(center)[
-  ```text
-  +----------------+       MQTT (TLS)      +-----------------+
-  |                | --------------------> |                 |
-  | Edge Node      |                       | HiveMQ Broker   |
-  | (ESP32-C3)     |                       |                 |
-  |                | <==================== |                 |
-  +----------------+    USB CDC Fallback   +-----------------+
-                                                   |
-                                                   | HTTP POST (Bridge)
-                                                   v
-  +----------------+       WebSocket       +-----------------+
-  |                | <-------------------- |                 |
-  | Mobile App     |                       | FastAPI Backend |
-  | (React Native) |                       |                 |
-  |                |                       |                 |
-  +----------------+                       +-----------------+
-  ```
-  _Figure: High-Level Architecture Block Diagram_
-]
+#figure(
+  image("assets/01-architecture.png", width: 100%),
+  caption: [_High-Level Architecture Block Diagram_]
+)
 
 == Data Plane and Control Plane
 

@@ -63,8 +63,8 @@ With the v2.0.0 milestone, the QuakeGuard hardware has matured from a breadboard
 #figure(
   image("assets/pcb_assembled.jpg", width: 90%),
   caption: [
-    The QuakeGuard v2.0.0 fully assembled PCB, featuring the ESP32-C3 SuperMini, the ADXL345 
-    accelerometer, and the u-blox GNSS module soldered into their dedicated footprints.
+    _The QuakeGuard v2.0.0 fully assembled PCB, featuring the ESP32-C3 SuperMini, the ADXL345 
+    accelerometer, and the u-blox GNSS module soldered into their dedicated footprints._
   ]
 )
 
@@ -87,11 +87,11 @@ To ensure the theoretical STA/LTA model translates correctly to the real world, 
 #figure(
   image("assets/roc.png", width: 80%),
   caption: [
-    Receiver Operating Characteristic (ROC) curve of the edge STA/LTA algorithm.
+    _Receiver Operating Characteristic (ROC) curve of the edge STA/LTA algorithm.
     The curve reaches a hard upper bound at 0.8 (80%) True Positive Rate (Sensitivity).
     This limit represents a highly desirable geophysical outcome: 4 out of 5 historical 
     events are perfectly identified without any false alarms (FAR = 0.0), while the 5th 
     event (a weak micro-seismicity recorded at >100km distance) correctly fails to 
-    trigger the algorithm, proving the firmware's robustness against distant noise.
+    trigger the algorithm, proving the firmware's robustness against distant noise._
   ]
 )

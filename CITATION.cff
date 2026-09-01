@@ -10,12 +10,12 @@ authors:
     given-names: "Riccardo"
     alias: "riccardo0731"
 title: "QuakeGuard"
-version: 1.3.0
+version: 2.0.0
 identifiers:
   - type: doi
     value: "10.5281/zenodo.22208913"
-    description: "Software archive (v1.3.0)"
-date-released: 2026-08-31
+    description: "Software archive (v2.0.0)"
+date-released: 2026-09-01
 url: "https://giovanni-zanotti.is-a.dev/Pages/Works/quakeguard/"
 repository-code: "https://github.com/GiZano/QuakeGuard"
 license: "AGPL-3.0"
@@ -31,6 +31,9 @@ abstract: >-
   USB serial fallback for edge telemetry when MQTT is unreachable. Since v1.3.0, it 
   features millisecond-accurate NTP clock discipline via GNSS hardware PPS interrupt, 
   ADXL345 static offset calibration, and SIL validation against historical INGV FDSN waveforms.
+  With v2.0.0, the architecture evolves to a Cloud-Hybrid model with zero-config DevOps 
+  orchestration (Ptyxis/Cloudflare), and introduces deterministic multi-node epicenter 
+  triangulation through a distributed temporal and spatial correlation engine.
 keywords:
   - earthquake-early-warning
   - iot
