@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Auto-generate secrets on first boot
-if [ ! -f "$PROJECT_ROOT/backend/.env" ]; then
+if [[ ! -f "$PROJECT_ROOT/backend/.env" ]]; then
     echo "⚠️  First boot detected: backend/.env not found."
     echo "🔐 Running secret generator to provision fresh .env files..."
     "$SCRIPT_DIR/generate_secrets.sh"
@@ -16,7 +16,7 @@ fi
 
 echo "🌐 Running tunnel automation..."
 "$SCRIPT_DIR/tunnel_init.sh"
-if [ $? -ne 0 ]; then
+if [[ $? -ne 0 ]]; then
     echo "❌ Tunnel script failed. Aborting."
     exit 1
 fi

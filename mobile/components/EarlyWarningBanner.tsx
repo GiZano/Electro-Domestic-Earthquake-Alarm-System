@@ -24,10 +24,10 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
 export function EarlyWarningBanner({ 
   alert, 
   userLocation 
-}: { 
+}: Readonly<{ 
   alert: AlertMessage;
   userLocation: { latitude: number; longitude: number } | null;
-}) {
+}>) {
   const { colors } = useAppTheme();
   const styles = createStyles(colors);
   

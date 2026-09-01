@@ -229,36 +229,37 @@ function NetworkChart({ points, isAlertActive, colors }: Readonly<{
     return colors.live;
   };
 
-  const gradientStops = [];
-  const minX = data.length > 0 ? data[0].x : -WINDOW_SECONDS;
-  const maxX = data.length > 0 ? data[data.length - 1].x : 0;
-  const currentSpanX = Math.max(0.0001, maxX - minX);
+  const buildGradientStops = (dataPoints: any[], minX: number, maxX: number) => {
+    const stops = [];
+    const currentSpanX = Math.max(0.0001, maxX - minX);
 
-  for (let i = 0; i < data.length; i++) {
-    const p = data[i];
-    // Map X coordinate to a percentage 0-100 across the ACTUAL bounding box of the line
-    // SVG linear gradients by default map 0-100% to the object bounding box, not the global viewport.
-    const offset = Math.max(0, Math.min(100, ((p.x - minX) / currentSpanX) * 100));
-    
-    // Segment color is determined by the max magnitude of its two endpoints
-    let leftColor = colors.live;
-    if (i > 0) leftColor = colorForMag(Math.max(data[i-1].y, p.y));
-    
-    let rightColor = colors.live;
-    if (i < data.length - 1) rightColor = colorForMag(Math.max(p.y, data[i+1].y));
+    for (let i = 0; i < dataPoints.length; i++) {
+      const p = dataPoints[i];
+      const offset = Math.max(0, Math.min(100, ((p.x - minX) / currentSpanX) * 100));
+      
+      let leftColor = colors.live;
+      if (i > 0) leftColor = colorForMag(Math.max(dataPoints[i-1].y, p.y));
+      
+      let rightColor = colors.live;
+      if (i < dataPoints.length - 1) rightColor = colorForMag(Math.max(p.y, dataPoints[i+1].y));
 
-    if (i === 0) {
-      gradientStops.push(<Stop key={`s-${i}-r`} offset={`${offset}%`} stopColor={rightColor} />);
-    } else if (i === data.length - 1) {
-      gradientStops.push(<Stop key={`s-${i}-l`} offset={`${offset}%`} stopColor={leftColor} />);
-    } else {
-      gradientStops.push(<Stop key={`s-${i}-l`} offset={`${offset}%`} stopColor={leftColor} />);
-      if (leftColor !== rightColor) {
-        // Hard cut transition at the vertex
-        gradientStops.push(<Stop key={`s-${i}-r`} offset={`${offset}%`} stopColor={rightColor} />);
+      if (i === 0) {
+        stops.push(<Stop key={`s-${i}-r`} offset={`${offset}%`} stopColor={rightColor} />);
+      } else if (i === dataPoints.length - 1) {
+        stops.push(<Stop key={`s-${i}-l`} offset={`${offset}%`} stopColor={leftColor} />);
+      } else {
+        stops.push(<Stop key={`s-${i}-l`} offset={`${offset}%`} stopColor={leftColor} />);
+        if (leftColor !== rightColor) {
+          stops.push(<Stop key={`s-${i}-r`} offset={`${offset}%`} stopColor={rightColor} />);
+        }
       }
     }
-  }
+    return stops;
+  };
+
+  const minX = data.length > 0 ? data[0].x : -WINDOW_SECONDS;
+  const maxX = data.length > 0 ? (data.at(-1)?.x ?? 0) : 0;
+  const gradientStops = buildGradientStops(data, minX, maxX);
 
   return (
     <VictoryChart
@@ -386,9 +387,9 @@ export default function MonitorScreen() {
         merged.set(now, { t: now, y: 0 });
         
         const list = [...merged.values()].filter(({ t }) => (now - t) / 1000 <= WINDOW_SECONDS);
+        list.sort((a, b) => a.t - b.t);
 
         return list
-          .sort((a, b) => a.t - b.t)
           .slice(-WINDOW_MAX)
           .map(({ t, y }) => ({
             // Clamp to the domain so nothing can ever spill past the plot edges.
@@ -418,7 +419,7 @@ export default function MonitorScreen() {
   useEffect(() => {
     if (lastAlert && lastAlert.zone_id === selectedZoneId) {
       // Prevent old alerts from re-triggering the UI during HMR (hot reloads)
-      const now = new Date().getTime();
+      const now = Date.now();
       const alertTime = new Date(lastAlert.timestamp).getTime();
       const ageMs = now - alertTime;
 
@@ -533,7 +534,7 @@ export default function MonitorScreen() {
           </View>
         )}
 
-        {isAlertActive && lastAlert && lastAlert.type === "TRIANGULATED" && (
+        {isAlertActive && lastAlert?.type === "TRIANGULATED" && (
           <EarlyWarningBanner alert={lastAlert} userLocation={userLocation} />
         )}
 

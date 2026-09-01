@@ -14,14 +14,14 @@ URL=""
 for i in {1..30}; do
     # Extract just the domain e.g. "word-word.trycloudflare.com" (force text mode with -a)
     URL=$(grep -a -oP 'https://\K[a-zA-Z0-9-]+\.trycloudflare\.com' /tmp/cloudflare_tunnel.log | head -n 1)
-    if [ -n "$URL" ]; then
+    if [[ -n "$URL" ]]; then
         break
     fi
     sleep 1
 done
 
-if [ -z "$URL" ]; then
-    echo "❌ Error: Failed to retrieve Cloudflare URL. Check /tmp/cloudflare_tunnel.log"
+if [[ -z "$URL" ]]; then
+    echo "❌ Error: Failed to retrieve Cloudflare URL. Check /tmp/cloudflare_tunnel.log" >&2
     exit 1
 fi
 
@@ -32,7 +32,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # 1. Update Mobile app configuration
-if [ -f "$PROJECT_ROOT/mobile/.env" ]; then
+if [[ -f "$PROJECT_ROOT/mobile/.env" ]]; then
     # Replace the base API URL line
     sed -i "s|^EXPO_PUBLIC_API_BASE_URL=.*|EXPO_PUBLIC_API_BASE_URL=https://$URL|" "$PROJECT_ROOT/mobile/.env"
     echo "📱 Updated mobile/.env"
@@ -41,7 +41,7 @@ else
 fi
 
 # 2. Update ESP32 firmware configuration
-if [ -f "$PROJECT_ROOT/firmware/esp32_config.env" ]; then
+if [[ -f "$PROJECT_ROOT/firmware/esp32_config.env" ]]; then
     sed -i "s|^SERVER_HOST=.*|SERVER_HOST=\"$URL\"|" "$PROJECT_ROOT/firmware/esp32_config.env"
     sed -i "s|^SERVER_PROTOCOL=.*|SERVER_PROTOCOL=\"https\"|" "$PROJECT_ROOT/firmware/esp32_config.env"
     sed -i "s|^SERVER_PORT=.*|SERVER_PORT=443|" "$PROJECT_ROOT/firmware/esp32_config.env"

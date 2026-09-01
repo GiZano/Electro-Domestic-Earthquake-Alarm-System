@@ -57,6 +57,29 @@ def estimate_magnitude(sensor_value: int) -> float:
     # Clamp to physically meaningful range for MEMS sensors
     return max(0.0, min(magnitude, 9.9))
 
+def _handle_triangulation(event: dict, magnitude: float, buffer_key: str):
+    if not buffer_key or event.get("latitude") is None:
+        return None
+        
+    trigger_data = {
+        "sensor_id": event.get("sensor_id"),
+        "latitude": event.get("latitude"),
+        "longitude": event.get("longitude"),
+        "magnitude": magnitude,
+        "timestamp": event.get("timestamp", datetime.now(timezone.utc).isoformat())
+    }
+    redis_sync.rpush(buffer_key, json.dumps(trigger_data))
+    redis_sync.expire(buffer_key, 60)
+    
+    if redis_sync.llen(buffer_key) == 3:
+        raw_triggers = redis_sync.lrange(buffer_key, 0, -1)
+        triggers = [json.loads(t) for t in raw_triggers]
+        try:
+            return triangulate_epicenter(triggers)
+        except Exception as e:
+            print(f"❌ Triangulation failed: {e}", flush=True)
+    return None
+
 def _enrich_event(event: dict, db: Session) -> dict:
     """Stage one reading (+ optional alert) into the session. Returns a resolution
     dict consumed by ``_finish_alerts`` after the shared commit. No commit here so
@@ -93,24 +116,8 @@ def _enrich_event(event: dict, db: Session) -> dict:
             db.add(alert_entry)
         else:
             print(f"🚫 ALERT SUPPRESSED: area '{area_key or zone_id}' is in 60s cooldown.", flush=True)
-        if buffer_key and event.get("latitude") is not None:
-            trigger_data = {
-                "sensor_id": event.get("sensor_id"),
-                "latitude": event.get("latitude"),
-                "longitude": event.get("longitude"),
-                "magnitude": magnitude,
-                "timestamp": event.get("timestamp", datetime.now(timezone.utc).isoformat())
-            }
-            redis_sync.rpush(buffer_key, json.dumps(trigger_data))
-            redis_sync.expire(buffer_key, 60)
             
-            if redis_sync.llen(buffer_key) == 3:
-                raw_triggers = redis_sync.lrange(buffer_key, 0, -1)
-                triggers = [json.loads(t) for t in raw_triggers]
-                try:
-                    triangulation_data = triangulate_epicenter(triggers)
-                except Exception as e:
-                    print(f"❌ Triangulation failed: {e}", flush=True)
+        triangulation_data = _handle_triangulation(event, magnitude, buffer_key)
 
     return {
         "event": event,
