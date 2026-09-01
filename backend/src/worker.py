@@ -156,7 +156,7 @@ def _finish_alerts(db: Session, resolutions: list) -> None:
                     "timestamp": datetime.now(timezone.utc).isoformat()
                 }
                 redis_sync.publish("quake_alerts", json.dumps(alert_payload))
-                print(f"📍 TRIANGULATION PUBLISHED: Zone {zone_id} - Lat {recent_alert.latitude:.4f} Lon {recent_alert.longitude:.4f}", flush=True)
+                print(f"📍 TRIANGULATION PUBLISHED: Zone {zone_id} - Epicenter calculated", flush=True)
                 
                 if AI_REPORT_ENABLED:
                     event["triangulated_latitude"] = recent_alert.latitude
