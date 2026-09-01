@@ -27,4 +27,7 @@ jobs:
             core
             style
             fullstack
+            whitepaper
+            web
+            firmware
           requireScope: true
