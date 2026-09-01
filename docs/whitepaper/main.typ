@@ -58,6 +58,7 @@
 #include "06-mobile.typ"
 #include "07-deployment.typ"
 #include "08-ai.typ"
+#include "09-triangulation.typ"
 #include "09-devops.typ"
 #include "10-benchmarks.typ"
 #include "11-limitations.typ"
