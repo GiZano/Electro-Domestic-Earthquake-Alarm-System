@@ -16,4 +16,4 @@ Earthquake Early Warning (EEW) systems are critical infrastructures designed to 
 - *End-to-End Latency:* < 200ms from edge trigger to mobile alert broadcast
 
 == Differentiators
-While commercial and state-sponsored systems like *ShakeAlert*, or crowdsourced applications like *MyShake* and *Earthquake Network (EQN)* rely on smartphone sensors (which suffer from unpredictable physical coupling and noise) or sparse professional seismometers, *QuakeGuard* occupies the "missing middle": dedicated, rigidly mounted IoT sensors running deterministic C++ DSP on bare-metal RTOS, ensuring zero latency variance and true always-on reliability.
+While commercial and state-sponsored systems like *ShakeAlert*, or crowdsourced applications like *MyShake* and *Earthquake Network (EQN)* rely on smartphone sensors (which must filter out human movement, often restricting data collection to when the device is stationary and charging) or sparse professional seismometers, *QuakeGuard* occupies the "missing middle": dedicated, rigidly mounted IoT sensors running deterministic C++ DSP on bare-metal RTOS, ensuring zero latency variance and true always-on reliability.

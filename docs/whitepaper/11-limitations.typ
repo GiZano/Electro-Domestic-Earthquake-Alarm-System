@@ -14,7 +14,7 @@ QuakeGuard sits between massive government systems and smartphone-based crowdsou
   [*Feature*], [*QuakeGuard (v2.0)*], [*ShakeAlert*], [*MyShake / EQN*],
   [Hardware], [Dedicated Edge IoT], [Professional], [Smartphones],
   [Latency], [< 200 ms], [< 5 s], [Variable (1-10 s)],
-  [Coupling Noise], [Low (Rigid mount)], [Very Low], [High (Pockets, tables)],
+  [Coupling Noise], [Low (Rigid mount)], [Very Low], [Variable (Filtered when stationary/charging)],
   [Cost/Node], [~ $15 USD], [>$10,000 USD], [Free (BYOD)]
 )
 
