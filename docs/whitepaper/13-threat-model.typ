@@ -17,7 +17,7 @@ QuakeGuard's architecture implements a Zero-Trust model where the network is ass
 
 == Out of Scope
 The following vectors are explicitly out of scope for the current threat model:
-- *Physical Compromise:* If an attacker gains physical access to the node, they could theoretically extract the private key from the ESP32's NVS or perform side-channel attacks during signing. Hardware Secure Elements (e.g., ATECC608A) are recommended for production deployments to mitigate this.
+- *Physical Compromise:* If an attacker gains physical access to the node, they could theoretically extract the private key from the ESP32's NVS or perform side-channel attacks during signing. Hardware Secure Elements (e.g., ATECC608A) are recommended for production deployments to mitigate this (currently planned for integration in roadmap phase R3).
 - *Sensor Spoofing:* Physically shaking the sensor to induce a false positive. Spatial correlation (Triangulation) mitigates this at the system level.
 
 == Key Rotation and Revocation

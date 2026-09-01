@@ -15,7 +15,7 @@
           "alternateName": "QuakeGuard \u2014 Distributed Earthquake Early Warning System",
           "applicationCategory": "IoTApplication",
           "operatingSystem": "Web, ESP32-C3, React Native (Android/iOS)",
-          "softwareVersion": "2.0.0",
+          "softwareVersion": "2.0.1",
           "url": "https://giovanni-zanotti.is-a.dev/projects/quakeguard.html",
           "description": "Full-stack IoT architecture for real-time earthquake detection and early warning. ESP32-C3 + ADXL345 edge sensors with on-device STA/LTA and optional GNSS, ECDSA-signed telemetry over MQTT or USB CDC serial fallback (Zero-Trust), FastAPI + Redis Streams + TimescaleDB/PostGIS backend with per-area geo-zoning, and a React Native app with on-premise AI emergency reports (Ollama).",
           "codeRepository": "https://github.com/GiZano/QuakeGuard",
@@ -247,7 +247,7 @@
                             </div>
                             <div class="col-6 col-md-3">
                                 <div class="qg-card stat-chip">
-                                    <div class="num">60 s</div>
+                                    <div class="num">300 s</div>
                                     <div class="lbl"><span data-i18n="stat_dedup">Zone dedup / anti-replay</span></div>
                                 </div>
                             </div>
@@ -380,7 +380,7 @@
                             <div class="pipe-step"><span class="n">4</span><strong
                                     data-i18n="pipe_4_t">Verify</strong><br><span data-i18n="pipe_4_d">Bridge → <code
                                         style="color:#00f5ff">POST /readings/</code>. API key, sensor status,
-                                    anti-replay (60 s) and signature are all validated.</span></div>
+                                    anti-replay (300 s) and signature are all validated.</span></div>
                             <div class="pipe-arrow"><i class="fas fa-chevron-down"></i></div>
                             <div class="pipe-step"><span class="n">5</span><strong
                                     data-i18n="pipe_5_t">Queue</strong><br><span data-i18n="pipe_5_d">Rate limit (50
@@ -530,8 +530,8 @@
                     </div>
                     <div class="col-12 col-md-4 mb-3">
                         <div class="qg-card text-center"><img
-                                src="https://img.shields.io/badge/ngrok-HTTPS%20Tunnel-1F1E37?style=for-the-badge&logo=ngrok&logoColor=white"
-                                alt="ngrok" class="qg-shield" loading="lazy"></div>
+                                src="https://img.shields.io/badge/Cloudflare-HTTPS%20Tunnel-F38020?style=for-the-badge&logo=cloudflare&logoColor=white"
+                                alt="Cloudflare" class="qg-shield" loading="lazy"></div>
                     </div>
                     <div class="col-12 col-md-4 mb-3">
                         <div class="qg-card text-center"><img
@@ -636,7 +636,7 @@
                             <div class="sec-gate">
                                 <div class="ico"><i class="fas fa-clock"></i></div>
                                 <div><strong data-i18n="sec_gate_replay_t">Anti-replay</strong>
-                                    <p data-i18n="sec_gate_replay_p">Timestamps older than the 60 s window are rejected
+                                    <p data-i18n="sec_gate_replay_p">Timestamps older than the 300 s window are rejected
                                         outright with <code>403 Forbidden</code>.</p>
                                 </div>
                             </div>
@@ -750,7 +750,7 @@
                                     </div>
                                     <div class="road-item done"><span class="ver" data-i18n="road_11_label">v1.1 ·
                                             Released</span>
-                                        <p data-i18n="road_11"><strong>HiveMQ Cloud MQTT (TLS)</strong>, ngrok HTTPS
+                                        <p data-i18n="road_11"><strong>HiveMQ Cloud MQTT (TLS)</strong>, Cloudflare HTTPS
                                             tunnel, security hardening.</p>
                                     </div>
                                     <div class="road-item done"><span class="ver" data-i18n="road_120_label">v1.2.0 ·

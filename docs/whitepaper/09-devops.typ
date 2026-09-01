@@ -26,3 +26,10 @@ To enforce the "Zero-Trust" architecture without manual pain, `generate_secrets.
 The automation suite also includes Python-based stress testers to validate the deployment's resilience:
 - *`stress_test.py` (in `backend/tests/`):* Simulates the "Thundering Herd" effect by spawning 150 concurrent asynchronous sensors, blasting the API to validate the Redis sliding-window rate limiter and the `FastAPI` concurrency limits. A successful run finishes with a `🏆 SYSTEM CERTIFIED` banner.
 - *`simulate_zone.py` (in `backend/scripts/`):* Streams synthetic, scaled acceleration telemetry into specific PostGIS zones to visualize live graphs on the React Native mobile app without triggering a full E2E pipeline crash.
+
+== Testing & CI/CD Pipeline
+
+To maintain production-grade reliability, QuakeGuard is backed by a rigorous Continuous Integration and Continuous Deployment (CI/CD) pipeline running on GitHub Actions:
+- *Test Coverage:* The backend is validated by 104 `pytest` scenarios covering ECDSA cryptography, state machine transitions, and Redis streams processing. The mobile application is covered by 23 Jest tests ensuring state management and UI resilience.
+- *Quality Gates:* Every pull request is automatically analyzed by SonarCloud, enforcing strict quality, reliability, and security metrics before a merge is permitted.
+- *Linting & Safety:* Python code is statically analyzed and formatted using Ruff, while dependencies are audited by Safety and CodeQL to prevent supply-chain attacks.

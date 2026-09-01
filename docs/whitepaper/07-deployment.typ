@@ -11,7 +11,7 @@ To orchestrate the full stack, the host machine must have the following dependen
 
 == Backend Provisioning
 
-The backend services (PostgreSQL, TimescaleDB, Redis, FastAPI, Worker, AI-Worker, and MQTT Bridge) are fully containerized[cite: 1]. The system uses a Hybrid Network Architecture where the backend runs locally, while exposing an automated Cloudflare tunnel for external WAN traffic[cite: 1].
+The backend services (PostgreSQL, TimescaleDB, Redis, FastAPI, Worker, AI-Worker, and MQTT Bridge) are fully containerized. The system uses a Hybrid Network Architecture where the backend runs locally, while exposing an automated Cloudflare tunnel for external WAN traffic.
 
 + Navigate to the project root and launch the orchestrator:
   ```bash
@@ -24,16 +24,16 @@ This single command automates the entire infrastructure deployment:
 
 == Horizontal Worker Scaling
 
-Because telemetry is consumed through Redis Streams consumer groups, the worker tier scales horizontally without reconfiguration: messages are balanced across the group automatically[cite: 1].
+Because telemetry is consumed through Redis Streams consumer groups, the worker tier scales horizontally without reconfiguration: messages are balanced across the group automatically.
 ```bash
 docker compose up --scale worker=N -d
 ```
 
 == Seismic Simulation & Stress Testing
 
-Two companion scripts exercise the ingestion pipeline[cite: 1]:
+Two companion scripts exercise the ingestion pipeline:
 - *`scripts/load_test.py`* — a high-concurrency End-to-End (E2E) stress test that simulates a massive seismic event through the real REST path (see the stress test section below).
-- *`scripts/simulate_zone.py`* — streams synthetic per-zone readings straight through the ingestion flow, exercising the per-area cooldown fragmentation and the per-zone seismograph endpoints[cite: 1].
+- *`scripts/simulate_zone.py`* — streams synthetic per-zone readings straight through the ingestion flow, exercising the per-area cooldown fragmentation and the per-zone seismograph endpoints.
 
 == Edge Node & Mobile Client Orchestration
 
