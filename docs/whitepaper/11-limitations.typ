@@ -15,7 +15,7 @@ QuakeGuard sits between massive government systems and smartphone-based crowdsou
   [Hardware], [Dedicated Edge IoT], [Professional], [Smartphones],
   [Latency], [< 200 ms], [< 5 s], [Variable (1-10 s)],
   [Coupling Noise], [Low (Rigid mount)], [Very Low], [Variable (Filtered when stationary/charging)],
-  [Cost/Node], [~ \$15 USD], [>\$10,000 USD], [Free (BYOD)]
+  [Cost/Citizen], [Free (Embedded)], [Paid via Taxes], [Free (BYOD)]
 )
 
-QuakeGuard offers deterministic latency and low coupling noise like ShakeAlert, but at the democratization scale of MyShake and Earthquake Network (EQN).
+QuakeGuard offers deterministic latency and low coupling noise like ShakeAlert, but at the democratization scale of MyShake and Earthquake Network (EQN). Crucially, the direct cost for the citizen remains zero: the deployment strategy is to embed these low-cost (~\$15 USD) nodes at the corporate level directly into home appliances, smart home infrastructures, or through municipality-led deployments. The current universal PCB is already designed to host either the ubiquitous ESP32-C3 sensors or the more powerful ESP32-S3. While currently operating with C3 capabilities, future releases will deploy TinyML to the S3 nodes, formally splitting the hardware into a two-tier edge cluster (ubiquitous sensors vs. intelligent confirmation gates).
