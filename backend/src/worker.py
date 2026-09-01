@@ -68,10 +68,11 @@ def _handle_triangulation(event: dict, magnitude: float, buffer_key: str):
         "magnitude": magnitude,
         "timestamp": event.get("timestamp", datetime.now(timezone.utc).isoformat())
     }
-    redis_sync.rpush(buffer_key, json.dumps(trigger_data))
-    redis_sync.expire(buffer_key, 60)
+    length = redis_sync.rpush(buffer_key, json.dumps(trigger_data))
+    if length == 1:
+        redis_sync.expire(buffer_key, 60)
     
-    if redis_sync.llen(buffer_key) == 3:
+    if length == 3:
         raw_triggers = redis_sync.lrange(buffer_key, 0, -1)
         triggers = [json.loads(t) for t in raw_triggers]
         try:

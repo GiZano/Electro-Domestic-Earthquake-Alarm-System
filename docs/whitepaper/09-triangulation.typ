@@ -21,7 +21,7 @@ $ hat(lambda) = (sum_(i=1)^N lambda_i dot W_i) / (sum_(i=1)^N W_i) $
 $ hat(phi) = (sum_(i=1)^N phi_i dot W_i) / (sum_(i=1)^N W_i) $
 
 *2. Haversine Distance*
-To estimate the origin time of the rupture, the backend computes the great-circle distance $d$ between the calculated epicenter $(hat(lambda), hat(phi))$ and the nearest triggered sensor $(lambda_0, phi_0)$ using the Haversine formula (where $R approx 6371 " km"$):
+To estimate the origin time of the rupture, the backend computes the great-circle distance $d$ between the calculated epicenter $(hat(lambda), hat(phi))$ and the first triggered sensor $(lambda_0, phi_0)$ (the node recording the earliest arrival time $T_"first"$) using the Haversine formula (where $R approx 6371 " km"$):
 
 $ a = sin^2((Delta phi) / 2) + cos(phi_1) dot cos(phi_2) dot sin^2((Delta lambda) / 2) $
 $ c = 2 dot "atan2"(sqrt(a), sqrt(1-a)) $
