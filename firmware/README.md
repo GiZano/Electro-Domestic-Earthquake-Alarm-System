@@ -1,4 +1,4 @@
-# QuakeGuard - Electro-Domestic Earthquake Alarm System
+# QuakeGuard - Distributed Earthquake Early Warning System
 ### Firmware Version: 3.0.0-MASTER
 
 ## 1. Project Overview

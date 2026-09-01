@@ -1,7 +1,7 @@
 <div align="center">
 
 # 🌋 QuakeGuard
-### Electro-Domestic Seismic Alarm System
+### Distributed Earthquake Early Warning System
 
 **Full-Stack IoT Architecture for Real-Time Earthquake Detection**
 
