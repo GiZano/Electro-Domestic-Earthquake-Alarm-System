@@ -10,12 +10,12 @@ While QuakeGuard provides a robust foundation for community EEW, several limitat
 QuakeGuard sits between massive government systems and smartphone-based crowdsourcing.
 
 #table(
-  columns: (1fr, 1fr, 1fr, 1fr),
-  [*Feature*], [*QuakeGuard (v2.0)*], [*ShakeAlert*], [*MyShake (Smartphones)*],
+  columns: (1fr, 1.2fr, 1fr, 1.3fr),
+  [*Feature*], [*QuakeGuard (v2.0)*], [*ShakeAlert*], [*MyShake / EQN*],
   [Hardware], [Dedicated Edge IoT], [Professional], [Smartphones],
   [Latency], [< 200 ms], [< 5 s], [Variable (1-10 s)],
   [Coupling Noise], [Low (Rigid mount)], [Very Low], [High (Pockets, tables)],
   [Cost/Node], [~ $15 USD], [>$10,000 USD], [Free (BYOD)]
 )
 
-QuakeGuard offers deterministic latency and low coupling noise like ShakeAlert, but at the democratization scale of MyShake.
+QuakeGuard offers deterministic latency and low coupling noise like ShakeAlert, but at the democratization scale of MyShake and Earthquake Network (EQN).
