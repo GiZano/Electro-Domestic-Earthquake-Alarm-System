@@ -154,7 +154,7 @@ async def lifespan(app: FastAPI):
     listener_task.cancel()
 
 # Initialize FastAPI
-app = FastAPI(title="QuakeGuard Backend", version="1.2.2", lifespan=lifespan)
+app = FastAPI(title="QuakeGuard Backend", version="2.0.0", lifespan=lifespan)
 
 # ==========================================
 # MIDDLEWARE
@@ -301,20 +301,100 @@ async def trigger_demo_earthquake(
     payload: schemas.DemoAlertRequest,
 ):
     """
-    Instantly triggers a simulated CRITICAL earthquake alert.
+    Instantly triggers a simulated TRIANGULATED earthquake alert.
     Bypasses the IoT ingestion pipeline and broadcasts directly to all connected WebSocket clients.
     """
     # Construct the exact payload format expected by the frontend WebSocketContext
     alert_data = {
-        "type": "CRITICAL",
+        "type": "TRIANGULATED",
         "zone_id": payload.zone_id,
         "magnitude": payload.magnitude,
         "message": payload.message,
+        "latitude": 45.4642,    # Mock epicenter (Milan, or any city)
+        "longitude": 9.1900,
+        "origin_time": datetime.now(timezone.utc).isoformat(),
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
-    # Publish directly to the Redis Pub/Sub channel
+    # Publish directly to the Redis Pub/Sub channel for live updates
     await redis_client.publish("quake_alerts", json.dumps(alert_data))
+
+    db = next(get_db())
+    
+    # We resolve the actual zone name if we can for realism
+    zone = db.query(models.Zone).filter(models.Zone.id == payload.zone_id).first()
+    
+    # 1. Create an Alert record so we can link the EmergencyReport
+    demo_alert = models.Alert(
+        zone_id=payload.zone_id,
+        magnitude=payload.magnitude,
+        message=payload.message,
+        latitude=alert_data["latitude"],
+        longitude=alert_data["longitude"],
+        is_triangulated=True,
+        origin_time=datetime.now(timezone.utc)
+    )
+    db.add(demo_alert)
+    db.commit()
+    db.refresh(demo_alert)
+
+    # 2. Create the PENDING EmergencyReport
+    demo_report = models.EmergencyReport(
+        alert_id=demo_alert.id,
+        zone_id=payload.zone_id,
+        magnitude=payload.magnitude
+    )
+    db.add(demo_report)
+    db.commit()
+    db.refresh(demo_report)
+
+    # Also push to the AI Worker queue so the AI report gets generated
+    ai_telemetry = {
+        "report_id": demo_report.id,
+        "alert_id": demo_alert.id,
+        "zone_id": payload.zone_id,
+        "zone_name": zone.city if zone else "Demo Zone", 
+        "magnitude": payload.magnitude,
+        "sensor_id": 999,
+        "value": 1000,
+        "triangulated_latitude": alert_data["latitude"],
+        "triangulated_longitude": alert_data["longitude"]
+    }
+
+    await redis_client.lpush("ai_report_queue", json.dumps(ai_telemetry))
+    
+    # -------------------------------------------------------------
+    # Inject fake readings into the database so the Mobile Graph updates
+    # -------------------------------------------------------------
+    from datetime import timedelta
+    
+    sensor = db.query(models.Sensor).filter(models.Sensor.zone_id == payload.zone_id).first()
+    if not sensor:
+        sensor = models.Sensor(zone_id=payload.zone_id, public_key_hex=f"demo-{int(datetime.now().timestamp())}", active=True)
+        db.add(sensor)
+        db.commit()
+        db.refresh(sensor)
+        
+    demo_magnitudes = [4.0, 4.4, payload.magnitude, 4.7, 4.2]
+    now_dt = datetime.now(timezone.utc)
+    
+    for i, mag in enumerate(demo_magnitudes):
+        # Reverse engineer the raw sensor value:
+        # magnitude = log10(sensorValue / 160) + 3.0
+        # 10^(magnitude - 3.0) = sensorValue / 160
+        raw_value = int(160 * (10 ** (mag - 3.0)))
+        
+        # Space them out by 1 second leading up to now
+        record_time = now_dt - timedelta(seconds=(len(demo_magnitudes) - i - 1))
+        
+        reading = models.Reading(
+            sensor_id=sensor.id,
+            value=raw_value,
+            recorded_at=record_time
+        )
+        db.add(reading)
+        
+    db.commit()
 
     return {
         "status": "success",

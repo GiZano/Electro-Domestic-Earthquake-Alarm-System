@@ -6,6 +6,7 @@
  */
 
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL as string;
+console.log("🛠️ DEBUG API_BASE_URL:", API_BASE_URL);
 
 // Centralized Security Secrets
 export const IOT_API_KEY = process.env.EXPO_PUBLIC_IOT_API_KEY as string;

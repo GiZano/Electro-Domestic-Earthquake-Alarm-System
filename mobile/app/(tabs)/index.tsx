@@ -1,4 +1,4 @@
-import { ShieldAlert, ShieldCheck, Wifi, WifiOff, Activity } from "lucide-react-native";
+import { ShieldAlert, ShieldCheck, Wifi, WifiOff, Activity, Settings, ChevronRight, X } from "lucide-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, View, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -11,15 +11,20 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { VictoryChart, VictoryLine, VictoryAxis, VictoryLabel } from "victory-native";
+import { Defs, LinearGradient, Stop } from "react-native-svg";
 import { useWebSocket } from "../../context/WebSocketContext";
 import { useSensors, useZones, useZoneReadings } from "../../api/hooks/useDashboard";
 import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 import { ErrorBanner } from "../../components/ErrorBanner";
 import { AlertHistoryList } from "../../components/AlertHistoryList";
+import { EarlyWarningBanner } from "../../components/EarlyWarningBanner";
+import * as Location from "expo-location";
+import { useRouter } from "expo-router";
+import { usePreferencesStore } from "../../store/usePreferencesStore";
 import { useAppTheme } from "../../theme/useTheme";
 import { createQuakeGuardTheme } from "../../theme/victory";
 import { MONO } from "../../theme";
-import { estimateMagnitude, thresholdOf } from "../../utils/magnitude";
+import { estimateMagnitude } from "../../utils/magnitude";
 
 const WINDOW_MAX = 60; // samples kept in the sliding window
 const WINDOW_SECONDS = 30; // time domain of the seismograph
@@ -160,7 +165,9 @@ function ZoneSummaryStrip({ activeNodes, totalNodes, latestMagnitude, isAlertAct
       </View>
       <View style={styles.summaryItem}>
         <Text style={styles.summaryLabel}>MAG</Text>
-        <Text style={[styles.summaryValue, { color: magColor }]}>{mag.toFixed(2)}</Text>
+        <Text style={[styles.summaryValue, { color: magColor }]}>
+          {latestMagnitude !== null ? mag.toFixed(2) : "0.00"}
+        </Text>
       </View>
       <View style={styles.summaryItem}>
         <Text style={styles.summaryLabel}>SIGNAL</Text>
@@ -183,32 +190,24 @@ function NetworkChart({ points, isAlertActive, colors }: Readonly<{
   isAlertActive: boolean;
   colors: ThemeColors;
 }>) {
-  const styles = createStyles(colors);
   const theme = useMemo(() => createQuakeGuardTheme(colors), [colors]);
-  const last = points.at(-1);
-  const threshold = last ? thresholdOf(last.y) : "live";
-  const isAlert = threshold === "alert";
-  const isCaution = threshold === "caution";
-  let lineColor = colors.live;
-  if (isAlert) {
-    lineColor = colors.alert;
-  } else if (isCaution) {
-    lineColor = colors.caution;
-  }
-
-  if (points.length === 0) {
-    return (
-      <Text style={styles.chartEmpty}>AWAITING TELEMETRY // ZONE ...</Text>
-    );
-  }
-
-  // Right breathing room so the newest live sample (x≈0) never touches or
-  // spills past the plot edge — that read as "the graph starts out of field".
-  const magTicks = [3.5, 4.0, 4.5]; // MIN / MED / ALTO thresholds on a linear MAG axis
+  const yellowColor = colors.bg === "#09090b" ? "#eab308" : "#ca8a04";
 
   // Plot in magnitude units (linear scale) instead of raw sensor values
-  // (log-compressed near the noise floor — that made the 3.0/3.5 ticks crowd).
-  const data = points.map(({ x, y, t }) => ({ x, y: estimateMagnitude(y), t }));
+  const realData = points.map(({ x, y, t }) => ({ x, y: estimateMagnitude(y), t }));
+  
+  // Dynamic Y domain: start at 0, go up to at least 5, or higher if needed.
+  const maxY = Math.max(5.0, ...realData.map(d => d.y));
+  const magTicks = [];
+  for (let i = 0; i <= Math.ceil(maxY); i++) {
+    magTicks.push(i);
+  }
+
+  // Wrap the real data with a boundary point at the far left so the line reaches the edge.
+  const data = [
+    { x: -WINDOW_SECONDS, y: realData.length > 0 ? realData[0].y : 0, t: 0 },
+    ...realData,
+  ];
 
   const CHART_WIDTH = 450; // victory-native default
   const PAD_LEFT = 52;
@@ -223,13 +222,58 @@ function NetworkChart({ points, isAlertActive, colors }: Readonly<{
   const timeX = PAD_LEFT + ((WINDOW_SECONDS - 15) / spanX) * (CHART_WIDTH - PAD_LEFT - PAD_RIGHT);
   const timeY = chartHeight - PAD_BOTTOM + 34;
 
+  const colorForMag = (mag: number) => {
+    if (mag >= 4.5) return colors.alert;
+    if (mag >= 4.0) return colors.caution;
+    if (mag > 3.04) return yellowColor;
+    return colors.live;
+  };
+
+  const buildGradientStops = (dataPoints: any[], minX: number, maxX: number) => {
+    const stops = [];
+    const currentSpanX = Math.max(0.0001, maxX - minX);
+
+    for (let i = 0; i < dataPoints.length; i++) {
+      const p = dataPoints[i];
+      const offset = Math.max(0, Math.min(100, ((p.x - minX) / currentSpanX) * 100));
+      
+      let leftColor = colors.live;
+      if (i > 0) leftColor = colorForMag(Math.max(dataPoints[i-1].y, p.y));
+      
+      let rightColor = colors.live;
+      if (i < dataPoints.length - 1) rightColor = colorForMag(Math.max(p.y, dataPoints[i+1].y));
+
+      if (i === 0) {
+        stops.push(<Stop key={`s-${i}-r`} offset={`${offset}%`} stopColor={rightColor} />);
+      } else if (i === dataPoints.length - 1) {
+        stops.push(<Stop key={`s-${i}-l`} offset={`${offset}%`} stopColor={leftColor} />);
+      } else {
+        stops.push(<Stop key={`s-${i}-l`} offset={`${offset}%`} stopColor={leftColor} />);
+        if (leftColor !== rightColor) {
+          stops.push(<Stop key={`s-${i}-r`} offset={`${offset}%`} stopColor={rightColor} />);
+        }
+      }
+    }
+    return stops;
+  };
+
+  const minX = data.length > 0 ? data[0].x : -WINDOW_SECONDS;
+  const maxX = data.length > 0 ? (data.at(-1)?.x ?? 0) : 0;
+  const gradientStops = buildGradientStops(data, minX, maxX);
+
   return (
     <VictoryChart
       theme={theme}
       height={chartHeight}
       padding={{ top: 8, bottom: PAD_BOTTOM, left: PAD_LEFT, right: PAD_RIGHT }}
-      domain={{ x: [-WINDOW_SECONDS, RIGHT_PAD], y: [3.0, 5.0] }}
+      domain={{ x: [-WINDOW_SECONDS, RIGHT_PAD], y: [0, maxY] }}
     >
+      <Defs>
+        <LinearGradient id="magGradient" x1="0" y1="0" x2="1" y2="0">
+          {gradientStops}
+        </LinearGradient>
+      </Defs>
+
       <VictoryLabel
         text="TIME"
         x={timeX}
@@ -254,20 +298,23 @@ function NetworkChart({ points, isAlertActive, colors }: Readonly<{
         tickFormat={(t) => `${Math.abs(Math.round(t))}s`}
       />
       <VictoryLine
-        style={{
-          data: { stroke: lineColor, strokeWidth: 2 },
-        }}
         data={data}
-        x="x"
-        y="y"
-        interpolation="linear"
+        interpolation="monotoneX"
+        style={{
+          data: {
+            stroke: "url(#magGradient)",
+            strokeWidth: 2.5,
+          },
+        }}
       />
     </VictoryChart>
   );
 }
 
 export default function MonitorScreen() {
+  const router = useRouter();
   const { isConnected, lastAlert, lastReport } = useWebSocket();
+  const { userLocation, setUserLocation, homeZoneId, hasDismissedZoneBanner, dismissZoneBanner } = usePreferencesStore();
   const { colors } = useAppTheme();
   const [isAlertActive, setIsAlertActive] = useState(false);
   const [selectedZoneId, setSelectedZoneId] = useState<number | undefined>(undefined);
@@ -280,9 +327,9 @@ export default function MonitorScreen() {
   const { data: zones, isLoading: loadingZones, isError: errorZones } = useZones();
   const { data: readings, isLoading: loadingReadings, isError: errorReadings } = useZoneReadings(selectedZoneId, WINDOW_MAX);
 
-  const totalSensors = sensors?.length || 0;
-  const activeSensors = sensors?.filter((s: any) => s.active).length || 0;
-  const selectedZone = zones?.find((z: any) => z.id === selectedZoneId);
+  const zoneSensors = sensors?.filter((s: any) => s.zone_id === selectedZoneId) || [];
+  const totalSensors = zoneSensors.length;
+  const activeSensors = zoneSensors.filter((s: any) => s.active).length;
 
   // Default to the first zone once the PostGIS list is available.
   useEffect(() => {
@@ -296,53 +343,102 @@ export default function MonitorScreen() {
     setWindow([]);
   }, [selectedZoneId]);
 
-  // Merge incoming readings into the sliding window (push newest, drop oldest).
-  // The time axis is anchored to the wall clock (Date.now), NOT to the newest
-  // sample: stale readings drift to the left and leave the window, while live
-  // ones enter at the right edge. Anchoring to the newest sample instead pins
-  // a finished run at the right edge forever ("lines going out of the field").
+  // Try to silently fetch the user location if we don't have it (for ETA calculation)
   useEffect(() => {
-    if (!readings || readings.length === 0) return;
-    setWindow((prev) => {
-      const now = Date.now();
-      const merged = new Map<number, WindowEntry>();
-      for (const p of prev) merged.set(p.t, { t: p.t, y: p.y });
-      for (const r of readings) {
-        const t = Date.parse(r.recorded_at);
-        if (Number.isNaN(t)) continue;
-        merged.set(t, { t, y: r.value });
+    (async () => {
+      if (!userLocation) {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const pos = await Location.getLastKnownPositionAsync();
+          if (pos) {
+            setUserLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+          }
+        }
       }
-      const list = [...merged.values()].filter(({ t }) => (now - t) / 1000 <= WINDOW_SECONDS);
-      if (list.length === 0) return prev;
-      return [...list]
-        .sort((a, b) => a.t - b.t)
-        .slice(-WINDOW_MAX)
-        .map(({ t, y }) => ({
-          // Clamp to the domain so nothing can ever spill past the plot edges.
-          x: Math.max(-WINDOW_SECONDS, Math.min(RIGHT_PAD, (t - now) / 1000)),
-          y,
-          t,
-        }));
-    });
+    })();
+  }, [userLocation, setUserLocation]);
+
+  // Merge incoming readings into the sliding window (push newest, drop oldest).
+  // The time axis is anchored to the wall clock (Date.now). We use a setInterval
+  // so the graph keeps shifting left smoothly even if no new data arrives.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setWindow((prev) => {
+        const now = Date.now();
+        const merged = new Map<number, WindowEntry>();
+        
+        // Retain previous real points
+        for (const p of prev) {
+          merged.set(p.t, { t: p.t, y: p.y });
+        }
+        
+        // Add new readings
+        if (readings && readings.length > 0) {
+          for (const r of readings) {
+            const t = Date.parse(r.recorded_at);
+            if (!Number.isNaN(t)) {
+              merged.set(t, { t, y: r.value });
+            }
+          }
+        }
+        // Always inject a baseline reading at the current tick.
+        // This guarantees that if a sensor only sends data sparsely (e.g. every 10s),
+        // we get a sharp spike that immediately returns to 0, rather than a 10s slope.
+        merged.set(now, { t: now, y: 0 });
+        
+        const list = [...merged.values()].filter(({ t }) => (now - t) / 1000 <= WINDOW_SECONDS);
+        list.sort((a, b) => a.t - b.t);
+
+        return list
+          .slice(-WINDOW_MAX)
+          .map(({ t, y }) => ({
+            // Clamp to the domain so nothing can ever spill past the plot edges.
+            x: Math.max(-WINDOW_SECONDS, Math.min(RIGHT_PAD, (t - now) / 1000)),
+            y,
+            t,
+          }));
+      });
+    }, 1000);
+    
+    return () => clearInterval(interval);
   }, [readings, selectedZoneId]);
 
   const latestMagnitude = useMemo(() => {
-    if (!readings || readings.length === 0) return null;
-    return estimateMagnitude(readings[0].value);
-  }, [readings]);
+    if (!window || window.length === 0) return null;
+    
+    // We want the MAG badge to reflect the peak magnitude currently visible 
+    // on the 30-second graph. By depending on `window` (which ticks every second),
+    // this correctly decays to N/A when no data is present, even if the API stops polling.
+    const realPoints = window.filter(p => p.y > 0);
+    
+    if (realPoints.length === 0) return null;
+
+    return Math.max(...realPoints.map(p => estimateMagnitude(p.y)));
+  }, [window]);
 
   useEffect(() => {
-    if (lastAlert) {
-      setIsAlertActive(true);
-      if (alertTimerRef.current) clearTimeout(alertTimerRef.current);
-      alertTimerRef.current = setTimeout(() => {
+    if (lastAlert && lastAlert.zone_id === selectedZoneId) {
+      // Prevent old alerts from re-triggering the UI during HMR (hot reloads)
+      const now = Date.now();
+      const alertTime = new Date(lastAlert.timestamp).getTime();
+      const ageMs = now - alertTime;
+
+      if (ageMs < 60000) {
+        setIsAlertActive(true);
+        if (alertTimerRef.current) clearTimeout(alertTimerRef.current);
+        alertTimerRef.current = setTimeout(() => {
+          setIsAlertActive(false);
+        }, 60000 - ageMs);
+      } else {
         setIsAlertActive(false);
-      }, 60000);
+      }
+    } else {
+      setIsAlertActive(false);
     }
     return () => {
       if (alertTimerRef.current) clearTimeout(alertTimerRef.current);
     };
-  }, [lastAlert]);
+  }, [lastAlert, selectedZoneId]);
 
   useEffect(() => {
     if (isAlertActive) {
@@ -384,7 +480,7 @@ export default function MonitorScreen() {
 
         <View style={styles.chartHeader}>
           <Text style={styles.chartTitle} numberOfLines={1}>
-            SEISMOGRAPH // {selectedZone?.city?.toUpperCase() ?? "ZONE"}
+            SEISMOGRAPH
           </Text>
           <Text style={styles.chartSubtitle}>Z-ACCEL // RAW</Text>
         </View>
@@ -414,9 +510,37 @@ export default function MonitorScreen() {
 
         <HeroSection isAlertActive={isAlertActive} animatedStyle={animatedStyle} colors={colors} />
 
+        {!homeZoneId && !hasDismissedZoneBanner && !isAlertActive && (
+          <View style={styles.missingZoneBannerWrapper}>
+            <Pressable 
+              style={({ pressed }) => [
+                styles.missingZoneBanner,
+                pressed && { opacity: 0.7 }
+              ]} 
+              onPress={() => router.push({ pathname: "/settings", params: { scroll: "zone" } })}
+            >
+              <Settings size={18} color={colors.caution} />
+              <View style={styles.missingZoneBannerTextContainer}>
+                <Text style={styles.missingZoneBannerTitle}>ACTION REQUIRED</Text>
+                <Text style={styles.missingZoneBannerText}>
+                  Home zone not configured. Tap to select.
+                </Text>
+              </View>
+              <ChevronRight size={20} color={colors.caution} />
+            </Pressable>
+            <Pressable style={styles.dismissButton} onPress={dismissZoneBanner}>
+              <X size={20} color={colors.textMuted} />
+            </Pressable>
+          </View>
+        )}
+
+        {isAlertActive && lastAlert?.type === "TRIANGULATED" && (
+          <EarlyWarningBanner alert={lastAlert} userLocation={userLocation} />
+        )}
+
         {isAlertActive && lastAlert && <AlertBanner lastAlert={lastAlert} colors={colors} />}
 
-        <AiReportCard lastReport={lastReport} colors={colors} />
+        {isAlertActive && lastReport && <AiReportCard lastReport={lastReport} colors={colors} />}
 
         <View style={styles.dashboardCard}>
           {dashboardContent}
@@ -448,6 +572,31 @@ const createStyles = (c: ThemeColors) =>
     statusDot: { width: 8, height: 8, borderRadius: 4 },
     connectionText: { fontSize: 12, fontWeight: "800", fontFamily: MONO },
     heroSection: { alignItems: 'center', marginVertical: 10 },
+    missingZoneBannerWrapper: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: c.surfaceAlt, 
+      borderColor: c.caution, 
+      borderWidth: 1, 
+      borderRadius: 12, 
+      marginTop: 10, 
+      marginBottom: 5,
+      shadowColor: c.caution,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    missingZoneBanner: { 
+      flex: 1,
+      flexDirection: "row", 
+      alignItems: "center", 
+      padding: 14, 
+    },
+    dismissButton: { padding: 14, borderLeftWidth: 1, borderLeftColor: c.border },
+    missingZoneBannerTextContainer: { flex: 1, paddingHorizontal: 12 },
+    missingZoneBannerTitle: { color: c.caution, fontSize: 11, fontWeight: "800", letterSpacing: 1.2, fontFamily: MONO, marginBottom: 2 },
+    missingZoneBannerText: { color: c.textSecondary, fontSize: 12, fontWeight: "500", fontFamily: MONO },
     iconContainer: { marginBottom: 10 },
     statusText: { fontSize: 24, fontWeight: "900", textAlign: "center", letterSpacing: 2, fontFamily: MONO },
     dashboardCard: {

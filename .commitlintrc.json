@@ -3,15 +3,16 @@
   "rules": {
     "body-max-line-length": [0, "always", 100],
     "footer-max-line-length": [0, "always", 100],
+    "header-max-length": [0, "always", 100],
     "type-enum": [
       2,
       "always",
       ["feat", "fix", "sec", "test", "refactor", "chore", "docs", "ci"]
     ],
     "scope-enum": [
-      2,
+      0,
       "always",
-      ["backend", "frontend", "iot", "ci", "deps", "deps-dev", "core", "style", "fullstack"]
+      ["backend", "frontend", "iot", "ci", "deps", "deps-dev", "core", "style", "fullstack", "whitepaper", "web", "firmware"]
     ]
   }
 }

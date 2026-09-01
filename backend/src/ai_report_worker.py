@@ -4,7 +4,7 @@ AI Report Worker
 Consumes the `ai_report_queue` and generates human-readable emergency reports
 via the local Ollama service.
 
-Decoupling rationale (v1.2.0):
+Decoupling rationale:
     * The high-throughput ingestion worker (`worker.py`) must never block on LLM
       inference. It enqueues alert context and immediately returns.
     * This dedicated process owns the slow, stateful interaction with Ollama and

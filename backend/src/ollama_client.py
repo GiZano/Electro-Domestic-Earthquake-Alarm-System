@@ -5,7 +5,7 @@ Responsible for generating AI emergency reports from alert telemetry.
 
 Privacy model:
     Ollama runs locally inside the Docker network (default `http://ollama:11434`).
-    No telemetry ever leaves the host. This satisfies the v1.2.0 privacy requirement.
+    No telemetry ever leaves the host. This satisfies the privacy requirement.
 
 Anti-hallucination for safety-critical systems:
     * `options.temperature` is forced to 0.0 (maximal deterministic sampling).
@@ -41,6 +41,8 @@ Generate an emergency seismic report based ONLY on the provided JSON telemetry.
 
 Strict rules:
 - Never invent magnitude, coordinates, timestamps, alerts, or zone names not present in the input.
+- Explicitly name the `zone_name` (e.g. "Milan", "Rome") in the first sentence of your summary to localize the event.
+- If `triangulated_latitude` and `triangulated_longitude` are present, explicitly state these coordinates as the estimated epicenter.
 - Never provide specific, unverified evacuation instructions. Only generic, universally safe guidance.
 - Output plain text with exactly two sections:
   1. "SUMMARY:" followed by a concise 2-3 sentence summary of the event.
@@ -50,7 +52,7 @@ Strict rules:
 
 # Keys delivered by the telemetry context. Any value missing from the input JSON
 # must be omitted from the prompt so the model cannot be led to hallucinate them.
-TELEMETRY_KEYS = ("alert_id", "zone_id", "zone_name", "magnitude", "sensor_id", "value", "timestamp")
+TELEMETRY_KEYS = ("alert_id", "zone_id", "zone_name", "magnitude", "sensor_id", "value", "triangulated_latitude", "triangulated_longitude")
 
 
 def build_prompt(telemetry: dict) -> str:

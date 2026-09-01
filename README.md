@@ -1,7 +1,7 @@
 <div align="center">
 
 # 🌋 QuakeGuard
-### Electro-Domestic Seismic Alarm System
+### Distributed Earthquake Early Warning System
 
 **Full-Stack IoT Architecture for Real-Time Earthquake Detection**
 
@@ -21,7 +21,7 @@
 ![CI Frontend](https://github.com/GiZano/QuakeGuard/actions/workflows/frontend-ci.yml/badge.svg)
 ![CI IoT](https://github.com/GiZano/QuakeGuard/actions/workflows/iot-ci.yml/badge.svg)
 
-[![DOI](https://zenodo.org/badge/1094177232.svg)](https://doi.org/10.5281/zenodo.21710405)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21710405.svg)](https://doi.org/10.5281/zenodo.21710405)
 
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=GiZano_QuakeGuard&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=GiZano_QuakeGuard)
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=GiZano_QuakeGuard&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=GiZano_QuakeGuard)
@@ -45,7 +45,13 @@
 
 **QuakeGuard** is a full-stack IoT architecture for real-time detection, analysis, and reporting of seismic events. The system transforms everyday household appliances — washing machines, TVs, refrigerators — into a distributed seismic sensor network, each node capable of detecting and reporting earthquake activity autonomously.
 
-Intelligent edge sensors (ESP32-C3 + ADXL345) analyze vibrations locally using professional-grade algorithms and transmit cryptographically signed data to an asynchronous cloud backend. The backend is engineered to handle the massive traffic spikes — the **Thundering Herd** effect — typical during widespread seismic events, ensuring reliable alarm delivery without bottlenecking. A React Native mobile app receives real-time haptic and visual alerts via WebSocket.
+Intelligent edge sensors (ESP32-C3 + ADXL345) analyze vibrations locally using professional-grade algorithms and transmit cryptographically signed data to an asynchronous cloud backend. The backend is engineesred to handle the massive traffic spikes — the **Thundering Herd** effect — typical during widespread seismic events, ensuring reliable alarm delivery without bottlenecking. A React Native mobile app receives real-time haptic and visual alerts via WebSocket.
+
+### QuakeGuard Proprietary Hardware
+
+<img align=center src="docs/whitepaper/assets/pcb_assembled.jpg" width="600" alt="QuakeGuard v2.0 Assembled PCB" />
+
+*The QuakeGuard v2.0 fully assembled PCB, featuring the ESP32-C3 SuperMini, the ADXL345 accelerometer, and the u-blox GNSS module.*
 
 ---
 
@@ -194,15 +200,22 @@ MQTT_PORT=8883
 MQTT_USERNAME=your_mqtt_username
 MQTT_PASSWORD=your_mqtt_password
 
-# --- AI Emergency Reports (optional, local Ollama) ---
+# --- AI Emergency Reports (hybrid Edge AI architecture) ---
 AI_REPORT_ENABLED=true
-OLLAMA_HOST=http://ollama:11434
+OLLAMA_HOST=http://127.0.0.1:11434
 OLLAMA_MODEL=llama3.2:1b
 ```
 
 > ⚠️ The backend will refuse to start if any of these are missing — this is intentional fail-fast behavior.
 
-> 💡 **Optional:** to enable on-premise AI emergency reports, start the stack with the `ai` profile — `docker compose --profile ai up --build -d`. This launches the local Ollama service (auto-pulls `llama3.2:1b` on first boot) plus the dedicated `ai-worker`. Reports are generated entirely on your machine: telemetry never leaves the host.
+> 💡 **Edge AI Architecture (v2.0.0):** To maximize hardware efficiency and avoid Docker's GPU passthrough overhead, QuakeGuard employs an industrial **Hybrid Edge AI** pattern (similar to NVIDIA Jetson or Tesla FSD architectures). The core AI inference engine (Ollama) runs bare-metal on the host Linux OS, while the application microservices run in Docker and communicate via `network_mode: "host"`.
+> 
+> **To enable on-premise AI reports:**
+> 1. Install Ollama natively on your Linux host: `curl -fsSL https://ollama.com/install.sh | sh`
+> 2. Pull the model natively: `ollama pull llama3.2:1b`
+> 3. Start the Docker stack with the AI worker profile: `docker compose --profile ai up --build -d`
+> 
+> Reports are generated entirely on your machine: telemetry never leaves the host.
 
 ### 2. Launch the Backend Stack
 
@@ -419,8 +432,7 @@ QuakeGuard/
 | **v1.2** | ✅ Released — On-Premise AI Worker (Local Ollama / Llama 3.2) for privacy-preserving emergency reports |
 | **v1.2.1** | ✅ Released — Geo-Zoning & Cooldown Fragmentation — geohash Redis zone index (FastAPI/PostGIS source of truth), per-area cooldown, GNSS-ready data model (`Sensor.last_fix_at`, `Reading.lat/lon`), per-zone live seismograph |
 | **v1.2.2** | ✅ Released — Zero-Trust Serial Fallback — signed telemetry over USB CDC (serial) when MQTT is unreachable |
-| **v1.3.0** | ✅ Released — GNSS sync, accurate node timestamps via NTP + PPS, ADXL345 calibration, and SIL validation with real INGV FDSN data |
-| **v2.0** | Triangulation — multi-node spatial correlation + AI reports for epicenter calculation |
+| **v2.0.0** | ✅ Released — Triangulation (multi-node spatial correlation), Hybrid Network Architecture, Automated DevOps Orchestration (Ptyxis), Local Factory Provisioning, GNSS sync, NTP+PPS, ADXL calibration, and INGV FDSN SIL validation |
 | **v2.1** | Data Dashboards — Grafana dashboards for real-time visualization of seismic telemetry |
 | **v2.1.1** | Timeseries DB & Mobile Fix — migration to TimescaleDB/InfluxDB; per-sensor chart isolation in React Native mobile |
 | **v2.2** | Heterogeneous Edge Intelligence — hybrid Tier A (STA/LTA) + Tier B (quantized CNN) decision fusion |

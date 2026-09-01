@@ -33,9 +33,9 @@ The firmware utilizes FreeRTOS to decouple time-critical sensor acquisition from
 - *`networkTask`:* Operates asynchronously at a lower priority[cite: 1]. It consumes the `eventQueue`, synchronizes the event timestamp via NTP (`pool.ntp.org`), signs the payload, and dispatches the MQTT message[cite: 1]. This design ensures that network blocking or Wi-Fi reconnects never halt the continuous monitoring of the accelerometer[cite: 1].
 - *`gnssTask` (optional):* When the GNSS subsystem is compiled in, a dedicated task (priority 2) continuously feeds NMEA frames into the parser so the coordinate pipeline is always live[cite: 1].
 
-== Zero-Trust Serial Fallback (v1.2.2)
+== Zero-Trust Serial Fallback 
 
-Since v1.2.2 the edge node tolerates complete MQTT/WiFi loss without losing cryptographically-attested telemetry[cite: 1]. The `networkTask` becomes a *first-available-path* dispatcher: `MQTT → USB CDC Serial → Retention Ring`[cite: 1].
+The edge node tolerates complete MQTT/WiFi loss without losing cryptographically-attested telemetry[cite: 1]. The `networkTask` becomes a *first-available-path* dispatcher: `MQTT → USB CDC Serial → Retention Ring`[cite: 1].
 
 - *Framing:* `SerialFallback.h` builds `[QG:FB]{...}` frames whose JSON is *byte-identical* to the MQTT payload (`value`, `sensor_id`, `device_timestamp`, `signature_hex`)[cite: 1]. The marker lets the host bridge filter CDC noise without parsing every line[cite: 1].
 - *Host-aware routing:* `Serial.isConnected()` (HWCDC, `ARDUINO_USB_CDC_ON_BOOT=1`) distinguishes a real USB host from a power-only charger; with no host the event is retained rather than written to a dead port[cite: 1]. The pure routing function `decidePath(mqttReachable, usbHostPresent, timeValid)` is shared between the firmware and the host SIL test suite[cite: 1].
@@ -43,14 +43,39 @@ Since v1.2.2 the edge node tolerates complete MQTT/WiFi loss without losing cryp
 - *Offline wall clock:* NTP is opportunistic (`pool.ntp.org` via `configTime`). At the first successful sync the firmware anchors `epochAtSync + millis()`; subsequent timestamps remain valid after WiFi drops and no frame is emitted before `timeValid`[cite: 1].
 - *Host bridge:* `firmware/tools/serial_bridge.py` reads `/dev/ttyACM0`, filters `[QG:FB]` lines via `parse_frame()`, validates the ingestion URL against SSRF (`_validate_api_url`), and POSTs to `/readings/` with `X-API-Key` — the same forwarding path as `mqtt_subscriber.py`[cite: 1]. A `test_serial_fallback.cpp` suite covers `buildSerialFrame`, `decidePath` and ring semantics on the host[cite: 1].
 
-== GNSS Subsystem & NTP Discipline (v1.3.0)
+== Diagnostic LED Indicators
 
-Since v1.2.1 the firmware is *GNSS-ready*: an optional module parses NMEA data from a u-blox / NEO-6M / NEO-M8N receiver over the secondary UART (RX GPIO 5, TX GPIO 4, 9600 baud on the JLCPCB — `J4-3→GPIO5`, `J4-4→GPIO4`, `J4-5→GPIO2 PPS` for v1.3) at 9600 baud[cite: 1]. The module is compiled #strong[only] when `GNSS_ENABLED=1` is present in `esp32_config.env`, so the default build stays hermetic and pulls no `TinyGPSPlus` dependency[cite: 1]. Defaults in `GnssModule.h` are `RX 5 / TX 4` to match the fabricated PCB; they remain overridable via `GPS_SERIAL_RX_PIN`/`TX_PIN` in `esp32_config.env` through `extra_script.py`[cite: 1].
+The ESP32-C3 firmware drives two diagnostic LEDs to provide immediate visual feedback of the node's operational state without requiring a serial monitor[cite: 1]:
+- *Boot Test:* Upon power-up, both the Blue and Red LEDs blink simultaneously twice to verify wiring integrity before the FreeRTOS tasks start[cite: 1].
+- *Solid Blue:* The node is fully online, with both Wi-Fi connected and an active MQTT session established with the broker[cite: 1].
+- *Single-Blinking Blue:* Wi-Fi is connected, but the MQTT broker is unreachable. The node is attempting opportunistic reconnection[cite: 1].
+- *Double-Blinking Blue:* Wi-Fi connection is lost. The node is actively scanning and attempting to re-associate with the AP[cite: 1].
+- *Solid Red (3-second pulse):* A seismic event (earthquake) was successfully detected by the STA/LTA algorithm. This overrides any blue LED state[cite: 1].
+- *Serial Fallback Indication:* If a seismic event occurs while the Blue LED is blinking (no MQTT), the Red LED will still pulse. This specific combination (Blinking Blue + Solid Red pulse) visually confirms to the operator that the node has fallen back to writing the cryptographically-signed event to the USB CDC Serial port or parking it in the Retention Ring[cite: 1].
+
+== PCB Design & Physical Assembly (v2.0.0)
+
+With the v2.0.0 milestone, the QuakeGuard hardware has matured from a breadboard prototype to a custom Printed Circuit Board (PCB), designed in KiCad[cite: 1]. The `hardware/` directory contains the complete schematic, PCB layout, and manufacturing Gerber files.
+- *Layout Integration:* The PCB provides dedicated footprints for the ESP32-C3 SuperMini (designed with footprint headroom to support a future ESP32-S3 variant for edge AI), the ADXL345 accelerometer (powered correctly at 3.3V), and the optional u-blox GNSS receiver[cite: 1].
+- *Signal Integrity:* The I2C lines (SDA on GPIO 7, SCL on GPIO 8) include proper hardware pull-up resistors on the PCB to guarantee stable communication at 100Hz without relying on the weak internal MCU pull-ups[cite: 1].
+- *External Interfacing:* A J4 header exposes the GNSS UART lines (RX GPIO 5, TX GPIO 4, PPS GPIO 2) and power rails, allowing modular connection of the GPS antenna for accurate time synchronization and epicentral triangulation[cite: 1].
+
+#figure(
+  image("assets/pcb_assembled.jpg", width: 90%),
+  caption: [
+    _The QuakeGuard v2.0.0 fully assembled PCB, featuring the ESP32-C3 SuperMini, the ADXL345 
+    accelerometer, and the u-blox GNSS module soldered into their dedicated footprints._
+  ]
+)
+
+== GNSS Subsystem & NTP Discipline (v2.0.0)
+
+The firmware features an optional GNSS module: an optional module parses NMEA data from a u-blox / NEO-6M / NEO-M8N receiver over the secondary UART (RX GPIO 5, TX GPIO 4, 9600 baud on the JLCPCB — `J4-3→GPIO5`, `J4-4→GPIO4`, `J4-5→GPIO2 PPS` for v2.0.0) at 9600 baud[cite: 1]. The module is compiled #strong[only] when `GNSS_ENABLED=1` is present in `esp32_config.env`, so the default build stays hermetic and pulls no `TinyGPSPlus` dependency[cite: 1]. Defaults in `GnssModule.h` are `RX 5 / TX 4` to match the fabricated PCB; they remain overridable via `GPS_SERIAL_RX_PIN`/`TX_PIN` in `esp32_config.env` through `extra_script.py`[cite: 1].
 
 - *Last-Known Fix Persistence:* Every reliable fix is saved into NVS (namespace `quake-gnss`, at most once per 60 seconds to limit flash wear)[cite: 1]. Provisioning therefore reports real coordinates even before the first fix after a cold boot[cite: 1].
 - *Staleness Handling:* A live fix older than 10 seconds is treated as stale and the firmware falls back to the last-known value[cite: 1].
-- *Provisioning Integration:* During `/devices/register`, the node reports the live GNSS fix when available, else the last-known-from-NVS fix; when neither exists it uses `GNSS_FALLBACK_LAT`/`LON` from `esp32_config.env` if defined (indoor/cantina testing), otherwise coordinates are omitted so the backend can assign the zone once placed[cite: 1].
-- *NTP + PPS Discipline:* The core feature of v1.3.0. The pulse-per-second (PPS) hardware interrupt (GPIO 2) records the precise `millis()` at the start of each UTC second. The `networkTask` synchronizes via NTP and then disciplines the internal `epochAtSync` directly to the last PPS interrupt, ensuring stratum-1-like millisecond precision for all seismic telemetry[cite: 1].
+- *Provisioning Integration:* During `/devices/register`, the node reports the live GNSS fix when available, else the last-known-from-NVS fix; when neither exists it uses `GNSS_FALLBACK_LAT`/`LON` from `esp32_config.env` if defined (indoor testing), otherwise coordinates are omitted so the backend can assign the zone once placed[cite: 1].
+- *NTP + PPS Discipline:* The core feature of v2.0.0. The pulse-per-second (PPS) hardware interrupt (GPIO 2) records the precise `millis()` at the start of each UTC second. The `networkTask` synchronizes via NTP and then disciplines the internal `epochAtSync` directly to the last PPS interrupt, ensuring stratum-1-like millisecond precision for all seismic telemetry[cite: 1].
 
 == Software-in-the-Loop (SIL) Validation
 
@@ -62,11 +87,11 @@ To ensure the theoretical STA/LTA model translates correctly to the real world, 
 #figure(
   image("assets/roc.png", width: 80%),
   caption: [
-    Receiver Operating Characteristic (ROC) curve of the edge STA/LTA algorithm.
+    _Receiver Operating Characteristic (ROC) curve of the edge STA/LTA algorithm.
     The curve reaches a hard upper bound at 0.8 (80%) True Positive Rate (Sensitivity).
     This limit represents a highly desirable geophysical outcome: 4 out of 5 historical 
     events are perfectly identified without any false alarms (FAR = 0.0), while the 5th 
     event (a weak micro-seismicity recorded at >100km distance) correctly fails to 
-    trigger the algorithm, proving the firmware's robustness against distant noise.
+    trigger the algorithm, proving the firmware's robustness against distant noise._
   ]
 )

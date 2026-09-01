@@ -1,39 +1,65 @@
 WEBVTT
 
-NOTE
-=== QuakeGuard demo captions (Italian) ===
-THIS IS A SCAFFOLD. Each cue below is a placeholder with a sample
-transcript of the pipeline. The TIMING (!) must be aligned to the real
-footage (Media/quakeguard/QuakeGuard.mp4). Steps to finalize:
-  1. Open the video in VLC or a subtitle editor (e.g. Subtitle Edit).
-  2. Pause-play and note the exact start/end timecodes of each spoken/onscreen phrase.
-  3. Replace the cue timings below (and any text) to match.
-Captions are optional, so a time mismatch will never break the page.
-
 1
-00:00:00.000 --> 00:00:04.000
-QuakeGuard: sistema di allarme sismico elettro-domestico.
+00:00:00.000 --> 00:00:03.000
+Ogni giorno i terremoti colpiscono,
 
 2
-00:00:04.000 --> 00:00:10.000
-Tre sensori ESP32-C3 raccolgono le vibrazioni e segnalano l'evento.
+00:00:03.000 --> 00:00:06.500
+ma i sistemi di rilevamento attuali
 
 3
-00:00:10.000 --> 00:00:16.000
-Il payload viene firmato con ECDSA e pubblicato via MQTT su HiveMQ.
+00:00:06.500 --> 00:00:10.000
+sono costosi e non ovunque presenti.
 
 4
-00:00:16.000 --> 00:00:22.000
-Il backend FastAPI valida la firma e mette l'evento in coda su Redis.
+00:00:10.000 --> 00:00:13.500
+Immagina se lavatrici o smart TV
 
 5
-00:00:22.000 --> 00:00:28.000
-Magnitudo stimata: il worker calcola M a partire dalla PGA.
+00:00:13.500 --> 00:00:16.500
+avessero un minuscolo sensore integrato
 
 6
-00:00:28.000 --> 00:00:34.000
-Allerta via WebSocket: la app mobile vibra e mostra la notifica.
+00:00:16.500 --> 00:00:19.500
+senza costi aggiuntivi per te:
 
 7
-00:00:34.000 --> 00:00:40.000
-Il report AI di emergenza viene generato on-premise con Ollama.
+00:00:19.500 --> 00:00:22.000
+insieme potrebbero formare
+
+8
+00:00:22.000 --> 00:00:25.000
+una rete globale al servizio della scienza!
+
+9
+00:00:25.000 --> 00:00:28.000
+QuakeGuard è questo:
+
+10
+00:00:28.000 --> 00:00:32.000
+sensori di grandezza minima
+
+11
+00:00:32.000 --> 00:00:36.000
+da inserire all’interno degli elettrodomestici,
+
+12
+00:00:36.000 --> 00:00:40.000
+per rilevare i terremoti
+
+13
+00:00:40.000 --> 00:00:45.000
+e avvisarci in tempo reale sui telefoni.
+
+14
+00:00:45.000 --> 00:00:49.000
+Tutto questo è Open Source su GitHub.
+
+15
+00:00:49.000 --> 00:00:54.000
+QuakeGuard:
+
+16
+00:00:54.000 --> 00:01:00.000
+la sicurezza inizia dagli oggetti di tutti i giorni.

@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { View, Text, StyleSheet, Switch, Alert, TouchableOpacity, ActivityIndicator, ScrollView, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useLocalSearchParams } from "expo-router";
 import {
   Settings as SettingsIcon,
   Bell,
@@ -43,6 +44,18 @@ export default function SettingsScreen() {
   const { data: zones } = useZones();
   const [detecting, setDetecting] = useState(false);
   const styles = createStyles(colors);
+  
+  const params = useLocalSearchParams();
+  const scrollRef = useRef<ScrollView>(null);
+  const [zoneSectionY, setZoneSectionY] = useState(0);
+
+  useEffect(() => {
+    if (params.scroll === "zone" && zoneSectionY > 0) {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: zoneSectionY, animated: true });
+      }, 100);
+    }
+  }, [params.scroll, zoneSectionY]);
 
   const handleClearHistory = () => {
     if (alerts.length === 0) return;
@@ -118,7 +131,7 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <SettingsIcon size={28} color={colors.alert} />
           <Text style={styles.headerTitle}>SYSTEM CONFIG</Text>
@@ -192,7 +205,12 @@ export default function SettingsScreen() {
         </View>
 
         {/* My Zone */}
-        <Text style={[styles.sectionTitle, styles.sectionTitleSpaced]}>ZONE</Text>
+        <Text 
+          style={[styles.sectionTitle, styles.sectionTitleSpaced]}
+          onLayout={(e) => setZoneSectionY(e.nativeEvent.layout.y)}
+        >
+          ZONE
+        </Text>
         <View style={styles.card}>
           <View style={styles.settingRow}>
             <View style={styles.settingLabelContainer}>
@@ -288,7 +306,7 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.versionFooter}>QuakeGuard v1.2.2</Text>
+        <Text style={styles.versionFooter}>QuakeGuard v2.0.0</Text>
       </ScrollView>
     </SafeAreaView>
   );

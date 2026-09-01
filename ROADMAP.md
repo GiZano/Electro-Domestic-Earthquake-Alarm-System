@@ -83,11 +83,11 @@ Advanced GNSS synchronization of nodes for exact timestamps.
 
 Triangulation algorithm. Multi-node spatial correlation combined with AI reports to compute the internal epicenter.
 
-- Triangulation algorithm from ≥3 nodes
-- Multi-node spatial and temporal correlation
-- Internal epicenter computation
-- AI + triangulation data fusion for precise alerts
-- KiCad schematics and Gerber files of the node PCB (hardware blueprints for the triangulation node) — already designed; fabrication order + bring-up pending
+- ✅ Triangulation algorithm from ≥3 nodes
+- ✅ Multi-node spatial and temporal correlation
+- ✅ Internal epicenter computation
+- ✅ AI + triangulation data fusion for precise alerts
+- ✅ KiCad schematics and Gerber files of the node PCB (hardware blueprints for the triangulation node) — fabricated and assembled, ready for deployment
 
 ---
 
@@ -104,7 +104,7 @@ Grafana dashboards for real-time visualization of seismic telemetry.
 > - **Implemented in v1.2.1:** fragmentation to Geohash keys (`alert_cooldown:<geohash>`),
 >   which offloads zone assignment from PostGIS `ST_Contains` to fast Redis lookups
 >   and stops overlapping macro-regions from silencing independent earthquakes.
-> - **Future:** H3 hex-grid reindexing is re-evaluated when the v2.0 triangulation
+> - **Future:** H3 hex-grid reindexing is re-evaluated when the v2.1 triangulation
 >   clustering is designed; daily H3 resolution can replace the coarsen geohash grid
 >   with no zone-model change. For real administrative polygons: apply
 >   `ST_SimplifyPreserveTopology` + a GiST index; size zones so an event cannot
@@ -226,7 +226,7 @@ Production-grade cloud platform behind the alert pipeline: the MQTT/REST/AI stac
 
 ### Performance & scaling engineering (post-paper, not needed at current scale)
 
-- **Kafka / Redpanda as the central ingestion buffer (millions-class)** — replaces Redis Streams as the durable, replayable backbone once sustained ingestion exceeds what a single Redis node can buffer. The v2.3.0 consumer interface (`src/ingest.py`) is deliberately transport-agnostic: `enqueue_reading` / `read_batch` / `ack` / `recover_pending` are re-pointable so a Kafka-backed implementation can slot in without touching the worker. Also unlocks partitions-per-sensor ordering and backfill reprocessing for the triangulation engine (v2.0).
+- **Kafka / Redpanda as the central ingestion buffer (millions-class)** — replaces Redis Streams as the durable, replayable backbone once sustained ingestion exceeds what a single Redis node can buffer. The v2.3.0 consumer interface (`src/ingest.py`) is deliberately transport-agnostic: `enqueue_reading` / `read_batch` / `ack` / `recover_pending` are re-pointable so a Kafka-backed implementation can slot in without touching the worker. Also unlocks partitions-per-sensor ordering and backfill reprocessing for the triangulation engine (v2.1).
 - **ClickHouse for cold-path analytics** — move long-range dashboards / multi-node correlation queries (epicenter triangulation, swarm clustering) off the operational Postgres node onto a columnar store with a Kafka connector. Cold reads never contend with the ingestion hot path; TimescaleDB continuous aggregates keep serving the real-time dashboard.
 - **Non-blocking MQTT-Bridge refactor** — `aiomqtt` + async push to Redis (or `httpx`/`aiohttp`)
   to make the bridge relay fully non-blocking. *Partially superseded by v2.3.0: the ingestion

@@ -8,6 +8,7 @@ import redis
 from sqlalchemy.orm import Session
 from src.database import SessionLocal, engine
 from src.geo import COOLDOWN_KEY_PREFIX
+from src.triangulation import triangulate_epicenter
 from src.ingest import (
     READINGS_STREAM,
     READINGS_GROUP,
@@ -56,6 +57,30 @@ def estimate_magnitude(sensor_value: int) -> float:
     # Clamp to physically meaningful range for MEMS sensors
     return max(0.0, min(magnitude, 9.9))
 
+def _handle_triangulation(event: dict, magnitude: float, buffer_key: str):
+    if not buffer_key or event.get("latitude") is None:
+        return None
+        
+    trigger_data = {
+        "sensor_id": event.get("sensor_id"),
+        "latitude": event.get("latitude"),
+        "longitude": event.get("longitude"),
+        "magnitude": magnitude,
+        "timestamp": event.get("timestamp", datetime.now(timezone.utc).isoformat())
+    }
+    length = redis_sync.rpush(buffer_key, json.dumps(trigger_data))
+    if length == 1:
+        redis_sync.expire(buffer_key, 60)
+    
+    if length == 3:
+        raw_triggers = redis_sync.lrange(buffer_key, 0, -1)
+        triggers = [json.loads(t) for t in raw_triggers]
+        try:
+            return triangulate_epicenter(triggers)
+        except Exception as e:
+            print(f"❌ Triangulation failed: {e}", flush=True)
+    return None
+
 def _enrich_event(event: dict, db: Session) -> dict:
     """Stage one reading (+ optional alert) into the session. Returns a resolution
     dict consumed by ``_finish_alerts`` after the shared commit. No commit here so
@@ -72,13 +97,16 @@ def _enrich_event(event: dict, db: Session) -> dict:
     magnitude = estimate_magnitude(sensor_value)
     zone_id = event.get("zone_id", 0)
     alert_entry = None
+    triangulation_data = None
 
     if magnitude >= 4.5:
         area_key = event.get("sensor_geohash") or event.get("geohash")
         if area_key:
             cooldown_key = f"{COOLDOWN_KEY_PREFIX}:{area_key}"
+            buffer_key = f"triangulation_buffer:{area_key}"
         else:
             cooldown_key = f"{COOLDOWN_KEY_PREFIX}:zone:{zone_id}"
+            buffer_key = None
 
         if redis_sync.set(cooldown_key, "active", nx=True, ex=60):
             alert_entry = Alert(
@@ -89,6 +117,8 @@ def _enrich_event(event: dict, db: Session) -> dict:
             db.add(alert_entry)
         else:
             print(f"🚫 ALERT SUPPRESSED: area '{area_key or zone_id}' is in 60s cooldown.", flush=True)
+            
+        triangulation_data = _handle_triangulation(event, magnitude, buffer_key)
 
     return {
         "event": event,
@@ -96,6 +126,7 @@ def _enrich_event(event: dict, db: Session) -> dict:
         "zone_id": zone_id,
         "sensor_id": event.get("sensor_id"),
         "alert": alert_entry,
+        "triangulation_data": triangulation_data,
     }
 
 def _finish_alerts(db: Session, resolutions: list) -> None:
@@ -103,13 +134,47 @@ def _finish_alerts(db: Session, resolutions: list) -> None:
     channel and enqueue AI report generation. Runs per-resolution (alerts are rare)."""
     for resolution in resolutions:
         alert_entry = resolution["alert"]
-        if alert_entry is None:
-            continue
-        db.refresh(alert_entry)
+        triangulation_data = resolution.get("triangulation_data")
         zone_id = resolution["zone_id"]
         magnitude = resolution["magnitude"]
         sensor_id = resolution["sensor_id"]
         event = resolution["event"]
+        
+        # Triangulation logic: if we just hit 3 sensors, we might not have a new alert_entry
+        # so we upgrade the most recent one for this zone.
+        if triangulation_data:
+            recent_alert = db.query(Alert).filter(Alert.zone_id == zone_id).order_by(Alert.id.desc()).first()
+            if recent_alert:
+                recent_alert.latitude = triangulation_data["latitude"]
+                recent_alert.longitude = triangulation_data["longitude"]
+                recent_alert.origin_time = datetime.fromisoformat(triangulation_data["origin_time"])
+                recent_alert.is_triangulated = True
+                db.commit()
+                db.refresh(recent_alert)
+                
+                alert_payload = {
+                    "type": "TRIANGULATED",
+                    "alert_id": recent_alert.id,
+                    "zone_id": zone_id,
+                    "magnitude": round(recent_alert.magnitude, 1),
+                    "message": "Epicenter Triangulated!",
+                    "latitude": recent_alert.latitude,
+                    "longitude": recent_alert.longitude,
+                    "origin_time": recent_alert.origin_time.isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+                redis_sync.publish("quake_alerts", json.dumps(alert_payload))
+                print(f"📍 TRIANGULATION PUBLISHED: Zone {zone_id} - Epicenter calculated", flush=True)
+                
+                if AI_REPORT_ENABLED:
+                    event["triangulated_latitude"] = recent_alert.latitude
+                    event["triangulated_longitude"] = recent_alert.longitude
+                    event["origin_time"] = recent_alert.origin_time.isoformat()
+                    enqueue_ai_report(db, event, recent_alert.id, zone_id, recent_alert.magnitude)
+
+        if alert_entry is None:
+            continue
+        db.refresh(alert_entry)
 
         alert_payload = {
             "type": "CRITICAL",

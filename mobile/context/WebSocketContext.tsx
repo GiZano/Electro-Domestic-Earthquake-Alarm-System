@@ -36,6 +36,9 @@ export interface AlertMessage {
   zone_id: number;
   magnitude: number;
   message: string;
+  latitude?: number;
+  longitude?: number;
+  origin_time?: string;
   timestamp: string;
 }
 
@@ -173,12 +176,12 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
         setLastAlert(alert);
         useAlertStore.getState().addAlert(alert);
 
-        if (alert.type === "CRITICAL" && ringsForZone(alert.zone_id)) {
+        if ((alert.type === "CRITICAL" || alert.type === "TRIANGULATED") && ringsForZone(alert.zone_id)) {
           Vibration.vibrate(SOS_VIBRATION_PATTERN);
           playAlarm(15000);
           Notifications.scheduleNotificationAsync({
             content: {
-              title: "⚠️ CRITICAL SEISMIC ALERT",
+              title: alert.type === "TRIANGULATED" ? "🚨 TRIANGULATED ALERT: EPICENTER FOUND" : "⚠️ CRITICAL SEISMIC ALERT",
               body: `Magnitude ${alert.magnitude.toFixed(1)} detected. ${alert.message}`,
               sound: true,
               priority: Notifications.AndroidNotificationPriority.MAX,

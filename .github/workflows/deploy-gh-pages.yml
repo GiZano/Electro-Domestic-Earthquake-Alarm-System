@@ -5,6 +5,7 @@ on:
     branches: [ "main" ]
     paths:
       - 'docs/web/**'
+      - 'docs/whitepaper/**'
       - '.github/workflows/deploy-gh-pages.yml'
   workflow_dispatch:
 
@@ -24,6 +25,16 @@ jobs:
         ref: main
         token: ${{ secrets.GIZANO_IO_PAT }}
         path: site-repo
+
+    - name: Setup Typst (Compile Whitepaper)
+      uses: typst-community/setup-typst@f5c90506c7ae74fca20e339034af05c52e0eda92
+      with:
+        typst-version: '0.11.1'
+
+    - name: Build Technical Report PDF
+      run: |
+        cd docs/whitepaper
+        typst compile main.typ ../web/assets/quakeguard/quakeguard-whitepaper.pdf
 
     - name: Copy QuakeGuard page artifacts
       run: |
@@ -46,5 +57,5 @@ jobs:
         fi
 
         git add -A
-        git commit -m "docs(quakeguard): sync v1.2.2 page from QuakeGuard repo"
+        git commit -m "docs(quakeguard): auto-sync v2.0.0 architecture and whitepaper"
         git push origin main

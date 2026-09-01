@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-QuakeGuard USB Serial Bridge (v1.2.2).
+QuakeGuard USB Serial Bridge .
 
 Reads the [QG:FB] machine-readable frames the firmware emits over USB CDC when
 the MQTT data plane is unreachable, and forwards each frame to the ingestion

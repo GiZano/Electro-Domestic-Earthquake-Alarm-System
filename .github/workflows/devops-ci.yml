@@ -20,3 +20,13 @@ jobs:
 
       - name: Run Actionlint
         uses: reviewdog/action-actionlint@50842263c20a7c46bd0065b9e624d3c569db061e
+
+      - name: Test Orchestration Scripts (Zero-Config Sync)
+        run: |
+          chmod +x scripts/generate_secrets.sh
+          # The script will detect CI=true and bypass interactive prompts
+          ./scripts/generate_secrets.sh
+          # Ensure files were actually created
+          test -f backend/.env
+          test -f mobile/.env
+          test -f firmware/esp32_config.env

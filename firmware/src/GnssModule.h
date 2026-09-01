@@ -1,17 +1,17 @@
 /**
  * Project: QuakeGuard - Professional Seismic Node
- * Optional GNSS sub-system (v1.3 readiness).
+ * Optional GNSS sub-system (v2.0.0).
  *
  * Compiled ONLY when `GNSS_ENABLED=1` is present in esp32_config.env. The
  * default build remains hermetic (no TinyGPSPlus dependency is pulled).
  *
- * Responsibilities at this stage (v1.2.x / GNSS-ready):
+ * Responsibilities at this stage (v2.0.0):
  *   - Parse NMEA from a u-blox / NEO-6M / NEO-M8N module on UART.
  *   - Persist the last reliable fix in NVS so provisioning can report real
  *     coordinates even before the first fix after a cold boot.
  *   - Expose the most recent fix (live GNSS, or last-known-from-NVS).
  *
- * NTP + PPS timestamp discipline is v1.3 scope (see ROADMAP): this module
+ * NTP + PPS timestamp discipline is v2.0.0 scope (see ROADMAP): this module
  * only guarantees the coordinates pipeline is ready for the GNSS upgrade.
  */
 
@@ -64,7 +64,7 @@ public:
   void begin();
   void loop();
   bool getFix(GnssFix& out);
-  // PPS (v1.3) — returns millis() of last PPS pulse, 0 if never seen
+  // PPS (v2.0.0) — returns millis() of last PPS pulse, 0 if never seen
   unsigned long getLastPpsMs() const { return lastPpsMs_; }
   bool hasPpsFix() const { return lastPpsMs_ != 0 && (millis() - lastPpsMs_) < 2000; }
 

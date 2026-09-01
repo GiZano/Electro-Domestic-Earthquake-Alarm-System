@@ -11,22 +11,16 @@ To orchestrate the full stack, the host machine must have the following dependen
 
 == Backend Provisioning
 
-The backend services (PostgreSQL, Redis, FastAPI, Worker, and MQTT Bridge) are fully containerized[cite: 1]. Since v1.2.2 the database image is a single unified TimescaleDB+PostGIS build (`backend/docker/postgres-timescale.Dockerfile`), so the `readings` table is provisioned as a hypertable with spatial extensions enabled in one container. The image explicitly runs as the non-root `postgres` user[cite: 1].
+The backend services (PostgreSQL, TimescaleDB, Redis, FastAPI, Worker, AI-Worker, and MQTT Bridge) are fully containerized[cite: 1]. The system uses a Hybrid Network Architecture where the backend runs locally, while exposing an automated Cloudflare tunnel for external WAN traffic[cite: 1].
 
-+ Navigate to the backend directory:
++ Navigate to the project root and launch the orchestrator:
   ```bash
-  cd backend
+  ./scripts/quakeguard_init.sh
   ```
-+ Clone the environment template and configure the secrets:
-  ```bash
-  cp .env.example .env
-  ```
-  _Ensure the `MQTT_BROKER`, `MQTT_USERNAME`, and `MQTT_PASSWORD` fields are correctly populated with your HiveMQ Cloud credentials._
-+ Boot the infrastructure in detached mode:
-  ```bash
-  docker compose up --build -d
-  ```
-The API Gateway will be exposed at `http://localhost:8000`, with the OpenAPI Swagger documentation available at `/docs`.
+This single command automates the entire infrastructure deployment:
+1. Spawns `tunnel_init.sh` to negotiate a new Cloudflare HTTPS tunnel.
+2. Dynamically injects the generated URL into the Mobile and Firmware `.env` configurations.
+3. Opens a 3-split terminal window (using `ptyxis` or `tmux`) that simultaneously boots the Docker Compose backend (with the `--profile ai` flag for LLaMa3.2), starts the Expo bundler for the mobile client, and compiles/flashes the ESP32 firmware via PlatformIO.
 
 == Horizontal Worker Scaling
 
@@ -41,42 +35,12 @@ Two companion scripts exercise the ingestion pipeline[cite: 1]:
 - *`scripts/load_test.py`* — a high-concurrency End-to-End (E2E) stress test that simulates a massive seismic event through the real REST path (see the stress test section below).
 - *`scripts/simulate_zone.py`* — streams synthetic per-zone readings straight through the ingestion flow, exercising the per-area cooldown fragmentation and the per-zone seismograph endpoints[cite: 1].
 
-== Edge Node Flashing (ESP32-C3)
+== Edge Node & Mobile Client Orchestration
 
-The firmware strictly requires compile-time secret injection to operate.
+Because the orchestrator (`quakeguard_init.sh`) dynamically resolves and injects environment variables, manual configuration of the edge node and mobile client is drastically reduced.
 
-+ Navigate to the firmware directory:
-  ```bash
-  cd firmware
-  ```
-+ Clone the configuration template:
-  ```bash
-  cp esp32_config.env.example esp32_config.env
-  ```
-+ Edit `esp32_config.env` to include your local Wi-Fi credentials, the HTTPS tunnel URL (a *Cloudflare quick tunnel*, `https://<random>.trycloudflare.com`, or a real domain) for the `SERVER_HOST`, and the `ENROLLMENT_TOKEN`. Note: an ngrok *free-tier* tunnel does not work for the node — its edge terminates ESP-IDF (mbedTLS) TLS handshakes via JA3 fingerprinting before any HTTP header can be read.
-+ Connect the ESP32-C3 via USB and trigger the PlatformIO upload sequence.
-+ Open the Serial Monitor at `115200` baud. On its first boot, the device will generate its ECDSA keys, connect to the network, and automatically register with the backend.
-
-== Mobile Client Initialization
-
-The React Native client must point to the backend's IP address.
-
-+ Navigate to the mobile directory and install dependencies:
-  ```bash
-  cd mobile
-  npm install
-  ```
-+ Create a `.env` file in the root of the mobile project matching the backend secrets:
-  ```env
-  EXPO_PUBLIC_IOT_API_KEY=your_secret_key
-  EXPO_PUBLIC_MOBILE_WS_TOKEN=your_ws_token
-  EXPO_PUBLIC_API_BASE_URL=http://YOUR_LOCAL_IP:8000
-  ```
-+ Start the Expo development server:
-  ```bash
-  npx expo start
-  ```
-+ Scan the generated QR code using the Expo Go app. Both the smartphone and the backend host must be on the same Local Area Network (LAN).
+- *Edge Node:* The ESP32 is automatically flashed via PlatformIO during the orchestrator's boot sequence (`pio run -t upload -t monitor`). The firmware strictly requires compile-time secret injection, so rebuilding ensures the node receives the latest dynamic Cloudflare provisioning URL and Fallback Coordinates (now mapped to Milan, Italy North).
+- *Mobile Client:* The Expo server is launched automatically. Ensure that the smartphone running Expo Go is connected to the same Local Area Network (LAN) as the host, and scan the QR code displayed in the top-right terminal window.
 
 == Executing the Critical Stress Test
 

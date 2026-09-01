@@ -11,7 +11,7 @@
 /**
  * SerialFallback — pure-C++ USB serial fallback core.
  *
- * v1.2.2: when the MQTT data plane is unreachable, the node re-certifies each
+ * When the MQTT data plane is unreachable, the node re-certifies each
  * seismic event and emits it over the USB CDC port so a co-located host can
  * read it and forward it to the ingestion pipeline. Like DetectionCore.h, this
  * translation unit is fully decoupled from the ESP32 hardware (no Arduino,

@@ -10,7 +10,7 @@ The primary entry point is a FastAPI application running behind an ASGI server (
 
 == Redis Streams Ingestion Substrate
 
-Since v1.2.1 the telemetry queue is a Redis *Stream* (default `readings:stream`), not a plain List. Lists cannot support consumer groups, so the previous single-worker `BRPOP` design bounded scale to one process and could lose a message on a crash mid-read[cite: 1]. Streams fix both concerns:
+The telemetry queue is a Redis *Stream* (default `readings:stream`), not a plain List. Lists cannot support consumer groups, so the previous single-worker `BRPOP` design bounded scale to one process and could lose a message on a crash mid-read[cite: 1]. Streams fix both concerns:
 - *Horizontal Scale:* Any number of producers `XADD` to the stream (HTTP API, MQTT bridge, ...). Any number of worker processes consume with `XREADGROUP`; Redis balances deliveries across the group, so capacity is added with `docker compose scale worker=N`[cite: 1].
 - *At-Least-Once Delivery:* `XAUTOCLAIM` reclaims entries left pending by crashed consumers, so no message is lost across worker restarts[cite: 1].
 - *Poisoned-Message Isolation:* Unparseable or fatally-failing messages are parked on a Dead Letter Stream (default `readings:dlq`) and acknowledged, so a poisoned heartbeat can never stall the group[cite: 1].
@@ -29,7 +29,7 @@ The `readings` table is provisioned as a TimescaleDB *hypertable* partitioned on
 
 == Geographic Zoning & Zone-Scoped Data
 
-v1.2.1 makes PostGIS zones the source of truth for the network topology[cite: 1]:
+PostGIS zones act as the source of truth for the network topology[cite: 1]:
 - *Zone Management:* `GET /zones` lists the monitored polygons; `POST /zones/` creates one[cite: 1].
 - *Spatial Auto-Assignment:* On provisioning, `resolve_zone` maps a device's coordinates to the smallest containing polygon. It first consults a Redis fast-path index (`zoneindex:<geohash>` → set of zone ids, precision 3), and only on a cache miss or an ambiguous multi-zone match does it run the authoritative PostGIS `ST_Contains` query ordered by polygon area. The cache is purely an optimization and can never assign the wrong zone[cite: 1].
 - *Zone Detection:* `GET /zones/locate?latitude=...&longitude=...` resolves an arbitrary GPS fix into its containing monitored zone (404 when outside any polygon), powering the mobile "Detect my zone" flow[cite: 1].
