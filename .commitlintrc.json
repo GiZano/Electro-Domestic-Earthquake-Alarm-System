@@ -10,9 +10,9 @@
       ["feat", "fix", "sec", "test", "refactor", "chore", "docs", "ci"]
     ],
     "scope-enum": [
-      2,
+      0,
       "always",
-      ["backend", "frontend", "iot", "ci", "deps", "deps-dev", "core", "style", "fullstack", "whitepaper", "web"]
+      ["backend", "frontend", "iot", "ci", "deps", "deps-dev", "core", "style", "fullstack", "whitepaper", "web", "firmware"]
     ]
   }
 }
