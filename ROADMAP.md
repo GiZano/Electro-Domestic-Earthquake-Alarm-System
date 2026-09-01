@@ -91,6 +91,18 @@ Triangulation algorithm. Multi-node spatial correlation combined with AI reports
 
 ---
 
+## v2.0.1 — Documentation & Zenodo Sync (Released)
+
+Documentation-only patch aligning the technical whitepaper, GitHub Wiki, and project website.
+
+- ✅ Typst PDF compilation polished (LLM citation removal, version updates)
+- ✅ Architectural Coherence: tunnel architecture (Cloudflare) and threshold/anti-replay values (300s) synchronized across all assets
+- ✅ Hardware Documentation: clarified `1.8f` firmware threshold vs `2.4` SIL offline threshold; ROC curve contextualized
+- ✅ Project Licensing Health: testing pipelines, AGPL-3.0 software licensing, and CERN-OHL hardware licensing explicitly documented
+- ✅ `CITATION.cff` bumped for Zenodo archival
+
+---
+
 ## v2.1.0 — Data Dashboards
 
 Grafana dashboards for real-time visualization of seismic telemetry.

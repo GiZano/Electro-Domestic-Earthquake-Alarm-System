@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-09-01
+### Changed
+- **Documentation Polish (Zenodo Sync):** Removed residual LLM tags (`[cite: 1]`) from the technical whitepaper.
+- **Architectural Coherence:** Aligned documentation across PDF, GitHub Wiki, and project website regarding tunnel architecture (Cloudflare) and threshold/anti-replay values (300s).
+- **Project Licensing Health:** Clearly detailed testing pipelines, AGPL-3.0 software licensing, and CERN-OHL hardware licensing in the whitepaper and wiki.
+- **Hardware Documentation:** Clarified `1.8f` firmware threshold vs `2.4` SIL offline threshold; contextualized ROC curve as preliminary MVP validation.
+- **Roadmap & Threat Model:** Added detailed v1.2.x changelog to the whitepaper and clarified `ATECC608A` secure element alignment to Roadmap Phase R3.
+
 ## [2.0.0] - 2026-09-01
 ### Added
 - **Hybrid Networking Architecture:** Transitioned from pure cloud to a Local-First / Cloud-Hybrid architecture for robust exhibition reliability.

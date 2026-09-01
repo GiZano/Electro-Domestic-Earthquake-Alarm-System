@@ -433,6 +433,7 @@ QuakeGuard/
 | **v1.2.1** | ✅ Released — Geo-Zoning & Cooldown Fragmentation — geohash Redis zone index (FastAPI/PostGIS source of truth), per-area cooldown, GNSS-ready data model (`Sensor.last_fix_at`, `Reading.lat/lon`), per-zone live seismograph |
 | **v1.2.2** | ✅ Released — Zero-Trust Serial Fallback — signed telemetry over USB CDC (serial) when MQTT is unreachable |
 | **v2.0.0** | ✅ Released — Triangulation (multi-node spatial correlation), Hybrid Network Architecture, Automated DevOps Orchestration (Ptyxis), Local Factory Provisioning, GNSS sync, NTP+PPS, ADXL calibration, and INGV FDSN SIL validation |
+| **v2.0.1** | ✅ Released — Documentation & Zenodo Sync: PDF/Wiki architectural coherence (Cloudflare, 300s anti-replay), CERN-OHL hardware licensing, SIL vs Firmware threshold clarification, and `CITATION.cff` bump |
 | **v2.1** | Data Dashboards — Grafana dashboards for real-time visualization of seismic telemetry |
 | **v2.1.1** | Timeseries DB & Mobile Fix — migration to TimescaleDB/InfluxDB; per-sensor chart isolation in React Native mobile |
 | **v2.2** | Heterogeneous Edge Intelligence — hybrid Tier A (STA/LTA) + Tier B (quantized CNN) decision fusion |
