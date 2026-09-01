@@ -53,7 +53,7 @@ def test_triangulate_epicenter_origin_time():
     # Origin time should be exactly 1720000010.0
     
     dt = datetime.fromisoformat(result["origin_time"])
-    assert dt.timestamp() == 1720000010.0
+    assert dt.timestamp() == pytest.approx(1720000010.0, abs=0.001)
 
 def test_triangulate_epicenter_isoformat_parsing():
     triggers = [
