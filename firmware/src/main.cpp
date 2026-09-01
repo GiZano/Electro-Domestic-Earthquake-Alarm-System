@@ -228,9 +228,7 @@ String CryptoContext::getPublicKeyHex() {
   String hexKey = "";
   for (int i = start_index; i < static_cast<int>(pub_buf.size()); i++) {
     std::array<char, 3> buf;
-    snprintf(
-        buf.data(), buf.size(), "%02x",
-        pub_buf[i]); // NOSONAR(cpp:S6494) - std::format unavailable on ESP32
+    snprintf(buf.data(), buf.size(), "%02x", pub_buf[i]); // NOSONAR(cpp:S6494) - std::format unavailable on ESP32
     hexKey += buf.data();
   }
   return hexKey;
