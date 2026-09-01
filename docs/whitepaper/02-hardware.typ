@@ -56,7 +56,7 @@ The ESP32-C3 firmware drives two diagnostic LEDs to provide immediate visual fee
 == PCB Design & Physical Assembly (v2.0.0)
 
 With the v2.0.0 milestone, the QuakeGuard hardware has matured from a breadboard prototype to a custom Printed Circuit Board (PCB), designed in KiCad[cite: 1]. The `hardware/` directory contains the complete schematic, PCB layout, and manufacturing Gerber files.
-- *Layout Integration:* The PCB provides dedicated footprints for the ESP32-C3 SuperMini, the ADXL345 accelerometer (powered correctly at 3.3V), and the optional u-blox GNSS receiver[cite: 1].
+- *Layout Integration:* The PCB provides dedicated footprints for the ESP32-C3 SuperMini (designed with footprint headroom to support a future ESP32-S3 variant for edge AI), the ADXL345 accelerometer (powered correctly at 3.3V), and the optional u-blox GNSS receiver[cite: 1].
 - *Signal Integrity:* The I2C lines (SDA on GPIO 7, SCL on GPIO 8) include proper hardware pull-up resistors on the PCB to guarantee stable communication at 100Hz without relying on the weak internal MCU pull-ups[cite: 1].
 - *External Interfacing:* A J4 header exposes the GNSS UART lines (RX GPIO 5, TX GPIO 4, PPS GPIO 2) and power rails, allowing modular connection of the GPS antenna for accurate time synchronization and epicentral triangulation[cite: 1].
 

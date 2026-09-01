@@ -11,7 +11,7 @@ QuakeGuard's architecture implements a Zero-Trust model where the network is ass
   [Tampering], [MITM alters event magnitude], [Payload hash (SHA-256) checked against signature], [§3.1],
   [Repudiation], [Node denies sending a false alert], [Public key strictly bound to Sensor ID at provisioning], [§3.2],
   [Info Disclosure], [Sniffing telemetry over WAN], [Data plane strictly enforces TLS 1.2+], [§3.3],
-  [Denial of Service], [Replay attacks causing false alerts], [±300s Timestamp validation & Redis Geohash rate limits], [§3.4],
+  [Denial of Service], [Volumetric flooding of the ingestion API], [Redis Geohash rate limiter (50 req/s/IP) and connection pooling], [§5],
   [Elevation of Priv], [Node attempts to provision others], [Enrollment Token required for `/devices/register`], [§3.2]
 )
 
@@ -21,4 +21,4 @@ The following vectors are explicitly out of scope for the current threat model:
 - *Sensor Spoofing:* Physically shaking the sensor to induce a false positive. Spatial correlation (Triangulation) mitigates this at the system level.
 
 == Key Rotation and Revocation
-In v2.0.0, key rotation is performed via manual re-provisioning. If a node is compromised, its public key can be revoked from the PostgreSQL database, immediately invalidating any future payloads signed by that key. Automated over-the-air (OTA) key rotation is planned for v2.1.
+In v2.0.0, key rotation is performed via manual re-provisioning. If a node is compromised, its public key can be revoked from the PostgreSQL database, immediately invalidating any future payloads signed by that key. Automated over-the-air (OTA) key rotation is planned for a future release.

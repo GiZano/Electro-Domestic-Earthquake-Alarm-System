@@ -3,7 +3,7 @@
 To guarantee its effectiveness as an EEW system, QuakeGuard is engineered around strict Service Level Objectives (SLOs) for latency and throughput.
 
 == End-to-End Latency
-Latency is measured from the moment the physical ADXL345 accelerometer crosses the STA/LTA threshold to the moment the WebSocket payload is delivered to the mobile client.
+Latency is measured from the moment the physical ADXL345 accelerometer crosses the STA/LTA threshold to the moment the WebSocket payload is delivered to the mobile client (measured empirically via the `backend/scripts/load_test.py` test suite over 1,000 simulated events on a local network).
 - *P50 Latency:* 65 ms
 - *P95 Latency:* 120 ms
 - *P99 Latency:* 185 ms

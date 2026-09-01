@@ -11,7 +11,6 @@
 )
 
 == Next Steps
-- *v2.0.0 - Triangulation:* Full multi-node spatial correlation combined with AI reports to compute the internal epicenter.
 - *v2.1.0 - Data Dashboards:* Grafana integration for real-time visualization of seismic telemetry and multi-node network activity.
 - *v2.2.0 - Edge AI (Two-Tier Cluster):* A hierarchical Decision Fusion network where ubiquitous ESP32-C3 sensors (Tier A) act as triggers, and intelligent ESP32-S3 nodes (Tier B) run quantized INT8 CNNs via ESP-DL to confirm or discard triggers.
 
