@@ -58,8 +58,7 @@
         }
       ],
       "expo-web-browser",
-      "expo-asset",
-      "expo-status-bar"
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
