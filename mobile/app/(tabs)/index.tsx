@@ -24,7 +24,7 @@ import { usePreferencesStore } from "../../store/usePreferencesStore";
 import { useAppTheme } from "../../theme/useTheme";
 import { createQuakeGuardTheme } from "../../theme/victory";
 import { MONO } from "../../theme";
-import { estimateMagnitude, thresholdOf } from "../../utils/magnitude";
+import { estimateMagnitude } from "../../utils/magnitude";
 
 const WINDOW_MAX = 60; // samples kept in the sliding window
 const WINDOW_SECONDS = 30; // time domain of the seismograph
@@ -190,7 +190,6 @@ function NetworkChart({ points, isAlertActive, colors }: Readonly<{
   isAlertActive: boolean;
   colors: ThemeColors;
 }>) {
-  const styles = createStyles(colors);
   const theme = useMemo(() => createQuakeGuardTheme(colors), [colors]);
   const yellowColor = colors.bg === "#09090b" ? "#eab308" : "#ca8a04";
 
@@ -330,7 +329,6 @@ export default function MonitorScreen() {
   const zoneSensors = sensors?.filter((s: any) => s.zone_id === selectedZoneId) || [];
   const totalSensors = zoneSensors.length;
   const activeSensors = zoneSensors.filter((s: any) => s.active).length;
-  const selectedZone = zones?.find((z: any) => z.id === selectedZoneId);
 
   // Default to the first zone once the PostGIS list is available.
   useEffect(() => {
