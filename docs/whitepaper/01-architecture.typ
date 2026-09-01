@@ -1,14 +1,14 @@
 = System Architecture & Overview
 
-QuakeGuard is a distributed, high-throughput backend system designed for the real-time ingestion, cryptographic validation, and processing of seismic data from IoT devices[cite: 1]. It serves as the core infrastructure for an Earthquake Early Warning (EEW) system[cite: 1]. The architecture is explicitly designed to handle high-concurrency event firehosing during seismic swarms while maintaining strict security boundaries.
+QuakeGuard is a distributed, high-throughput backend system designed for the real-time ingestion, cryptographic validation, and processing of seismic data from IoT devices. It serves as the core infrastructure for an Earthquake Early Warning (EEW) system. The architecture is explicitly designed to handle high-concurrency event firehosing during seismic swarms while maintaining strict security boundaries.
 
 == High-Level Topology
 
 The infrastructure is decoupled into three primary tiers:
 
-- *Edge Layer (IoT):* Composed of ESP32-C3 SuperMini microcontrollers interfaced with ADXL345 digital accelerometers[cite: 1]. These nodes execute on-device Digital Signal Processing (DSP) using the STA/LTA (Short Term Average / Long Term Average) algorithm[cite: 1]. 
-- *Core Backend & Processing:* A polyglot backend architecture utilizing FastAPI (Python) as the API gateway[cite: 1]. Validated data is asynchronously offloaded to a Redis Stream (`readings:stream`) and consumed by horizontally-scalable background workers via consumer groups[cite: 1]. The workers persist time-series data into a PostgreSQL/PostGIS database (provisioned as a TimescaleDB hypertable) and trigger area-scoped alerts via Redis Pub/Sub[cite: 1].
-- *Client Presentation Layer:* A React Native (Expo) mobile application providing users with real-time seismograph telemetry and instantaneous critical event notifications delivered through WebSockets and native push notifications[cite: 1].
+- *Edge Layer (IoT):* Composed of ESP32-C3 SuperMini microcontrollers interfaced with ADXL345 digital accelerometers. These nodes execute on-device Digital Signal Processing (DSP) using the STA/LTA (Short Term Average / Long Term Average) algorithm. 
+- *Core Backend & Processing:* A polyglot backend architecture utilizing FastAPI (Python) as the API gateway. Validated data is asynchronously offloaded to a Redis Stream (`readings:stream`) and consumed by horizontally-scalable background workers via consumer groups. The workers persist time-series data into a PostgreSQL/PostGIS database (provisioned as a TimescaleDB hypertable) and trigger area-scoped alerts via Redis Pub/Sub.
+- *Client Presentation Layer:* A React Native (Expo) mobile application providing users with real-time seismograph telemetry and instantaneous critical event notifications delivered through WebSockets and native push notifications.
 
 #figure(
   image("assets/01-architecture.png", width: 100%),
@@ -19,11 +19,11 @@ The infrastructure is decoupled into three primary tiers:
 
 Following the v1.1.0 cloud migration, the architecture strictly separates the data and control pipelines:
 
-- *Data Plane (Telemetry):* Flows exclusively through a HiveMQ Cloud Serverless broker on port 8883[cite: 1]. Communication is fully authenticated and TLS-encrypted[cite: 1]. A Python-based MQTT bridge (`mqtt_subscriber.py`) subscribes to the `quakeguard/telemetry` topic and forwards payloads to the internal FastAPI ingestion pipeline via HTTP POST[cite: 1].
-- *Control Plane (Provisioning & Management):* Device onboarding, cryptographic handshakes, and REST retrieval operations are routed through an HTTPS tunnel to the FastAPI endpoints (e.g., `/devices/register`)[cite: 1]. In development the tunnel is a *Cloudflare quick tunnel* (`cloudflared tunnel --url http://localhost:8000`); production should use a real HTTPS domain. The ngrok free-tier edge is not used because its bot-protection terminates ESP-IDF (mbedTLS) TLS handshakes via JA3 fingerprinting *before* any HTTP header can be read, so IoT clients never reach the backend.
+- *Data Plane (Telemetry):* Flows exclusively through a HiveMQ Cloud Serverless broker on port 8883. Communication is fully authenticated and TLS-encrypted. A Python-based MQTT bridge (`mqtt_subscriber.py`) subscribes to the `quakeguard/telemetry` topic and forwards payloads to the internal FastAPI ingestion pipeline via HTTP POST.
+- *Control Plane (Provisioning & Management):* Device onboarding, cryptographic handshakes, and REST retrieval operations are routed through an HTTPS tunnel to the FastAPI endpoints (e.g., `/devices/register`). In development the tunnel is a *Cloudflare quick tunnel* (`cloudflared tunnel --url http://localhost:8000`); production should use a real HTTPS domain. The ngrok free-tier edge is not used because its bot-protection terminates ESP-IDF (mbedTLS) TLS handshakes via JA3 fingerprinting *before* any HTTP header can be read, so IoT clients never reach the backend.
 
 == Key Design Principles
 
-- *Zero-Trust Security:* Every telemetry payload must be cryptographically signed using an ECDSA (NIST256p) private key stored securely in the ESP32's Non-Volatile Storage (NVS)[cite: 1]. The backend validates these signatures (SHA-256) and device timestamps to prevent spoofing and replay attacks[cite: 1].
-- *Asynchronous Decoupling:* The ingestion API is strictly non-blocking. Validated payloads are immediately pushed to the Redis Stream, allowing the gateway to acknowledge the IoT device in milliseconds while background workers handle heavy database transactions and magnitude estimations[cite: 1].
-- *Spatial Awareness:* Leveraging PostGIS, the system automatically assigns newly provisioned sensors to geographic zones using polygon containment[cite: 1]. A geohash-based Redis index (`zoneindex:<geohash>`) pre-computed at seed time provides a fast-path for coordinate-to-zone resolution, with PostGIS `ST_Contains` as the authoritative fallback[cite: 1]. This enables targeted, geographically bounded alert broadcasting with per-area cooldowns[cite: 1].
+- *Zero-Trust Security:* Every telemetry payload must be cryptographically signed using an ECDSA (NIST256p) private key stored securely in the ESP32's Non-Volatile Storage (NVS). The backend validates these signatures (SHA-256) and device timestamps to prevent spoofing and replay attacks.
+- *Asynchronous Decoupling:* The ingestion API is strictly non-blocking. Validated payloads are immediately pushed to the Redis Stream, allowing the gateway to acknowledge the IoT device in milliseconds while background workers handle heavy database transactions and magnitude estimations.
+- *Spatial Awareness:* Leveraging PostGIS, the system automatically assigns newly provisioned sensors to geographic zones using polygon containment. A geohash-based Redis index (`zoneindex:<geohash>`) pre-computed at seed time provides a fast-path for coordinate-to-zone resolution, with PostGIS `ST_Contains` as the authoritative fallback. This enables targeted, geographically bounded alert broadcasting with per-area cooldowns.
