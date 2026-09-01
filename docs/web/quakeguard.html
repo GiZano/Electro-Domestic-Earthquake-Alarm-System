@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-5JCG2NQS1Y"></script>
     <script async src="../assets/quakeguard/analytics.js"></script>
-    
+
     <meta charset="UTF-8">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <script type="application/ld+json">
@@ -49,7 +50,8 @@
     </script>
 
 
-    <meta http-equiv="Content-Security-Policy" content="
+    <meta http-equiv="Content-Security-Policy"
+        content="
     default-src 'self';
     script-src 'self' https://www.googletagmanager.com https://cdn.jsdelivr.net;
     style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net;
@@ -59,22 +61,26 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="canonical" href="https://giovanni-zanotti.is-a.dev/projects/quakeguard">
-        <meta property="og:type" content="website">
+    <meta property="og:type" content="website">
     <meta property="og:site_name" content="GiZano Portfolio">
     <meta property="og:title" content="QuakeGuard — Distributed Earthquake Early Warning System | GiZano">
-    <meta property="og:description" content="QuakeGuard is a full-stack IoT architecture for real-time earthquake detection. ESP32-C3 + ADXL345 edge sensors, ECDSA-signed MQTT telemetry, FastAPI + Redis + PostGIS backend, and a React Native early-warning app.">
+    <meta property="og:description"
+        content="QuakeGuard is a full-stack IoT architecture for real-time earthquake detection. ESP32-C3 + ADXL345 edge sensors, ECDSA-signed MQTT telemetry, FastAPI + Redis + PostGIS backend, and a React Native early-warning app.">
     <meta property="og:url" content="https://giovanni-zanotti.is-a.dev/projects/quakeguard">
     <meta property="og:image" content="https://giovanni-zanotti.is-a.dev/assets/home/social-share.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="QuakeGuard — Distributed Earthquake Early Warning System | GiZano">
-    <meta name="twitter:description" content="QuakeGuard is a full-stack IoT architecture for real-time earthquake detection. ESP32-C3 + ADXL345 edge sensors, ECDSA-signed MQTT telemetry, FastAPI + Redis + PostGIS backend, and a React Native early-warning app.">
+    <meta name="twitter:description"
+        content="QuakeGuard is a full-stack IoT architecture for real-time earthquake detection. ESP32-C3 + ADXL345 edge sensors, ECDSA-signed MQTT telemetry, FastAPI + Redis + PostGIS backend, and a React Native early-warning app.">
     <meta name="twitter:image" content="https://giovanni-zanotti.is-a.dev/assets/home/social-share.png">
-    
+
     <title>QuakeGuard — Distributed Earthquake Early Warning System | GiZano</title>
-    <meta name="description" content="QuakeGuard is a full-stack IoT architecture for real-time earthquake detection. ESP32-C3 + ADXL345 edge sensors, ECDSA-signed MQTT telemetry, FastAPI + Redis + PostGIS backend, and a React Native early-warning app.">
-    <meta name="keywords" content="QuakeGuard, earthquake detection, IoT, ESP32, ADXL345, STA/LTA, FastAPI, Redis, PostGIS, Websocket, early warning, seismic, GiZano">
+    <meta name="description"
+        content="QuakeGuard is a full-stack IoT architecture for real-time earthquake detection. ESP32-C3 + ADXL345 edge sensors, ECDSA-signed MQTT telemetry, FastAPI + Redis + PostGIS backend, and a React Native early-warning app.">
+    <meta name="keywords"
+        content="QuakeGuard, earthquake detection, IoT, ESP32, ADXL345, STA/LTA, FastAPI, Redis, PostGIS, Websocket, early warning, seismic, GiZano">
     <meta name="author" content="Giovanni Zanotti">
 
     <link rel="icon" type="image/png" href="../assets/quakeguard/favicon-shield.png">
@@ -85,42 +91,55 @@
     <link rel="preconnect" href="https://sonarcloud.io">
     <link rel="preconnect" href="https://zenodo.org">
     <link rel="preconnect" href="https://github.com">
-    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600&family=Rajdhani:wght@500;600;700&display=swap"
+        rel="stylesheet">
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
     <link rel="stylesheet" href="../Style/font-awesome/css/all.min.css">
 
     <link rel="stylesheet" href="../Style/quakeguard.css">
 </head>
+
 <body>
 
     <nav class="navbar navbar-expand-lg navbar-dark navbar-glass fixed-top">
         <div class="container">
             <a class="navbar-brand fw-bold" href="../index.html" aria-label="GiZano - Go to Homepage">GiZano</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation menu">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation menu">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item dropdown">
-                        <button class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-i18n="navbar_sections">Sections</button>
+                        <button class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                            aria-expanded="false" data-i18n="navbar_sections">Sections</button>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="#demo" data-i18n="navbar_demo">Live Demo</a></li>
                             <li><a class="dropdown-item" href="#mission" data-i18n="navbar_mission">Mission</a></li>
-                            <li><a class="dropdown-item" href="#architecture" data-i18n="navbar_architecture">Architecture</a></li>
-                            <li><a class="dropdown-item" href="#resilience" data-i18n="navbar_resilience">Resilience</a></li>
+                            <li><a class="dropdown-item" href="#architecture"
+                                    data-i18n="navbar_architecture">Architecture</a></li>
+                            <li><a class="dropdown-item" href="#resilience" data-i18n="navbar_resilience">Resilience</a>
+                            </li>
                             <li><a class="dropdown-item" href="#security" data-i18n="navbar_security">Security</a></li>
-                            <li><a class="dropdown-item" href="#zones" data-i18n="navbar_zones">Geographic Zones</a></li>
+                            <li><a class="dropdown-item" href="#zones" data-i18n="navbar_zones">Geographic Zones</a>
+                            </li>
                             <li><a class="dropdown-item" href="#roadmap" data-i18n="navbar_roadmap">Roadmap</a></li>
-                            <li><a class="dropdown-item" href="#health" data-i18n="navbar_health">Project Health</a></li>
+                            <li><a class="dropdown-item" href="#health" data-i18n="navbar_health">Project Health</a>
+                            </li>
                             <li><a class="dropdown-item" href="#mentors" data-i18n="navbar_mentors">Mentors</a></li>
                         </ul>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="https://github.com/GiZano/QuakeGuard" target="_blank" rel="noopener noreferrer" aria-label="QuakeGuard on GitHub"><i class="fab fa-github me-1"></i><span data-i18n="navbar_github">GitHub</span></a>
+                        <a class="nav-link" href="https://github.com/GiZano/QuakeGuard" target="_blank"
+                            rel="noopener noreferrer" aria-label="QuakeGuard on GitHub"><i
+                                class="fab fa-github me-1"></i><span data-i18n="navbar_github">GitHub</span></a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="../index.html" aria-label="Back to Home"><i class="fas fa-arrow-left me-1"></i><span data-i18n="navbar_home">Home</span></a>
+                        <a class="nav-link" href="../index.html" aria-label="Back to Home"><i
+                                class="fas fa-arrow-left me-1"></i><span data-i18n="navbar_home">Home</span></a>
                     </li>
                 </ul>
             </div>
@@ -137,35 +156,56 @@
                     <p class="qg-lead mb-4" data-i18n="hero_lead">
                         A full-stack IoT architecture for real-time detection, analysis and reporting of seismic events.
                         Everyday household appliances — washing machines, TVs, refrigerators — become a distributed
-                        earthquake early-warning network that alerts you <strong style="color:#fff">before the shaking arrives</strong>.
-                        <strong style="color:#fff">v2.0.0 Hybrid Infrastructure & GNSS Automation</strong> — Automated DevOps orchestrator, Local Provisioning, NTP hardware PPS discipline, ADXL345 calibration, and INGV FDSN validation
-                        when MQTT/WiFi is unreachable, with host-aware retention and automatic first-boot provisioning — privacy-first,
+                        earthquake early-warning network that alerts you <strong style="color:#fff">before the shaking
+                            arrives</strong>.
+                        <strong style="color:#fff">v2.0.0 Hybrid Infrastructure & GNSS Automation</strong> — Automated
+                        DevOps orchestrator, Local Provisioning, NTP hardware PPS discipline, ADXL345 calibration, and
+                        INGV FDSN validation
+                        when MQTT/WiFi is unreachable, with host-aware retention and automatic first-boot provisioning —
+                        privacy-first,
                         seismic telemetry never leaves the machine.
                     </p>
                     <div class="d-flex flex-wrap gap-2 mb-4">
-                        <a href="#demo" class="btn btn-qg"><i class="fas fa-bolt me-2"></i><span data-i18n="hero_trigger">Trigger an earthquake</span></a>
-                        <a href="https://github.com/GiZano/QuakeGuard" target="_blank" rel="noopener noreferrer" class="btn btn-qg-ghost"><i class="fab fa-github me-2"></i><span data-i18n="hero_github">View on GitHub</span></a>
-                        <a href="../assets/quakeguard/quakeguard-whitepaper.pdf" download target="_blank" rel="noopener noreferrer" class="btn btn-qg-ghost"><i class="fas fa-file-pdf me-2"></i><span data-i18n="hero_whitepaper">Whitepaper</span></a>
-                        <a href="https://github.com/GiZano/QuakeGuard/wiki" target="_blank" rel="noopener noreferrer" class="btn btn-qg-ghost"><i class="fab fa-github me-2"></i><span data-i18n="hero_wiki">Wiki</span></a>
+                        <a href="#demo" class="btn btn-qg"><i class="fas fa-bolt me-2"></i><span
+                                data-i18n="hero_trigger">Trigger an earthquake</span></a>
+                        <a href="https://github.com/GiZano/QuakeGuard" target="_blank" rel="noopener noreferrer"
+                            class="btn btn-qg-ghost"><i class="fab fa-github me-2"></i><span
+                                data-i18n="hero_github">View on GitHub</span></a>
+                        <a href="../assets/quakeguard/quakeguard-whitepaper.pdf" download target="_blank"
+                            rel="noopener noreferrer" class="btn btn-qg-ghost"><i class="fas fa-file-pdf me-2"></i><span
+                                data-i18n="hero_whitepaper">Whitepaper</span></a>
+                        <a href="https://github.com/GiZano/QuakeGuard/wiki" target="_blank" rel="noopener noreferrer"
+                            class="btn btn-qg-ghost"><i class="fab fa-github me-2"></i><span
+                                data-i18n="hero_wiki">Wiki</span></a>
                     </div>
                     <div class="badge-strip mb-2">
                         <img src="../assets/badges/release.svg" alt="Latest release" loading="lazy">
                         <img src="../assets/badges/license.svg" alt="AGPL-3.0 license" loading="lazy">
-                        <a href="https://doi.org/10.5281/zenodo.22208913" target="_blank" rel="noopener noreferrer" aria-label="Zenodo DOI 10.5281/zenodo.22208913"><img src="../assets/badges/zenodo-doi.svg" alt="Zenodo DOI 10.5281/zenodo.22208913" loading="lazy"></a>
-                        <img src="https://github.com/GiZano/QuakeGuard/actions/workflows/backend-ci.yml/badge.svg" alt="Backend CI" loading="lazy">
-                        <img src="https://github.com/GiZano/QuakeGuard/actions/workflows/frontend-ci.yml/badge.svg" alt="Frontend CI" loading="lazy">
-                        <img src="https://github.com/GiZano/QuakeGuard/actions/workflows/iot-ci.yml/badge.svg" alt="IoT CI" loading="lazy">
+                        <a href="https://doi.org/10.5281/zenodo.22208913" target="_blank" rel="noopener noreferrer"
+                            aria-label="Zenodo DOI 10.5281/zenodo.22208913"><img src="../assets/badges/zenodo-doi.svg"
+                                alt="Zenodo DOI 10.5281/zenodo.22208913" loading="lazy"></a>
+                        <img src="https://github.com/GiZano/QuakeGuard/actions/workflows/backend-ci.yml/badge.svg"
+                            alt="Backend CI" loading="lazy">
+                        <img src="https://github.com/GiZano/QuakeGuard/actions/workflows/frontend-ci.yml/badge.svg"
+                            alt="Frontend CI" loading="lazy">
+                        <img src="https://github.com/GiZano/QuakeGuard/actions/workflows/iot-ci.yml/badge.svg"
+                            alt="IoT CI" loading="lazy">
                     </div>
                     <div class="badge-strip">
-                        <img src="https://sonarcloud.io/api/project_badges/measure?project=GiZano_QuakeGuard&metric=alert_status" alt="Quality gate" loading="lazy">
-                        <img src="https://sonarcloud.io/api/project_badges/measure?project=GiZano_QuakeGuard&metric=security_rating" alt="Security rating" loading="lazy">
-                        <img src="https://sonarcloud.io/api/project_badges/measure?project=GiZano_QuakeGuard&metric=reliability_rating" alt="Reliability rating" loading="lazy">
-                        <img src="https://sonarcloud.io/api/project_badges/measure?project=GiZano_QuakeGuard&metric=sqale_rating" alt="Maintainability rating" loading="lazy">
+                        <img src="https://sonarcloud.io/api/project_badges/measure?project=GiZano_QuakeGuard&metric=alert_status"
+                            alt="Quality gate" loading="lazy">
+                        <img src="https://sonarcloud.io/api/project_badges/measure?project=GiZano_QuakeGuard&metric=security_rating"
+                            alt="Security rating" loading="lazy">
+                        <img src="https://sonarcloud.io/api/project_badges/measure?project=GiZano_QuakeGuard&metric=reliability_rating"
+                            alt="Reliability rating" loading="lazy">
+                        <img src="https://sonarcloud.io/api/project_badges/measure?project=GiZano_QuakeGuard&metric=sqale_rating"
+                            alt="Maintainability rating" loading="lazy">
                     </div>
                 </div>
                 <div class="col-lg-6 hero-logo-col order-1 order-lg-2 text-center">
                     <div class="hero-logo-wrap">
-                        <img src="../assets/quakeguard/shield-transparent.png" alt="QuakeGuard shield logo" class="hero-logo">
+                        <img src="../assets/quakeguard/shield-transparent.png" alt="QuakeGuard shield logo"
+                            class="hero-logo">
                     </div>
                 </div>
             </div>
@@ -174,475 +214,753 @@
 
     <main>
 
-    <!-- ============ MISSION ============ -->
-    <section id="mission" class="qg-section">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-8 mx-auto text-center">
-                    <span class="qg-eyebrow" data-i18n="mission_eyebrow">Mission</span>
-                    <h2 class="qg-title" data-i18n="mission_title">Detection for everyone</h2>
-                    <div class="accent-bar mx-auto"></div>
-                    <p class="qg-lead mb-4" data-i18n="mission_lead">
-                        We want to make earthquake detection available <strong style="color:#fff">all around the world</strong>, with
-                        <strong style="color:#fff">zero cost</strong> for the people and <strong style="color:#fff">low cost</strong> for the enterprises.
-                        By embedding miniature IoT sensors inside the objects we already live with, we can grant P-wave detection
-                        <em>without anyone even knowing</em> — and give people time to evacuate or reach a safe location before it is too late.
-                    </p>
-                    <div class="row g-3" style="max-width:760px;margin:0 auto;">
-                        <div class="col-6 col-md-3"><div class="qg-card stat-chip"><div class="num">100 Hz</div><div class="lbl" ><span data-i18n="stat_sample">Edge sampling</span></div></div></div>
-                        <div class="col-6 col-md-3"><div class="qg-card stat-chip"><div class="num">≤ 4.5</div><div class="lbl"><span data-i18n="stat_mag">Magnitude threshold</span></div></div></div>
-                        <div class="col-6 col-md-3"><div class="qg-card stat-chip"><div class="num">60 s</div><div class="lbl"><span data-i18n="stat_dedup">Zone dedup / anti-replay</span></div></div></div>
-                        <div class="col-6 col-md-3"><div class="qg-card stat-chip"><div class="num">50/s</div><div class="lbl"><span data-i18n="stat_rate">Rate limit per IP</span></div></div></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ============ LIVE DEMO ============ -->
-    <section id="demo" class="qg-section qg-section-alt">
-        <div class="container">
-            <div class="text-center mb-5">
-                <span class="qg-eyebrow" data-i18n="demo_eyebrow">Live Demo</span>
-                <h2 class="qg-title" data-i18n="demo_title">Trigger an earthquake</h2>
-                <div class="accent-bar mx-auto"></div>
-                <p class="qg-lead" data-i18n="demo_sub" style="max-width:720px;margin:0 auto;">
-                    A faithful, client-only echo of the backend's <code style="color:#00f5ff">POST /demo/trigger-earthquake</code> flow:
-                    pick one of the 8 geographic zones, set a magnitude ≥ 4.5 and watch the pipeline run from edge to mobile alert + AI report.
-                </p>
-                <div class="mx-auto mt-3" style="max-width:720px;">
-                    <div class="demo-panel d-flex align-items-center gap-3" style="padding:0.6rem 1rem;">
-                        <i class="fas fa-flask-vial" style="color:#00f5ff;flex-shrink:0;"></i>
-                        <span class="text-white" style="font-size:0.9rem;" data-i18n="demo_notice">This is a <strong style="color:#fff">client-side simulation</strong> — everything runs in your browser, no real request is sent. Try it below.</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row g-4" id="qg-demo">
-                <div class="col-lg-5">
-                    <div class="demo-panel">
-<label class="form-label" for="demo-zone" data-i18n="demo_zone">Geographic zone</label>
-                        <select class="form-select form-control-qg mb-3" id="demo-zone"></select>
-
-                        <label class="form-label" for="demo-mag" data-i18n="demo_mag">Estimated magnitude</label>
-                        <input type="range" class="range-qg mb-2" id="demo-mag" min="4.5" max="9.5" step="0.1" value="6.6">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <output class="mag-readout" id="demo-mag-read" for="demo-mag">6.6</output>
-                            <small class="text-muted" data-i18n="demo_mag_hint">M ≥ 4.5 triggers an alert</small>
-                        </div>
-
-                        <label class="form-label" for="demo-msg" data-i18n="demo_msg">Message</label>
-                        <input type="text" class="form-control form-control-qg mb-4" id="demo-msg" placeholder="Simulated Critical Event" data-i18n-attr="demo_msg_ph">
-
-                        <button class="btn btn-qg btn-qg-gold w-100" id="demo-trigger">
-                            <i class="fas fa-bell me-2"></i><span data-i18n="demo_trigger">Trigger Earthquake</span>
-                        </button>
-                        <p class="small text-white mt-3 mb-0" data-i18n="demo_historic">
-                            <i class="fas fa-bell me-1"></i> Historically the backend bypasses the IoT pipeline and pushes to the
-                            Redis <code>quake_alerts</code> channel — the mobile app vibrates and fires a push notification within milliseconds.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="col-lg-7">
-                    <div class="demo-panel h-100">
-                        <h5 class="text-white mb-3"><i class="fas fa-terminal me-2" style="color:#00f5ff"></i><span data-i18n="demo_console_heading">Ingestion → Alert pipeline</span></h5>
-                        <div class="demo-console mb-4" id="demo-console" aria-live="polite">
-                            <div class="demo-line"><span class="t">Demo</span><span data-i18n="demo_console_ready">Ready — select a zone and trigger an earthquake to watch the pipeline.</span></div>
-                        </div>
-                        <h5 class="text-white mb-3"><i class="fas fa-history me-2" style="color:#f1a208"></i><span data-i18n="demo_feed_heading">Recent critical events (last 10)</span></h5>
-                        <div class="list-group feed" id="demo-feed" aria-live="polite"></div>
-                        <h5 class="text-white mb-3 mt-4"><i class="fas fa-robot me-2" style="color:#00f5ff"></i><span data-i18n="demo_ai_heading">AI Emergency Report</span> <span class="badge rounded-pill text-bg-info">v1.2.1</span></h5>
-                        <div class="ai-report" style="background:rgba(3,21,32,0.7);border:1px solid rgba(0,245,255,0.25);border-left:4px solid #00f5ff;border-radius:10px;padding:1rem;" aria-live="polite">
-                            <div class="mb-2"><span class="t" style="color:#00f5ff">[AI]</span> <strong id="ai-report-title" style="color:#fff">Magnitude 6.6 &middot; Eastern Sicily</strong></div>
-                            <p id="ai-report-body" class="mb-2 text-white" style="font-size:0.92rem;">Moderate-strong event detected by 12 sensors in Sicily. Shaking intensity IV-V MMI; recommend staying away from windows and tall furniture, and monitoring aftershocks over the next 2 hours.</p>
-                            <p id="ai-report-footer" class="small mb-0" style="color:#9db4d0;">Generated on-premise by <code style="color:#00f5ff">ai_report_worker.py</code> via Ollama — no telemetry leaves your machine.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ============ HOW IT WORKS / ARCHITECTURE ============ -->
-    <section id="architecture" class="qg-section">
-        <div class="container">
-            <div class="text-center mb-5">
-                <span class="qg-eyebrow" data-i18n="arch_eyebrow">From vibration to alert</span>
-                <h2 class="qg-title" data-i18n="arch_title">System Architecture</h2>
-                <div class="accent-bar mx-auto"></div>
-            </div>
-
-            <div class="row justify-content-center">
-                <div class="col-lg-10">
-                    <div class="pipeline">
-                        <div class="pipe-step"><span class="n">1</span><strong data-i18n="pipe_1_t">Detect</strong><br><span data-i18n="pipe_1_d">ADXL345 at 100 Hz → HPF removes gravity → STA/LTA ratio &gt; 1.8 flags an event.</span></div>
-                        <div class="pipe-arrow"><i class="fas fa-chevron-down"></i></div>
-                        <div class="pipe-step"><span class="n">2</span><strong data-i18n="pipe_2_t">Sign</strong><br><span data-i18n="pipe_2_d">Firmware signs the payload with ECDSA NIST P-256 — the private key never leaves the device&rsquo;s NVS.</span></div>
-                        <div class="pipe-arrow"><i class="fas fa-chevron-down"></i></div>
-                        <div class="pipe-step"><span class="n">3</span><strong data-i18n="pipe_3_t">Publish</strong><br><span data-i18n="pipe_3_d">MQTT publish to <code style="color:#00f5ff">quakeguard/telemetry</code> on HiveMQ Cloud (TLS, port 8883).</span></div>
-                        <div class="pipe-arrow"><i class="fas fa-chevron-down"></i></div>
-                        <div class="pipe-step"><span class="n">4</span><strong data-i18n="pipe_4_t">Verify</strong><br><span data-i18n="pipe_4_d">Bridge → <code style="color:#00f5ff">POST /readings/</code>. API key, sensor status, anti-replay (60 s) and signature are all validated.</span></div>
-                        <div class="pipe-arrow"><i class="fas fa-chevron-down"></i></div>
-                        <div class="pipe-step"><span class="n">5</span><strong data-i18n="pipe_5_t">Queue</strong><br><span data-i18n="pipe_5_d">Rate limit (50 req/s per IP) passes → event appended to Redis Streams (<code style="color:#00f5ff">readings:stream</code>); API replies <code style="color:#00f5ff">202 Accepted</code> instantly.</span></div>
-                        <div class="pipe-arrow"><i class="fas fa-chevron-down"></i></div>
-                        <div class="pipe-step"><span class="n">6</span><strong data-i18n="pipe_6_t">Process</strong><br><span data-i18n="pipe_6_d">Worker estimates <code style="color:#00f5ff">M = log10(PGA × 1.6) + 3.0</code>; if M ≥ 4.5 an Alert is triggered.</span></div>
-                        <div class="pipe-arrow"><i class="fas fa-chevron-down"></i></div>
-                        <div class="pipe-step"><span class="n">7</span><strong data-i18n="pipe_7_t">Persist &amp; dedup</strong><br><span data-i18n="pipe_7_d">Atomically saved to TimescaleDB (hypertable) + PostGIS; a per-area Redis cooldown (geohash region or zone) prevents alert storms (outbox pattern).</span></div>
-                        <div class="pipe-arrow"><i class="fas fa-chevron-down"></i></div>
-                        <div class="pipe-step"><span class="n">8</span><strong data-i18n="pipe_8_t">Alert</strong><br><span data-i18n="pipe_8_d">WebSocket broadcast → mobile SOS haptic vibration + high-priority push notification, sub-second delivery.</span></div>
-                        <div class="pipe-arrow"><i class="fas fa-chevron-down"></i></div>
-                        <div class="pipe-step"><span class="n">9</span><strong data-i18n="pipe_9_t">AI Report</strong><br><span data-i18n="pipe_9_d"><code style="color:#00f5ff">ai_report_queue</code> in Redis → worker → Ollama generates the emergency report on-premise; persisted and pushed on the <code style="color:#00f5ff">ai_reports</code> WebSocket channel.</span></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row g-4 mt-5">
-                <div class="col-md-6 col-lg-4">
-                    <div class="qg-card">
-                        <div class="icon"><i class="fas fa-microchip"></i></div>
-                        <h3 data-i18n="arch_iot">IoT Edge Sensors</h3>
-                        <p data-i18n="arch_iot_p">ESP32-C3 (RISC-V) + ADXL345 accelerometer. Runs a FreeRTOS DSP pipeline with O(1) ring-buffer STA/LTA, ECDSA signing on every payload and an optional GNSS subsystem (NEO-6M/M8N) with NVS last-known-fix.</p>
-                        <span class="qg-tag">ESP32-C3</span><span class="qg-tag">STA/LTA</span><span class="qg-tag">100 Hz</span>
-                        <img src="https://img.shields.io/badge/C%2B%2B-Hardware%20Logic-00599C?style=for-the-badge&logo=c%2B%2B&logoColor=white" alt="C++" style="height:22px;margin-top:8px;" loading="lazy">
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="qg-card">
-                        <div class="icon"><i class="fas fa-cloud"></i></div>
-                        <h3 data-i18n="arch_api">FastAPI Cloud</h3>
-                        <p data-i18n="arch_api_p">Fully async Python 3.11 gateway. Sliding-window rate limiting, API-key auth, ECDSA verification and anti-replay — designed to sustain the Thundering Herd.</p>
-                        <span class="qg-tag">Async</span><span class="qg-tag">Rate limit</span><span class="qg-tag">Uvicorn</span>
-                        <img src="https://img.shields.io/badge/Python-FastAPI-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54" alt="Python" style="height:22px;margin-top:8px;" loading="lazy">
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="qg-card">
-                        <div class="icon"><i class="fas fa-layer-group"></i></div>
-                        <h3 data-i18n="arch_redis">Redis Streams + Pub/Sub</h3>
-                        <p data-i18n="arch_redis_p">Decouples ingestion from processing (producer-consumer). Redis Streams offloading, per-area dedup locks, a Dead Letter Queue on failure — plus a dedicated <code style="color:#00f5ff">ai_report_queue</code> for the <code style="color:#00f5ff">ai_report_worker.py</code>, decoupled from the alert engine.</p>
-                        <span class="qg-tag">Streams</span><span class="qg-tag">DLQ</span><span class="qg-tag">Outbox</span>
-                        <img src="https://img.shields.io/badge/Redis-Message%20Broker-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis" style="height:22px;margin-top:8px;" loading="lazy">
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="qg-card">
-                        <div class="icon"><i class="fas fa-network-wired"></i></div>
-                        <h3 data-i18n="arch_mqtt">MQTT Data Plane</h3>
-                        <p data-i18n="arch_mqtt_p">HiveMQ Cloud broker over TLS. A dedicated bridge microservice forwards telemetry to the secure HTTP pipeline, injecting the API key.</p>
-                        <span class="qg-tag">TLS 8883</span><span class="qg-tag">Paho</span><span class="qg-tag">Bridge</span>
-                        <img src="https://img.shields.io/badge/HiveMQ-Cloud%20MQTT-FFC107?style=for-the-badge&logo=mqtt&logoColor=black" alt="HiveMQ" style="height:22px;margin-top:8px;" loading="lazy">
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="qg-card">
-                        <div class="icon"><i class="fas fa-database"></i></div>
-                        <h3 data-i18n="arch_pg">PostgreSQL + TimescaleDB + PostGIS</h3>
-                        <p data-i18n="arch_pg_p">Time-series + spatial persistence. Sensor data lands in a TimescaleDB hypertable; zones resolve through a geohash fast-path Redis index, with PostGIS <code style="color:#00f5ff">ST_Contains</code> as the authoritative fallback.</p>
-                        <span class="qg-tag">TimescaleDB</span><span class="qg-tag">Geohash</span><span class="qg-tag">ST_Contains</span>
-                        <img src="https://img.shields.io/badge/PostgreSQL-PostGIS-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" style="height:22px;margin-top:8px;" loading="lazy">
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="qg-card">
-                        <div class="icon"><i class="fas fa-mobile-alt"></i></div>
-                        <h3 data-i18n="arch_app">React Native App</h3>
-                        <p data-i18n="arch_app_p">Three-tab app (Monitor, Sensor Map, Settings). Per-zone live seismograph with a horizontal zone strip, GPS "Detect my zone" via <code style="color:#00f5ff">GET /zones/locate</code>, WebSocket alerts with SOS haptics &amp; push, siren audio (<code style="color:#00f5ff">expo-audio</code>), MIC/RESEARCH dual theme, offline mode, last-10 alert history and AI report cards.</p>
-                        <span class="qg-tag">Expo</span><span class="qg-tag">Zustand</span><span class="qg-tag">TanStack Query</span>
-                        <img src="https://img.shields.io/badge/React%20Native-Mobile-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React Native" style="height:22px;margin-top:8px;" loading="lazy">
-                    </div>
-                </div>
-            </div>
-
-            <div class="row mt-5">
-                <div class="col-12">
-                    <div class="qg-card d-flex flex-column flex-md-row align-items-center gap-4">
-                        <div style="flex: 1">
-                            <h3 data-i18n="arch_hardware">Proprietary Hardware (v2.0.0)</h3>
-                            <p data-i18n="arch_hardware_p">The QuakeGuard v2.0.0 milestone introduces a custom Printed Circuit Board (PCB) designed in KiCad. It houses the ESP32-C3 SuperMini, the ADXL345 accelerometer (powered accurately at 3.3V), and a J4 header for the optional u-blox GNSS module for precise spatial-temporal synchronization.</p>
-                            <span class="qg-tag">KiCad</span><span class="qg-tag">PCB</span><span class="qg-tag">GNSS</span>
-                        </div>
-                        <div style="flex: 1">
-                            <img src="assets/quakeguard/pcb_assembled.jpg" alt="QuakeGuard PCB" style="width:100%; border-radius: 8px; border: 1px solid rgba(0, 245, 255, 0.2);">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row g-4 mt-1">
-                <div class="col-12 col-md-4 mb-3"><div class="qg-card text-center"><img src="https://img.shields.io/badge/Docker-Containerization-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" class="qg-shield" loading="lazy"></div></div>
-                <div class="col-12 col-md-4 mb-3"><div class="qg-card text-center"><img src="https://img.shields.io/badge/Ollama-LLM%20on--premise-F5C518?style=for-the-badge&logo=ollama&logoColor=white" alt="Ollama" class="qg-shield" loading="lazy"></div></div>
-                <div class="col-12 col-md-4 mb-3"><div class="qg-card text-center"><img src="https://img.shields.io/badge/ngrok-HTTPS%20Tunnel-1F1E37?style=for-the-badge&logo=ngrok&logoColor=white" alt="ngrok" class="qg-shield" loading="lazy"></div></div>
-                <div class="col-12 col-md-4 mb-3"><div class="qg-card text-center"><img src="https://img.shields.io/badge/ESP32-C3%20Edge-052f5f?style=for-the-badge&logo=espressif&logoColor=white" alt="ESP32" class="qg-shield" loading="lazy"></div></div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ============ RESILIENCE ============ -->
-    <section id="resilience" class="qg-section qg-section-alt">
-        <div class="container">
-            <div class="row align-items-center g-5">
-                <div class="col-lg-6">
-                    <span class="qg-eyebrow" data-i18n="res_eyebrow">Built for the crowd</span>
-                    <h2 class="qg-title" data-i18n="res_title">The Thundering Herd</h2>
-                    <div class="accent-bar"></div>
-                    <p class="qg-lead mb-3" data-i18n="res_lead1">
-                        Earthquakes don&rsquo;t knock on one door. When hundreds of sensors in the same zone detect the same event
-                        at once, the backend is hit by a <strong style="color:#fff">massive, synchronous traffic spike</strong>.
-                    </p>
-                    <p class="qg-lead" data-i18n="res_lead2">
-                        QuakeGuard is engineered for exactly that moment: ingestion is decoupled from processing, requests return
-                        <code style="color:#00f5ff">202 Accepted</code> in milliseconds, connection pooling absorbs the load, and a
-                        per-area Redis cooldown guarantees the network fires <strong style="color:#fff">one clean alert</strong> — not a storm of duplicates.
-                    </p>
-                </div>
-                <div class="col-lg-6">
-                    <div class="qg-card">
-                        <h3 class="mb-3" data-i18n="res_card_title">How the spike is absorbed</h3>
-                        <div class="sec-gate"><div class="ico"><i class="fas fa-tachometer-alt"></i></div><div><strong data-i18n="res_queue_t">Producer-consumer queue</strong><p data-i18n="res_queue_p">Ingestion never waits on the database; events offload to Redis Streams instantly.</p></div></div>
-                        <div class="sec-gate"><div class="ico"><i class="fas fa-water"></i></div><div><strong data-i18n="res_rate_t">Control-plane rate limit</strong><p data-i18n="res_rate_p">50 req/s per IP, backs off buggy or malicious nodes early.</p></div></div>
-                        <div class="sec-gate"><div class="ico"><i class="fas fa-info"></i></div><div><strong data-i18n="res_pool_t">Connection pooling</strong><p data-i18n="res_pool_p">Aggressive SQLAlchemy pool configured for high concurrency, no queue exhaustion.</p></div></div>
-                        <div class="sec-gate"><div class="ico"><i class="fas fa-filter"></i></div><div><strong data-i18n="res_cooldown_t">Per-area cooldown</strong><p data-i18n="res_cooldown_p">Dedup lock per geohash region or zone; only the winning worker publishes the Alert (outbox pattern).</p></div></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ============ SECURITY ============ -->
-    <section id="security" class="qg-section">
-        <div class="container">
-            <div class="text-center mb-5">
-                <span class="qg-eyebrow" data-i18n="sec_eyebrow">Zero-Trust Edge</span>
-                <h2 class="qg-title" data-i18n="sec_title">Cryptographic Security</h2>
-                <div class="accent-bar mx-auto"></div>
-                <p class="qg-lead" data-i18n="sec_lead" style="max-width:720px;margin:0 auto;">
-                    Data integrity is paramount in an emergency system. Every telemetry packet is
-                    <span class="zero">cryptographically secured end-to-end</span> against spoofing, replay and tampering.
-                </p>
-            </div>
-            <div class="row g-4">
-                <div class="col-lg-6">
-                    <div class="qg-card">
-                        <h3 class="mb-3" data-i18n="sec_gates_title">The 4 validation gates</h3>
-                        <div class="sec-gate"><div class="ico"><i class="fas fa-key"></i></div><div><strong data-i18n="sec_gate_key_t">API key</strong><p data-i18n="sec_gate_key_p">Checked on every request using a constant-time comparison to resist timing attacks.</p></div></div>
-                        <div class="sec-gate"><div class="ico"><i class="fas fa-plug"></i></div><div><strong data-i18n="sec_gate_status_t">Sensor status</strong><p data-i18n="sec_gate_status_p">Confirms the sensor exists and is marked active in the database.</p></div></div>
-                        <div class="sec-gate"><div class="ico"><i class="fas fa-clock"></i></div><div><strong data-i18n="sec_gate_replay_t">Anti-replay</strong><p data-i18n="sec_gate_replay_p">Timestamps older than the 60 s window are rejected outright with <code>403 Forbidden</code>.</p></div></div>
-                        <div class="sec-gate"><div class="ico"><i class="fas fa-signature"></i></div><div><strong data-i18n="sec_gate_sig_t">ECDSA signature</strong><p data-i18n="sec_gate_sig_p">Payload verified against the device public key — both DER and raw r||s forms supported.</p></div></div>
-                    </div>
-                </div>
-                <div class="col-lg-6">
-                    <div class="qg-card">
-                        <h3 class="mb-3" data-i18n="sec_identity_title">Identity & threat coverage</h3>
-                        <p class="qg-lead" data-i18n="sec_identity_p">
-                            On first boot each ESP32-C3 generates its own <span class="zero">NIST P-256 ECDSA</span> keypair (mbedTLS).
-                            The private key is sealed in Non-Volatile Storage and <strong>never leaves the device</strong>; the public key becomes the
-                            unforgeable identity used during the automated <code style="color:#00f5ff">/devices/register</code> provisioning handshake.
-                        </p>
-                        <div class="row g-2">
-                            <div class="col-6"><span class="badge text-bg-success w-100 text-start"><i class="fas fa-shield-alt me-1"></i> <span data-i18n="sec_mitm">MitM protected</span></span></div>
-                            <div class="col-6"><span class="badge text-bg-success w-100 text-start"><i class="fas fa-shield-alt me-1"></i> <span data-i18n="sec_spoof">Spoofing blocked</span></span></div>
-                            <div class="col-6"><span class="badge text-bg-success w-100 text-start"><i class="fas fa-shield-alt me-1"></i> <span data-i18n="sec_replay">Replay attack blocked</span></span></div>
-                            <div class="col-6"><span class="badge text-bg-success w-100 text-start"><i class="fas fa-shield-alt me-1"></i> <span data-i18n="sec_brute">Brute force limited</span></span></div>
-                            <div class="col-12"><span class="badge text-bg-success w-100 text-start text-wrap"><i class="fas fa-shield-alt me-1"></i> <span data-i18n="sec_unauth">Unauthorized access blocked (API key + enrollment token fail-fast)</span></span></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ============ ZONES ============ -->
-    <section id="zones" class="qg-section qg-section-alt">
-        <div class="container">
-            <div class="text-center mb-5">
-                <span class="qg-eyebrow" data-i18n="zones_eyebrow">Spatial intelligence</span>
-                <h2 class="qg-title" data-i18n="zones_title">Geographic Zones</h2>
-                <div class="accent-bar mx-auto"></div>
-                <p class="qg-lead" data-i18n="zones_lead" style="max-width:720px;margin:0 auto;">
-                    8 global macro-regions are pre-seeded. Zone resolution uses a geohash Redis fast path, with PostGIS
-                    <strong style="color:#fff">ST_Contains</strong> as the authoritative fallback — plus an <strong style="color:#fff">Unknown Region</strong>
-                    fallback for unmapped coordinates. The mobile app can detect your zone with one tap via <code style="color:#00f5ff">GET /zones/locate</code>.
-                </p>
-            </div>
-            <div class="zone-list">
-                <div class="zone-item"><span class="dot"></span><strong data-i18n="zone_1">Italy - North</strong><span>Lombardy, Veneto, Piedmont</span></div>
-                <div class="zone-item"><span class="dot"></span><strong data-i18n="zone_2">Italy - Center</strong><span>Tuscany, Lazio, Umbria</span></div>
-                <div class="zone-item"><span class="dot"></span><strong data-i18n="zone_3">Italy - South & Islands</strong><span>Campania, Sicily, Sardinia</span></div>
-                <div class="zone-item"><span class="dot"></span><strong data-i18n="zone_4">Western Europe</strong><span>France, Spain, Germany, UK</span></div>
-                <div class="zone-item"><span class="dot"></span><strong data-i18n="zone_5">North America</strong><span>USA, Canada, Mexico</span></div>
-                <div class="zone-item"><span class="dot"></span><strong data-i18n="zone_6">South America</strong><span>Brazil, Argentina, Chile</span></div>
-                <div class="zone-item"><span class="dot"></span><strong data-i18n="zone_7">East Asia</strong><span>China, Japan, India</span></div>
-                <div class="zone-item"><span class="dot"></span><strong data-i18n="zone_8">Unknown Region</strong><span data-i18n="zones_unknown_sub">Fallback for unmapped coordinates</span></div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ============ ROADMAP ============ -->
-    <section id="roadmap" class="qg-section">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-lg-10">
-                    <div class="text-center mb-4">
-                        <span class="qg-eyebrow" data-i18n="roadmap_eyebrow">Where it&rsquo;s going</span>
-                        <h2 class="qg-title" data-i18n="roadmap">Roadmap</h2>
+        <!-- ============ MISSION ============ -->
+        <section id="mission" class="qg-section">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-8 mx-auto text-center">
+                        <span class="qg-eyebrow" data-i18n="mission_eyebrow">Mission</span>
+                        <h2 class="qg-title" data-i18n="mission_title">Detection for everyone</h2>
                         <div class="accent-bar mx-auto"></div>
-                    </div>
-                    <div class="text-center mb-5">
-                        <a href="https://github.com/GiZano/QuakeGuard/blob/main/ROADMAP.md" target="_blank" rel="noopener noreferrer" class="btn btn-qg-ghost"><i class="fas fa-map-signs me-2"></i><span data-i18n="roadmap_details">See the detailed roadmap</span></a>
-                    </div>
-                    <div class="row g-4">
-                        <div class="col-md-6">
-                            <h3 class="text-center mb-4" style="color:#fff;" data-i18n="roadmap_dev">Development</h3>
-                            <div class="road">
-                                <div class="road-item done"><span class="ver" data-i18n="road_1_label">v1.0 · Released</span><p data-i18n="road_1"><strong>Edge seismic detection</strong> on ESP32-C3 and local alerts.</p></div>
-                                <div class="road-item done"><span class="ver" data-i18n="road_11_label">v1.1 · Released</span><p data-i18n="road_11"><strong>HiveMQ Cloud MQTT (TLS)</strong>, ngrok HTTPS tunnel, security hardening.</p></div>
-                                <div class="road-item done"><span class="ver" data-i18n="road_120_label">v1.2.0 · Released</span><p data-i18n="road_120"><strong>On-Premise AI Reports</strong> — Ollama generates emergency reports on-premise, pushed over WebSocket.</p></div>
-                                <div class="road-item done"><span class="ver" data-i18n="road_12_label">v1.2.1 · Released</span><p data-i18n="road_12"><strong>Geo-Zoning &amp; Cooldown Fragmentation (GNSS-ready)</strong> — geohash Redis fast-path zone resolution, per-area cooldown locks, PostGIS <code style="color:#00f5ff">ST_Contains</code> as source of truth.</p></div>
-                                <div class="road-item done"><span class="ver" data-i18n="road_122_label">v1.2.2 · Released</span><p data-i18n="road_122"><strong>Zero-Trust Serial Fallback</strong> — ECDSA-signed telemetry over USB CDC when MQTT/WiFi is unreachable, with host-aware retention and automatic first-boot provisioning.</p></div>
-                                <div class="road-item done"><span class="ver" data-i18n="road_13_label">v2.0.0 · Released</span><p data-i18n="road_13">Triangulation, Hybrid Cloud Architecture, DevOps deployment scripts, GNSS NTP + PPS timestamps, ADXL345 calibration, and SIL integration testing.</p></div>
-                                <div class="road-item"><span class="ver" data-i18n="road_21_label">v2.1 · Dashboards</span><p data-i18n="road_21"><strong>Grafana</strong> live visualization of seismic telemetry.</p></div>
+                        <p class="qg-lead mb-4" data-i18n="mission_lead">
+                            We want to make earthquake detection available <strong style="color:#fff">all around the
+                                world</strong>, with
+                            <strong style="color:#fff">zero cost</strong> for the people and <strong
+                                style="color:#fff">low cost</strong> for the enterprises.
+                            By embedding miniature IoT sensors inside the objects we already live with, we can grant
+                            P-wave detection
+                            <em>without anyone even knowing</em> — and give people time to evacuate or reach a safe
+                            location before it is too late.
+                        </p>
+                        <div class="row g-3" style="max-width:760px;margin:0 auto;">
+                            <div class="col-6 col-md-3">
+                                <div class="qg-card stat-chip">
+                                    <div class="num">100 Hz</div>
+                                    <div class="lbl"><span data-i18n="stat_sample">Edge sampling</span></div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="qg-card stat-chip">
+                                    <div class="num">≤ 4.5</div>
+                                    <div class="lbl"><span data-i18n="stat_mag">Magnitude threshold</span></div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="qg-card stat-chip">
+                                    <div class="num">60 s</div>
+                                    <div class="lbl"><span data-i18n="stat_dedup">Zone dedup / anti-replay</span></div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="qg-card stat-chip">
+                                    <div class="num">50/s</div>
+                                    <div class="lbl"><span data-i18n="stat_rate">Rate limit per IP</span></div>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <h3 class="text-center mb-4" style="color:#fff;" data-i18n="roadmap_res">Research</h3>
-                            <div class="road">
-                                <div class="road-item done"><span class="ver" data-i18n="r1_label">R1 · Done</span><p data-i18n="r1"><strong>SIL STA/LTA cross-validation</strong> — pure C++ core, host orchestrator, metrics and trigger calibration on the synthetic fallback. Real ESM ground-truth validation remains.</p></div>
-                                <div class="road-item wip"><span class="ver" data-i18n="r2_label">R2 · Next</span><p data-i18n="r2"><strong>AI benchmarking</strong> — P50/P99 latency of the local Ollama worker, hallucination rate, privacy/latency vs cloud baseline.</p></div>
-                                <div class="road-item"><span class="ver" data-i18n="r3_label">R3 · Planned</span><p data-i18n="r3"><strong>Dissemination</strong> — open validation dataset (Zenodo DOI) + technical paper / preprint.</p></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ LIVE DEMO ============ -->
+        <section id="demo" class="qg-section qg-section-alt">
+            <div class="container">
+                <div class="text-center mb-5">
+                    <span class="qg-eyebrow" data-i18n="demo_eyebrow">Live Demo</span>
+                    <h2 class="qg-title" data-i18n="demo_title">Trigger an earthquake</h2>
+                    <div class="accent-bar mx-auto"></div>
+                    <p class="qg-lead" data-i18n="demo_sub" style="max-width:720px;margin:0 auto;">
+                        A faithful, client-only echo of the backend's <code
+                            style="color:#00f5ff">POST /demo/trigger-earthquake</code> flow:
+                        pick one of the 8 geographic zones, set a magnitude ≥ 4.5 and watch the pipeline run from edge
+                        to mobile alert + AI report.
+                    </p>
+                    <div class="mx-auto mt-3" style="max-width:720px;">
+                        <div class="demo-panel d-flex align-items-center gap-3" style="padding:0.6rem 1rem;">
+                            <i class="fas fa-flask-vial" style="color:#00f5ff;flex-shrink:0;"></i>
+                            <span class="text-white" style="font-size:0.9rem;" data-i18n="demo_notice">This is a <strong
+                                    style="color:#fff">client-side simulation</strong> — everything runs in your
+                                browser, no real request is sent. Try it below.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4" id="qg-demo">
+                    <div class="col-lg-5">
+                        <div class="demo-panel">
+                            <label class="form-label" for="demo-zone" data-i18n="demo_zone">Geographic zone</label>
+                            <select class="form-select form-control-qg mb-3" id="demo-zone"></select>
+
+                            <label class="form-label" for="demo-mag" data-i18n="demo_mag">Estimated magnitude</label>
+                            <input type="range" class="range-qg mb-2" id="demo-mag" min="4.5" max="9.5" step="0.1"
+                                value="6.6">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <output class="mag-readout" id="demo-mag-read" for="demo-mag">6.6</output>
+                                <small class="text-muted" data-i18n="demo_mag_hint">M ≥ 4.5 triggers an alert</small>
                             </div>
-                            <p class="small text-muted mt-3" data-i18n="roadmap_res_note">R1 is the blocking prerequisite for the v2.2.0 Edge AI tier and runs in parallel with v1.3 (GNSS).</p>
+
+                            <label class="form-label" for="demo-msg" data-i18n="demo_msg">Message</label>
+                            <input type="text" class="form-control form-control-qg mb-4" id="demo-msg"
+                                placeholder="Simulated Critical Event" data-i18n-attr="demo_msg_ph">
+
+                            <button class="btn btn-qg btn-qg-gold w-100" id="demo-trigger">
+                                <i class="fas fa-bell me-2"></i><span data-i18n="demo_trigger">Trigger Earthquake</span>
+                            </button>
+                            <p class="small text-white mt-3 mb-0" data-i18n="demo_historic">
+                                <i class="fas fa-bell me-1"></i> Historically the backend bypasses the IoT pipeline and
+                                pushes to the
+                                Redis <code>quake_alerts</code> channel — the mobile app vibrates and fires a push
+                                notification within milliseconds.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-7">
+                        <div class="demo-panel h-100">
+                            <h5 class="text-white mb-3"><i class="fas fa-terminal me-2" style="color:#00f5ff"></i><span
+                                    data-i18n="demo_console_heading">Ingestion → Alert pipeline</span></h5>
+                            <div class="demo-console mb-4" id="demo-console" aria-live="polite">
+                                <div class="demo-line"><span class="t">Demo</span><span
+                                        data-i18n="demo_console_ready">Ready — select a zone and trigger an earthquake
+                                        to watch the pipeline.</span></div>
+                            </div>
+                            <h5 class="text-white mb-3"><i class="fas fa-history me-2" style="color:#f1a208"></i><span
+                                    data-i18n="demo_feed_heading">Recent critical events (last 10)</span></h5>
+                            <div class="list-group feed" id="demo-feed" aria-live="polite"></div>
+                            <h5 class="text-white mb-3 mt-4"><i class="fas fa-robot me-2"
+                                    style="color:#00f5ff"></i><span data-i18n="demo_ai_heading">AI Emergency
+                                    Report</span> <span class="badge rounded-pill text-bg-info">v1.2.1</span></h5>
+                            <div class="ai-report"
+                                style="background:rgba(3,21,32,0.7);border:1px solid rgba(0,245,255,0.25);border-left:4px solid #00f5ff;border-radius:10px;padding:1rem;"
+                                aria-live="polite">
+                                <div class="mb-2"><span class="t" style="color:#00f5ff">[AI]</span> <strong
+                                        id="ai-report-title" style="color:#fff">Magnitude 6.6 &middot; Eastern
+                                        Sicily</strong></div>
+                                <p id="ai-report-body" class="mb-2 text-white" style="font-size:0.92rem;">
+                                    Moderate-strong event detected by 12 sensors in Sicily. Shaking intensity IV-V MMI;
+                                    recommend staying away from windows and tall furniture, and monitoring aftershocks
+                                    over the next 2 hours.</p>
+                                <p id="ai-report-footer" class="small mb-0" style="color:#9db4d0;">Generated on-premise
+                                    by <code style="color:#00f5ff">ai_report_worker.py</code> via Ollama — no telemetry
+                                    leaves your machine.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- ============ PROJECT HEALTH ============ -->
-    <section id="health" class="qg-section qg-section-alt">
-        <div class="container">
-            <div class="text-center mb-5">
-                <span class="qg-eyebrow" data-i18n="health_eyebrow">Engineering rigor</span>
-                <h2 class="qg-title" data-i18n="health_title">Project Health</h2>
-                <div class="accent-bar mx-auto"></div>
+        <!-- ============ HOW IT WORKS / ARCHITECTURE ============ -->
+        <section id="architecture" class="qg-section">
+            <div class="container">
+                <div class="text-center mb-5">
+                    <span class="qg-eyebrow" data-i18n="arch_eyebrow">From vibration to alert</span>
+                    <h2 class="qg-title" data-i18n="arch_title">System Architecture</h2>
+                    <div class="accent-bar mx-auto"></div>
+                </div>
+
+                <div class="row justify-content-center">
+                    <div class="col-lg-10">
+                        <div class="pipeline">
+                            <div class="pipe-step"><span class="n">1</span><strong
+                                    data-i18n="pipe_1_t">Detect</strong><br><span data-i18n="pipe_1_d">ADXL345 at 100 Hz
+                                    → HPF removes gravity → STA/LTA ratio &gt; 1.8 flags an event.</span></div>
+                            <div class="pipe-arrow"><i class="fas fa-chevron-down"></i></div>
+                            <div class="pipe-step"><span class="n">2</span><strong
+                                    data-i18n="pipe_2_t">Sign</strong><br><span data-i18n="pipe_2_d">Firmware signs the
+                                    payload with ECDSA NIST P-256 — the private key never leaves the device&rsquo;s
+                                    NVS.</span></div>
+                            <div class="pipe-arrow"><i class="fas fa-chevron-down"></i></div>
+                            <div class="pipe-step"><span class="n">3</span><strong
+                                    data-i18n="pipe_3_t">Publish</strong><br><span data-i18n="pipe_3_d">MQTT publish to
+                                    <code style="color:#00f5ff">quakeguard/telemetry</code> on HiveMQ Cloud (TLS, port
+                                    8883).</span></div>
+                            <div class="pipe-arrow"><i class="fas fa-chevron-down"></i></div>
+                            <div class="pipe-step"><span class="n">4</span><strong
+                                    data-i18n="pipe_4_t">Verify</strong><br><span data-i18n="pipe_4_d">Bridge → <code
+                                        style="color:#00f5ff">POST /readings/</code>. API key, sensor status,
+                                    anti-replay (60 s) and signature are all validated.</span></div>
+                            <div class="pipe-arrow"><i class="fas fa-chevron-down"></i></div>
+                            <div class="pipe-step"><span class="n">5</span><strong
+                                    data-i18n="pipe_5_t">Queue</strong><br><span data-i18n="pipe_5_d">Rate limit (50
+                                    req/s per IP) passes → event appended to Redis Streams (<code
+                                        style="color:#00f5ff">readings:stream</code>); API replies <code
+                                        style="color:#00f5ff">202 Accepted</code> instantly.</span></div>
+                            <div class="pipe-arrow"><i class="fas fa-chevron-down"></i></div>
+                            <div class="pipe-step"><span class="n">6</span><strong
+                                    data-i18n="pipe_6_t">Process</strong><br><span data-i18n="pipe_6_d">Worker estimates
+                                    <code style="color:#00f5ff">M = log10(PGA × 1.6) + 3.0</code>; if M ≥ 4.5 an Alert
+                                    is triggered.</span></div>
+                            <div class="pipe-arrow"><i class="fas fa-chevron-down"></i></div>
+                            <div class="pipe-step"><span class="n">7</span><strong data-i18n="pipe_7_t">Persist &amp;
+                                    dedup</strong><br><span data-i18n="pipe_7_d">Atomically saved to TimescaleDB
+                                    (hypertable) + PostGIS; a per-area Redis cooldown (geohash region or zone) prevents
+                                    alert storms (outbox pattern).</span></div>
+                            <div class="pipe-arrow"><i class="fas fa-chevron-down"></i></div>
+                            <div class="pipe-step"><span class="n">8</span><strong
+                                    data-i18n="pipe_8_t">Alert</strong><br><span data-i18n="pipe_8_d">WebSocket
+                                    broadcast → mobile SOS haptic vibration + high-priority push notification,
+                                    sub-second delivery.</span></div>
+                            <div class="pipe-arrow"><i class="fas fa-chevron-down"></i></div>
+                            <div class="pipe-step"><span class="n">9</span><strong data-i18n="pipe_9_t">AI
+                                    Report</strong><br><span data-i18n="pipe_9_d"><code
+                                        style="color:#00f5ff">ai_report_queue</code> in Redis → worker → Ollama
+                                    generates the emergency report on-premise; persisted and pushed on the <code
+                                        style="color:#00f5ff">ai_reports</code> WebSocket channel.</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mt-5">
+                    <div class="col-md-6 col-lg-4">
+                        <div class="qg-card">
+                            <div class="icon"><i class="fas fa-microchip"></i></div>
+                            <h3 data-i18n="arch_iot">IoT Edge Sensors</h3>
+                            <p data-i18n="arch_iot_p">ESP32-C3 (RISC-V) + ADXL345 accelerometer. Runs a FreeRTOS DSP
+                                pipeline with O(1) ring-buffer STA/LTA, ECDSA signing on every payload and an optional
+                                GNSS subsystem (NEO-6M/M8N) with NVS last-known-fix.</p>
+                            <span class="qg-tag">ESP32-C3</span><span class="qg-tag">STA/LTA</span><span
+                                class="qg-tag">100 Hz</span>
+                            <img src="https://img.shields.io/badge/C%2B%2B-Hardware%20Logic-00599C?style=for-the-badge&logo=c%2B%2B&logoColor=white"
+                                alt="C++" style="height:22px;margin-top:8px;" loading="lazy">
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="qg-card">
+                            <div class="icon"><i class="fas fa-cloud"></i></div>
+                            <h3 data-i18n="arch_api">FastAPI Cloud</h3>
+                            <p data-i18n="arch_api_p">Fully async Python 3.11 gateway. Sliding-window rate limiting,
+                                API-key auth, ECDSA verification and anti-replay — designed to sustain the Thundering
+                                Herd.</p>
+                            <span class="qg-tag">Async</span><span class="qg-tag">Rate limit</span><span
+                                class="qg-tag">Uvicorn</span>
+                            <img src="https://img.shields.io/badge/Python-FastAPI-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54"
+                                alt="Python" style="height:22px;margin-top:8px;" loading="lazy">
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="qg-card">
+                            <div class="icon"><i class="fas fa-layer-group"></i></div>
+                            <h3 data-i18n="arch_redis">Redis Streams + Pub/Sub</h3>
+                            <p data-i18n="arch_redis_p">Decouples ingestion from processing (producer-consumer). Redis
+                                Streams offloading, per-area dedup locks, a Dead Letter Queue on failure — plus a
+                                dedicated <code style="color:#00f5ff">ai_report_queue</code> for the <code
+                                    style="color:#00f5ff">ai_report_worker.py</code>, decoupled from the alert engine.
+                            </p>
+                            <span class="qg-tag">Streams</span><span class="qg-tag">DLQ</span><span
+                                class="qg-tag">Outbox</span>
+                            <img src="https://img.shields.io/badge/Redis-Message%20Broker-DC382D?style=for-the-badge&logo=redis&logoColor=white"
+                                alt="Redis" style="height:22px;margin-top:8px;" loading="lazy">
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="qg-card">
+                            <div class="icon"><i class="fas fa-network-wired"></i></div>
+                            <h3 data-i18n="arch_mqtt">MQTT Data Plane</h3>
+                            <p data-i18n="arch_mqtt_p">HiveMQ Cloud broker over TLS. A dedicated bridge microservice
+                                forwards telemetry to the secure HTTP pipeline, injecting the API key.</p>
+                            <span class="qg-tag">TLS 8883</span><span class="qg-tag">Paho</span><span
+                                class="qg-tag">Bridge</span>
+                            <img src="https://img.shields.io/badge/HiveMQ-Cloud%20MQTT-FFC107?style=for-the-badge&logo=mqtt&logoColor=black"
+                                alt="HiveMQ" style="height:22px;margin-top:8px;" loading="lazy">
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="qg-card">
+                            <div class="icon"><i class="fas fa-database"></i></div>
+                            <h3 data-i18n="arch_pg">PostgreSQL + TimescaleDB + PostGIS</h3>
+                            <p data-i18n="arch_pg_p">Time-series + spatial persistence. Sensor data lands in a
+                                TimescaleDB hypertable; zones resolve through a geohash fast-path Redis index, with
+                                PostGIS <code style="color:#00f5ff">ST_Contains</code> as the authoritative fallback.
+                            </p>
+                            <span class="qg-tag">TimescaleDB</span><span class="qg-tag">Geohash</span><span
+                                class="qg-tag">ST_Contains</span>
+                            <img src="https://img.shields.io/badge/PostgreSQL-PostGIS-316192?style=for-the-badge&logo=postgresql&logoColor=white"
+                                alt="PostgreSQL" style="height:22px;margin-top:8px;" loading="lazy">
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="qg-card">
+                            <div class="icon"><i class="fas fa-mobile-alt"></i></div>
+                            <h3 data-i18n="arch_app">React Native App</h3>
+                            <p data-i18n="arch_app_p">Three-tab app (Monitor, Sensor Map, Settings). Per-zone live
+                                seismograph with a horizontal zone strip, GPS "Detect my zone" via <code
+                                    style="color:#00f5ff">GET /zones/locate</code>, WebSocket alerts with SOS haptics
+                                &amp; push, siren audio (<code style="color:#00f5ff">expo-audio</code>), MIC/RESEARCH
+                                dual theme, offline mode, last-10 alert history and AI report cards.</p>
+                            <span class="qg-tag">Expo</span><span class="qg-tag">Zustand</span><span
+                                class="qg-tag">TanStack Query</span>
+                            <img src="https://img.shields.io/badge/React%20Native-Mobile-20232A?style=for-the-badge&logo=react&logoColor=61DAFB"
+                                alt="React Native" style="height:22px;margin-top:8px;" loading="lazy">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-5">
+                    <div class="col-12">
+                        <div class="qg-card d-flex flex-column flex-md-row align-items-center gap-4">
+                            <div style="flex: 1">
+                                <h3 data-i18n="arch_hardware">Proprietary Hardware (v2.0.0)</h3>
+                                <p data-i18n="arch_hardware_p">The QuakeGuard v2.0.0 milestone introduces a custom
+                                    Printed Circuit Board (PCB) designed in KiCad. It houses the ESP32-C3 SuperMini, the
+                                    ADXL345 accelerometer (powered accurately at 3.3V), and a J4 header for the optional
+                                    u-blox GNSS module for precise spatial-temporal synchronization.</p>
+                                <span class="qg-tag">KiCad</span><span class="qg-tag">PCB</span><span
+                                    class="qg-tag">GNSS</span>
+                            </div>
+                            <div style="flex: 1">
+                                <img src="assets/quakeguard/pcb_assembled.jpg" alt="QuakeGuard PCB"
+                                    style="width:100%; border-radius: 8px; border: 1px solid rgba(0, 245, 255, 0.2);">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mt-1">
+                    <div class="col-12 col-md-4 mb-3">
+                        <div class="qg-card text-center"><img
+                                src="https://img.shields.io/badge/Docker-Containerization-2496ED?style=for-the-badge&logo=docker&logoColor=white"
+                                alt="Docker" class="qg-shield" loading="lazy"></div>
+                    </div>
+                    <div class="col-12 col-md-4 mb-3">
+                        <div class="qg-card text-center"><img
+                                src="https://img.shields.io/badge/Ollama-LLM%20on--premise-F5C518?style=for-the-badge&logo=ollama&logoColor=white"
+                                alt="Ollama" class="qg-shield" loading="lazy"></div>
+                    </div>
+                    <div class="col-12 col-md-4 mb-3">
+                        <div class="qg-card text-center"><img
+                                src="https://img.shields.io/badge/ngrok-HTTPS%20Tunnel-1F1E37?style=for-the-badge&logo=ngrok&logoColor=white"
+                                alt="ngrok" class="qg-shield" loading="lazy"></div>
+                    </div>
+                    <div class="col-12 col-md-4 mb-3">
+                        <div class="qg-card text-center"><img
+                                src="https://img.shields.io/badge/ESP32-C3%20Edge-052f5f?style=for-the-badge&logo=espressif&logoColor=white"
+                                alt="ESP32" class="qg-shield" loading="lazy"></div>
+                    </div>
+                </div>
             </div>
-            <div class="row g-4">
-                <div class="col-md-4">
-                    <div class="qg-card">
-                        <h3><i class="fas fa-rocket me-2" style="color:#00f5ff"></i><span data-i18n="health_cd_title">CI/CD</span></h3>
-                        <p class="mb-2" data-i18n="health_cd_p">Five automated pipelines gate every change:</p>
-                        <ul class="qg-lead" style="font-size:0.95rem;padding-left:1.2rem;">
-                            <li><code>backend-ci</code> — Bandit, Safety, stress test</li>
-                            <li><code>frontend-ci</code> — ESLint, npm audit</li>
-                            <li><code>iot-ci</code> — PlatformIO compilation</li>
-                            <li><code>pr-lint</code> + <code>devops-ci</code></li>
-                            <li>Dedicated <code>geo</code>/<code>timescale</code>/<code>zone</code> CI jobs</li>
-                            <li>✔️ 104 backend tests + 23 mobile tests</li>
-                        </ul>
+        </section>
+
+        <!-- ============ RESILIENCE ============ -->
+        <section id="resilience" class="qg-section qg-section-alt">
+            <div class="container">
+                <div class="row align-items-center g-5">
+                    <div class="col-lg-6">
+                        <span class="qg-eyebrow" data-i18n="res_eyebrow">Built for the crowd</span>
+                        <h2 class="qg-title" data-i18n="res_title">The Thundering Herd</h2>
+                        <div class="accent-bar"></div>
+                        <p class="qg-lead mb-3" data-i18n="res_lead1">
+                            Earthquakes don&rsquo;t knock on one door. When hundreds of sensors in the same zone detect
+                            the same event
+                            at once, the backend is hit by a <strong style="color:#fff">massive, synchronous traffic
+                                spike</strong>.
+                        </p>
+                        <p class="qg-lead" data-i18n="res_lead2">
+                            QuakeGuard is engineered for exactly that moment: ingestion is decoupled from processing,
+                            requests return
+                            <code style="color:#00f5ff">202 Accepted</code> in milliseconds, connection pooling absorbs
+                            the load, and a
+                            per-area Redis cooldown guarantees the network fires <strong style="color:#fff">one clean
+                                alert</strong> — not a storm of duplicates.
+                        </p>
                     </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="qg-card d-flex flex-column">
-                        <h3><i class="fas fa-biohazard me-2" style="color:#f1a208"></i><span data-i18n="health_stress_title">Stress test</span></h3>
-                        <p data-i18n="health_stress_p">Validates the full ingestion → Redis → worker → PostGIS → WebSocket pipeline against a simulated massive seismic event.</p>
-                        <ul class="qg-lead" style="font-size:0.95rem;padding-left:1.2rem;">
-                            <li>🔥 150 concurrent sensors — rate limiter</li>
-                            <li>⚔️ Bad signature (401) + replay (403)</li>
-                            <li>🤖 AI dedup stress test — 50 raw alerts → 1 report</li>
-                            <li>🔍 DB persistence verified end-to-end</li>
-                        </ul>
-                        <div class="mt-auto pt-3"><span class="badge text-bg-warning fs-6"><i class="fas fa-trophy me-1"></i> <span data-i18n="health_stress_cert">SYSTEM CERTIFIED</span></span></div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="qg-card d-flex flex-column">
-                        <h3><i class="fas fa-book-open me-2" style="color:#06a77d"></i><span data-i18n="health_docs_title">Deep documentation</span></h3>
-                        <p data-i18n="health_docs_p">A Typst-compiled whitepaper walks through architecture, hardware, security, the broker, backend, mobile and deployment.</p>
-                        <p class="qg-lead" data-i18n="health_docs_os" style="font-size:0.95rem;">Open source under <strong style="color:#fff">AGPL-3.0</strong>, with a DOI, contributing guide and security policy.</p>
-                        <div class="mt-auto pt-3 d-flex flex-wrap gap-2">
-                            <a class="btn btn-qg btn-sm" href="../assets/quakeguard/quakeguard-whitepaper.pdf" download target="_blank" rel="noopener noreferrer"><i class="fas fa-file-pdf me-1"></i><span data-i18n="health_docs_read">Read the whitepaper</span></a>
-                            <a class="btn btn-qg-ghost btn-sm" href="https://github.com/GiZano/QuakeGuard" target="_blank" rel="noopener noreferrer"><i class="fab fa-github me-1"></i><span data-i18n="health_docs_star">Star on GitHub</span></a>
+                    <div class="col-lg-6">
+                        <div class="qg-card">
+                            <h3 class="mb-3" data-i18n="res_card_title">How the spike is absorbed</h3>
+                            <div class="sec-gate">
+                                <div class="ico"><i class="fas fa-tachometer-alt"></i></div>
+                                <div><strong data-i18n="res_queue_t">Producer-consumer queue</strong>
+                                    <p data-i18n="res_queue_p">Ingestion never waits on the database; events offload to
+                                        Redis Streams instantly.</p>
+                                </div>
+                            </div>
+                            <div class="sec-gate">
+                                <div class="ico"><i class="fas fa-water"></i></div>
+                                <div><strong data-i18n="res_rate_t">Control-plane rate limit</strong>
+                                    <p data-i18n="res_rate_p">50 req/s per IP, backs off buggy or malicious nodes early.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="sec-gate">
+                                <div class="ico"><i class="fas fa-info"></i></div>
+                                <div><strong data-i18n="res_pool_t">Connection pooling</strong>
+                                    <p data-i18n="res_pool_p">Aggressive SQLAlchemy pool configured for high
+                                        concurrency, no queue exhaustion.</p>
+                                </div>
+                            </div>
+                            <div class="sec-gate">
+                                <div class="ico"><i class="fas fa-filter"></i></div>
+                                <div><strong data-i18n="res_cooldown_t">Per-area cooldown</strong>
+                                    <p data-i18n="res_cooldown_p">Dedup lock per geohash region or zone; only the
+                                        winning worker publishes the Alert (outbox pattern).</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- ============ MENTORS ============ -->
-    <section id="mentors" class="qg-section">
-        <div class="container">
-            <div class="row align-items-center g-4">
-                <div class="col-lg-8">
-                    <span class="qg-eyebrow" data-i18n="mentors_eyebrow">Milestone</span>
-                    <h2 class="qg-title" data-i18n="mentors_title">Mentorship & Recognition</h2>
-                    <div class="accent-bar"></div>
-                    <p class="qg-lead" data-i18n="mentors_p1">
-                        Developed as a school-contest project for <strong style="color:#fff">Hackersgen by Sorint.lab</strong> and the
-                        <strong style="color:#fff">GF Marilli</strong> competition &mdash; in collaboration with
-                        <a href="https://riccardo0731.github.io" target="_blank" rel="noopener noreferrer">riccardo0731</a>.
+        <!-- ============ SECURITY ============ -->
+        <section id="security" class="qg-section">
+            <div class="container">
+                <div class="text-center mb-5">
+                    <span class="qg-eyebrow" data-i18n="sec_eyebrow">Zero-Trust Edge</span>
+                    <h2 class="qg-title" data-i18n="sec_title">Cryptographic Security</h2>
+                    <div class="accent-bar mx-auto"></div>
+                    <p class="qg-lead" data-i18n="sec_lead" style="max-width:720px;margin:0 auto;">
+                        Data integrity is paramount in an emergency system. Every telemetry packet is
+                        <span class="zero">cryptographically secured end-to-end</span> against spoofing, replay and
+                        tampering.
                     </p>
-                    <p class="qg-lead mb-0" data-i18n="mentors_p2">
-                        We were honored to work with <strong style="color:#fff">Francesco Finazzi</strong> — UniBG professor and founder of
-                        <em>Earthquake Network</em>, the largest community seismic network in the world. After the conference, our
-                        collaboration with him is exactly where the project&rsquo;s story began.
-                    </p>
                 </div>
-                <div class="col-lg-4">
-                    <div class="mentor-cards">
-                        <div class="qg-card mentor-card">
-                            <img src="../assets/quakeguard/sorint.webp" alt="Sorint.lab Hackersgen" loading="lazy">
-                            <span data-i18n="mentor_1">Sorint.lab — Hackersgen</span>
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="qg-card">
+                            <h3 class="mb-3" data-i18n="sec_gates_title">The 4 validation gates</h3>
+                            <div class="sec-gate">
+                                <div class="ico"><i class="fas fa-key"></i></div>
+                                <div><strong data-i18n="sec_gate_key_t">API key</strong>
+                                    <p data-i18n="sec_gate_key_p">Checked on every request using a constant-time
+                                        comparison to resist timing attacks.</p>
+                                </div>
+                            </div>
+                            <div class="sec-gate">
+                                <div class="ico"><i class="fas fa-plug"></i></div>
+                                <div><strong data-i18n="sec_gate_status_t">Sensor status</strong>
+                                    <p data-i18n="sec_gate_status_p">Confirms the sensor exists and is marked active in
+                                        the database.</p>
+                                </div>
+                            </div>
+                            <div class="sec-gate">
+                                <div class="ico"><i class="fas fa-clock"></i></div>
+                                <div><strong data-i18n="sec_gate_replay_t">Anti-replay</strong>
+                                    <p data-i18n="sec_gate_replay_p">Timestamps older than the 60 s window are rejected
+                                        outright with <code>403 Forbidden</code>.</p>
+                                </div>
+                            </div>
+                            <div class="sec-gate">
+                                <div class="ico"><i class="fas fa-signature"></i></div>
+                                <div><strong data-i18n="sec_gate_sig_t">ECDSA signature</strong>
+                                    <p data-i18n="sec_gate_sig_p">Payload verified against the device public key — both
+                                        DER and raw r||s forms supported.</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="qg-card mentor-card">
-                            <img src="../assets/quakeguard/unibg.webp" alt="University of Bergamo" loading="lazy">
-                            <span data-i18n="mentor_2">University of Bergamo</span>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="qg-card">
+                            <h3 class="mb-3" data-i18n="sec_identity_title">Identity & threat coverage</h3>
+                            <p class="qg-lead" data-i18n="sec_identity_p">
+                                On first boot each ESP32-C3 generates its own <span class="zero">NIST P-256 ECDSA</span>
+                                keypair (mbedTLS).
+                                The private key is sealed in Non-Volatile Storage and <strong>never leaves the
+                                    device</strong>; the public key becomes the
+                                unforgeable identity used during the automated <code
+                                    style="color:#00f5ff">/devices/register</code> provisioning handshake.
+                            </p>
+                            <div class="row g-2">
+                                <div class="col-6"><span class="badge text-bg-success w-100 text-start"><i
+                                            class="fas fa-shield-alt me-1"></i> <span data-i18n="sec_mitm">MitM
+                                            protected</span></span></div>
+                                <div class="col-6"><span class="badge text-bg-success w-100 text-start"><i
+                                            class="fas fa-shield-alt me-1"></i> <span data-i18n="sec_spoof">Spoofing
+                                            blocked</span></span></div>
+                                <div class="col-6"><span class="badge text-bg-success w-100 text-start"><i
+                                            class="fas fa-shield-alt me-1"></i> <span data-i18n="sec_replay">Replay
+                                            attack blocked</span></span></div>
+                                <div class="col-6"><span class="badge text-bg-success w-100 text-start"><i
+                                            class="fas fa-shield-alt me-1"></i> <span data-i18n="sec_brute">Brute force
+                                            limited</span></span></div>
+                                <div class="col-12"><span class="badge text-bg-success w-100 text-start text-wrap"><i
+                                            class="fas fa-shield-alt me-1"></i> <span
+                                            data-i18n="sec_unauth">Unauthorized access blocked (API key + enrollment
+                                            token fail-fast)</span></span></div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- ============ EXPERIENCE VIDEO ============ -->
-    <section id="experience" class="qg-section qg-section-alt">
-        <div class="container">
-            <div class="text-center mb-5">
-                <span class="qg-eyebrow" data-i18n="exp_eyebrow">See it in action</span>
-                <h2 class="qg-title" data-i18n="exp_title">The experience</h2>
-                <div class="accent-bar mx-auto"></div>
-                <p class="qg-lead" data-i18n="exp_note" style="max-width:720px;margin:0 auto;">Watch the demo with captions available in English and Italian.</p>
-            </div>
-            <div class="row">
-                <div class="col-lg-10 mx-auto">
-                    <video class="qg-video" controls preload="none" poster="../assets/quakeguard/mission-img.webp" aria-label="QuakeGuard experience video with captions in English and Italian">
-                        <source src="../assets/quakeguard/quakeguard.mp4" type="video/mp4">
-                        <track kind="captions" srclang="it" label="Italiano" src="../assets/quakeguard/quakeguard.it.vtt" default>
-                        <track kind="captions" srclang="en" label="English" src="../assets/quakeguard/quakeguard.en.vtt">
-                        Your browser does not support the video tag.
-                    </video>
+        <!-- ============ ZONES ============ -->
+        <section id="zones" class="qg-section qg-section-alt">
+            <div class="container">
+                <div class="text-center mb-5">
+                    <span class="qg-eyebrow" data-i18n="zones_eyebrow">Spatial intelligence</span>
+                    <h2 class="qg-title" data-i18n="zones_title">Geographic Zones</h2>
+                    <div class="accent-bar mx-auto"></div>
+                    <p class="qg-lead" data-i18n="zones_lead" style="max-width:720px;margin:0 auto;">
+                        8 global macro-regions are pre-seeded. Zone resolution uses a geohash Redis fast path, with
+                        PostGIS
+                        <strong style="color:#fff">ST_Contains</strong> as the authoritative fallback — plus an <strong
+                            style="color:#fff">Unknown Region</strong>
+                        fallback for unmapped coordinates. The mobile app can detect your zone with one tap via <code
+                            style="color:#00f5ff">GET /zones/locate</code>.
+                    </p>
+                </div>
+                <div class="zone-list">
+                    <div class="zone-item"><span class="dot"></span><strong data-i18n="zone_1">Italy -
+                            North</strong><span>Lombardy, Veneto, Piedmont</span></div>
+                    <div class="zone-item"><span class="dot"></span><strong data-i18n="zone_2">Italy -
+                            Center</strong><span>Tuscany, Lazio, Umbria</span></div>
+                    <div class="zone-item"><span class="dot"></span><strong data-i18n="zone_3">Italy - South &
+                            Islands</strong><span>Campania, Sicily, Sardinia</span></div>
+                    <div class="zone-item"><span class="dot"></span><strong data-i18n="zone_4">Western
+                            Europe</strong><span>France, Spain, Germany, UK</span></div>
+                    <div class="zone-item"><span class="dot"></span><strong data-i18n="zone_5">North
+                            America</strong><span>USA, Canada, Mexico</span></div>
+                    <div class="zone-item"><span class="dot"></span><strong data-i18n="zone_6">South
+                            America</strong><span>Brazil, Argentina, Chile</span></div>
+                    <div class="zone-item"><span class="dot"></span><strong data-i18n="zone_7">East
+                            Asia</strong><span>China, Japan, India</span></div>
+                    <div class="zone-item"><span class="dot"></span><strong data-i18n="zone_8">Unknown
+                            Region</strong><span data-i18n="zones_unknown_sub">Fallback for unmapped coordinates</span>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- ============ CONTACTS / FOOTER ============ -->
-    <section id="contact" class="qg-section">
-        <div class="container text-center">
-            <span class="qg-eyebrow" data-i18n="contact_eyebrow">Get in touch</span>
-            <h2 class="qg-title" data-i18n="contact_title">Contribute or collaborate</h2>
-            <div class="accent-bar mx-auto"></div>
-            <p class="qg-lead mx-auto" data-i18n="contact_p" style="max-width:640px;">
-                QuakeGuard is open source and community-driven. Ideas, issues and pull requests are always welcome&nbsp;—&nbsp;
-                pull in, and let&rsquo;s build a safer world together.
-            </p>
-            <div class="d-flex justify-content-center flex-wrap gap-2 mb-4">
-                <a href="https://github.com/GiZano/QuakeGuard" target="_blank" rel="noopener noreferrer" class="btn btn-qg"><i class="fab fa-github me-2"></i><span data-i18n="contact_open">Open the repository</span></a>
-                <a href="mailto:gizano&#46;dev&#64;gmail&#46;com" class="btn btn-qg-ghost"><i class="fas fa-envelope me-2"></i><span data-i18n="contact_email">Email me</span></a>
+        <!-- ============ ROADMAP ============ -->
+        <section id="roadmap" class="qg-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-10">
+                        <div class="text-center mb-4">
+                            <span class="qg-eyebrow" data-i18n="roadmap_eyebrow">Where it&rsquo;s going</span>
+                            <h2 class="qg-title" data-i18n="roadmap">Roadmap</h2>
+                            <div class="accent-bar mx-auto"></div>
+                        </div>
+                        <div class="text-center mb-5">
+                            <a href="https://github.com/GiZano/QuakeGuard/blob/main/ROADMAP.md" target="_blank"
+                                rel="noopener noreferrer" class="btn btn-qg-ghost"><i
+                                    class="fas fa-map-signs me-2"></i><span data-i18n="roadmap_details">See the detailed
+                                    roadmap</span></a>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <h3 class="text-center mb-4" style="color:#fff;" data-i18n="roadmap_dev">Development
+                                </h3>
+                                <div class="road">
+                                    <div class="road-item done"><span class="ver" data-i18n="road_1_label">v1.0 ·
+                                            Released</span>
+                                        <p data-i18n="road_1"><strong>Edge seismic detection</strong> on ESP32-C3 and
+                                            local alerts.</p>
+                                    </div>
+                                    <div class="road-item done"><span class="ver" data-i18n="road_11_label">v1.1 ·
+                                            Released</span>
+                                        <p data-i18n="road_11"><strong>HiveMQ Cloud MQTT (TLS)</strong>, ngrok HTTPS
+                                            tunnel, security hardening.</p>
+                                    </div>
+                                    <div class="road-item done"><span class="ver" data-i18n="road_120_label">v1.2.0 ·
+                                            Released</span>
+                                        <p data-i18n="road_120"><strong>On-Premise AI Reports</strong> — Ollama
+                                            generates emergency reports on-premise, pushed over WebSocket.</p>
+                                    </div>
+                                    <div class="road-item done"><span class="ver" data-i18n="road_12_label">v1.2.1 ·
+                                            Released</span>
+                                        <p data-i18n="road_12"><strong>Geo-Zoning &amp; Cooldown Fragmentation
+                                                (GNSS-ready)</strong> — geohash Redis fast-path zone resolution,
+                                            per-area cooldown locks, PostGIS <code
+                                                style="color:#00f5ff">ST_Contains</code> as source of truth.</p>
+                                    </div>
+                                    <div class="road-item done"><span class="ver" data-i18n="road_122_label">v1.2.2 ·
+                                            Released</span>
+                                        <p data-i18n="road_122"><strong>Zero-Trust Serial Fallback</strong> —
+                                            ECDSA-signed telemetry over USB CDC when MQTT/WiFi is unreachable, with
+                                            host-aware retention and automatic first-boot provisioning.</p>
+                                    </div>
+                                    <div class="road-item done"><span class="ver" data-i18n="road_13_label">v2.0.0 ·
+                                            Released</span>
+                                        <p data-i18n="road_13">Triangulation, Hybrid Cloud Architecture, DevOps
+                                            deployment scripts, GNSS NTP + PPS timestamps, ADXL345 calibration, and SIL
+                                            integration testing.</p>
+                                    </div>
+                                    <div class="road-item"><span class="ver" data-i18n="road_21_label">v2.1 ·
+                                            Dashboards</span>
+                                        <p data-i18n="road_21"><strong>Grafana</strong> live visualization of seismic
+                                            telemetry.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h3 class="text-center mb-4" style="color:#fff;" data-i18n="roadmap_res">Research</h3>
+                                <div class="road">
+                                    <div class="road-item done"><span class="ver" data-i18n="r1_label">R1 · Done</span>
+                                        <p data-i18n="r1"><strong>SIL STA/LTA cross-validation</strong> — pure C++ core,
+                                            host orchestrator, metrics and trigger calibration on the synthetic
+                                            fallback. Real ESM ground-truth validation remains.</p>
+                                    </div>
+                                    <div class="road-item wip"><span class="ver" data-i18n="r2_label">R2 · Next</span>
+                                        <p data-i18n="r2"><strong>AI benchmarking</strong> — P50/P99 latency of the
+                                            local Ollama worker, hallucination rate, privacy/latency vs cloud baseline.
+                                        </p>
+                                    </div>
+                                    <div class="road-item"><span class="ver" data-i18n="r3_label">R3 · Planned</span>
+                                        <p data-i18n="r3"><strong>Dissemination</strong> — open validation dataset
+                                            (Zenodo DOI) + technical paper / preprint.</p>
+                                    </div>
+                                </div>
+                                <p class="small text-muted mt-3" data-i18n="roadmap_res_note">R1 is the blocking
+                                    prerequisite for the v2.2.0 Edge AI tier and runs in parallel with v1.3 (GNSS).</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    </section>
+        </section>
+
+        <!-- ============ PROJECT HEALTH ============ -->
+        <section id="health" class="qg-section qg-section-alt">
+            <div class="container">
+                <div class="text-center mb-5">
+                    <span class="qg-eyebrow" data-i18n="health_eyebrow">Engineering rigor</span>
+                    <h2 class="qg-title" data-i18n="health_title">Project Health</h2>
+                    <div class="accent-bar mx-auto"></div>
+                </div>
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="qg-card">
+                            <h3><i class="fas fa-rocket me-2" style="color:#00f5ff"></i><span
+                                    data-i18n="health_cd_title">CI/CD</span></h3>
+                            <p class="mb-2" data-i18n="health_cd_p">Five automated pipelines gate every change:</p>
+                            <ul class="qg-lead" style="font-size:0.95rem;padding-left:1.2rem;">
+                                <li><code>backend-ci</code> — Bandit, Safety, stress test</li>
+                                <li><code>frontend-ci</code> — ESLint, npm audit</li>
+                                <li><code>iot-ci</code> — PlatformIO compilation</li>
+                                <li><code>pr-lint</code> + <code>devops-ci</code></li>
+                                <li>Dedicated <code>geo</code>/<code>timescale</code>/<code>zone</code> CI jobs</li>
+                                <li>✔️ 104 backend tests + 23 mobile tests</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="qg-card d-flex flex-column">
+                            <h3><i class="fas fa-biohazard me-2" style="color:#f1a208"></i><span
+                                    data-i18n="health_stress_title">Stress test</span></h3>
+                            <p data-i18n="health_stress_p">Validates the full ingestion → Redis → worker → PostGIS →
+                                WebSocket pipeline against a simulated massive seismic event.</p>
+                            <ul class="qg-lead" style="font-size:0.95rem;padding-left:1.2rem;">
+                                <li>🔥 150 concurrent sensors — rate limiter</li>
+                                <li>⚔️ Bad signature (401) + replay (403)</li>
+                                <li>🤖 AI dedup stress test — 50 raw alerts → 1 report</li>
+                                <li>🔍 DB persistence verified end-to-end</li>
+                            </ul>
+                            <div class="mt-auto pt-3"><span class="badge text-bg-warning fs-6"><i
+                                        class="fas fa-trophy me-1"></i> <span data-i18n="health_stress_cert">SYSTEM
+                                        CERTIFIED</span></span></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="qg-card d-flex flex-column">
+                            <h3><i class="fas fa-book-open me-2" style="color:#06a77d"></i><span
+                                    data-i18n="health_docs_title">Deep documentation</span></h3>
+                            <p data-i18n="health_docs_p">A Typst-compiled whitepaper walks through architecture,
+                                hardware, security, the broker, backend, mobile and deployment.</p>
+                            <p class="qg-lead" data-i18n="health_docs_os" style="font-size:0.95rem;">Open source under
+                                <strong style="color:#fff">AGPL-3.0</strong>, with a DOI, contributing guide and
+                                security policy.</p>
+                            <div class="mt-auto pt-3 d-flex flex-wrap gap-2">
+                                <a class="btn btn-qg btn-sm" href="../assets/quakeguard/quakeguard-whitepaper.pdf"
+                                    download target="_blank" rel="noopener noreferrer"><i
+                                        class="fas fa-file-pdf me-1"></i><span data-i18n="health_docs_read">Read the
+                                        whitepaper</span></a>
+                                <a class="btn btn-qg-ghost btn-sm" href="https://github.com/GiZano/QuakeGuard"
+                                    target="_blank" rel="noopener noreferrer"><i class="fab fa-github me-1"></i><span
+                                        data-i18n="health_docs_star">Star on GitHub</span></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ MENTORS ============ -->
+        <section id="mentors" class="qg-section">
+            <div class="container">
+                <div class="row align-items-center g-4">
+                    <div class="col-lg-8">
+                        <span class="qg-eyebrow" data-i18n="mentors_eyebrow">Milestone</span>
+                        <h2 class="qg-title" data-i18n="mentors_title">Mentorship & Recognition</h2>
+                        <div class="accent-bar"></div>
+                        <p class="qg-lead" data-i18n="mentors_p1">
+                            Developed as a school-contest project for <strong style="color:#fff">Hackersgen by
+                                Sorint.lab</strong> and the
+                            <strong style="color:#fff">GF Marilli</strong> competition &mdash; in collaboration with
+                            <a href="https://riccardo0731.github.io" target="_blank"
+                                rel="noopener noreferrer">riccardo0731</a>.
+                        </p>
+                        <p class="qg-lead mb-0" data-i18n="mentors_p2">
+                            We were honored to work with <strong style="color:#fff">Francesco Finazzi</strong> — UniBG
+                            professor and founder of
+                            <em>Earthquake Network</em>, the largest community seismic network in the world. After the
+                            conference, our
+                            collaboration with him is exactly where the project&rsquo;s story began.
+                        </p>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="mentor-cards">
+                            <div class="qg-card mentor-card">
+                                <img src="../assets/quakeguard/sorint.webp" alt="Sorint.lab Hackersgen" loading="lazy">
+                                <span data-i18n="mentor_1">Sorint.lab — Hackersgen</span>
+                            </div>
+                            <div class="qg-card mentor-card">
+                                <img src="../assets/quakeguard/unibg.webp" alt="University of Bergamo" loading="lazy">
+                                <span data-i18n="mentor_2">University of Bergamo</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ EXPERIENCE VIDEO ============ -->
+        <section id="experience" class="qg-section qg-section-alt">
+            <div class="container">
+                <div class="text-center mb-5">
+                    <span class="qg-eyebrow" data-i18n="exp_eyebrow">See it in action</span>
+                    <h2 class="qg-title" data-i18n="exp_title">The experience</h2>
+                    <div class="accent-bar mx-auto"></div>
+                    <p class="qg-lead" data-i18n="exp_note" style="max-width:720px;margin:0 auto;">Watch the demo with
+                        captions available in English and Italian.</p>
+                </div>
+                <div class="row">
+                    <div class="col-lg-10 mx-auto">
+                        <video class="qg-video" controls preload="none" poster="../assets/quakeguard/mission-img.webp"
+                            aria-label="QuakeGuard experience video with captions in English and Italian">
+                            <source src="../assets/quakeguard/quakeguard.mp4" type="video/mp4">
+                            <track kind="captions" srclang="it" label="Italiano"
+                                src="../assets/quakeguard/quakeguard.it.vtt" default>
+                            <track kind="captions" srclang="en" label="English"
+                                src="../assets/quakeguard/quakeguard.en.vtt">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ CONTACTS / FOOTER ============ -->
+        <section id="contact" class="qg-section">
+            <div class="container text-center">
+                <span class="qg-eyebrow" data-i18n="contact_eyebrow">Get in touch</span>
+                <h2 class="qg-title" data-i18n="contact_title">Contribute or collaborate</h2>
+                <div class="accent-bar mx-auto"></div>
+                <p class="qg-lead mx-auto" data-i18n="contact_p" style="max-width:640px;">
+                    QuakeGuard is open source and community-driven. Ideas, issues and pull requests are always
+                    welcome&nbsp;—&nbsp;
+                    pull in, and let&rsquo;s build a safer world together.
+                </p>
+                <div class="d-flex justify-content-center flex-wrap gap-2 mb-4">
+                    <a href="https://github.com/GiZano/QuakeGuard" target="_blank" rel="noopener noreferrer"
+                        class="btn btn-qg"><i class="fab fa-github me-2"></i><span data-i18n="contact_open">Open the
+                            repository</span></a>
+                    <a href="mailto:gizano&#46;dev&#64;gmail&#46;com" class="btn btn-qg-ghost"><i
+                            class="fas fa-envelope me-2"></i><span data-i18n="contact_email">Email me</span></a>
+                </div>
+            </div>
+        </section>
 
     </main>
 
@@ -651,42 +969,85 @@
             <div class="row align-items-center">
                 <div class="col-md-4 text-center text-md-start mb-4 mb-md-0">
                     <p class="h5 mb-3 fw-bold">GiZano</p>
-                    <p class="text-white-50 small mb-0" data-i18n="footer_tagline">BSc Computer Science Student at UniPi | Specialized in Edge Computing, Cloud Architecture, and IoT.</p>
+                    <p class="text-white-50 small mb-0" data-i18n="footer_tagline">BSc Computer Science Student at UniPi
+                        | Specialized in Edge Computing, Cloud Architecture, and IoT.</p>
                 </div>
 
                 <div class="col-md-4 text-center mb-4 mb-md-0">
-                    <p class="mb-3 small text-uppercase fw-bold ls-1"><span data-i18n="footer_ttl">Get in touch</span></p>
+                    <p class="mb-3 small text-uppercase fw-bold ls-1"><span data-i18n="footer_ttl">Get in touch</span>
+                    </p>
                     <a href="mailto:gizano&#46;dev&#64;gmail&#46;com" class="btn btn-outline-light btn-sm px-4">
                         <i class="fas fa-envelope me-2"></i><span data-i18n="footer_email">Email Me</span>
                     </a>
                 </div>
 
                 <div class="col-md-4 text-center text-md-end">
-                    <div class="social-links d-flex justify-content-center justify-content-md-end align-items-center gap-3 flex-wrap">
+                    <div
+                        class="social-links d-flex justify-content-center justify-content-md-end align-items-center gap-3 flex-wrap">
                         <!-- ORCID -->
-                        <a target="_blank" href="https://orcid.org/0009-0000-8900-9586" class="text-light social-icon-footer" aria-label="ORCID Researcher Profile" rel="noopener noreferrer">
+                        <a target="_blank" href="https://orcid.org/0009-0000-8900-9586"
+                            class="text-light social-icon-footer" aria-label="ORCID Researcher Profile"
+                            rel="noopener noreferrer">
                             <i class="fab fa-orcid fa-lg"></i>
                         </a>
 
                         <!-- CREDLY -->
-<!-- LINKEDIN -->
-                        <a target="_blank" href="https://www.linkedin.com/in/giovanni-zanotti-it/" class="text-light social-icon-footer" aria-label="LinkedIn Profile" rel="noopener noreferrer">
+                        <!-- LINKEDIN -->
+                        <a target="_blank" href="https://www.linkedin.com/in/giovanni-zanotti-it/"
+                            class="text-light social-icon-footer" aria-label="LinkedIn Profile"
+                            rel="noopener noreferrer">
                             <i class="fab fa-linkedin fa-lg"></i>
                         </a>
 
                         <!-- GITHUB -->
-                        <a target="_blank" href="https://github.com/GiZano" class="text-light social-icon-footer" aria-label="GitHub Profile" rel="noopener noreferrer">
+                        <a target="_blank" href="https://github.com/GiZano" class="text-light social-icon-footer"
+                            aria-label="GitHub Profile" rel="noopener noreferrer">
                             <i class="fab fa-github fa-lg"></i>
                         </a>
 
                         <!-- MEDIUM -->
-                        <a target="_blank" href="https://medium.com/@gizano" class="text-light social-icon-footer" aria-label="Medium Blog" rel="noopener noreferrer">
+                        <a target="_blank" href="https://medium.com/@gizano" class="text-light social-icon-footer"
+                            aria-label="Medium Blog" rel="noopener noreferrer">
                             <i class="fab fa-medium fa-lg"></i>
                         </a>
+                    </div>
+                </div>
+            </div>
 
-                        <!-- KAGGLE -->
-<!-- LEETCODE -->
-</div>
+            <hr class="my-4 border-secondary opacity-25">
+
+            <div class="row align-items-center">
+                <div class="col-md-4 text-center text-md-start mb-4 mb-md-0">
+                    <p class="h5 mb-3 fw-bold">riccardo0731</p>
+                    <p class="text-white-50 small mb-0">Recent graduate in Computer Science and Telecommunications from
+                        I.S. Archimede</p>
+                </div>
+
+                <div class="col-md-4 text-center mb-4 mb-md-0">
+                    <p class="mb-3 small text-uppercase fw-bold ls-1"><span data-i18n="footer_ttl">Get in touch</span>
+                    </p>
+                    <a href="mailto:riccardodilecce07&#64;gmail&#46;com" class="btn btn-outline-light btn-sm px-4">
+                        <i class="fas fa-envelope me-2"></i><span data-i18n="footer_email">Email Me</span>
+                    </a>
+                </div>
+
+                <div class="col-md-4 text-center text-md-end">
+                    <div
+                        class="social-links d-flex justify-content-center justify-content-md-end align-items-center gap-3 flex-wrap">
+                        <a target="_blank" href="https://www.linkedin.com/in/riccardo-dilecce-it/"
+                            class="text-light social-icon-footer" aria-label="LinkedIn Profile"
+                            rel="noopener noreferrer">
+                            <i class="fab fa-linkedin fa-lg"></i>
+                        </a>
+                        <a target="_blank" href="https://github.com/riccardo0731" class="text-light social-icon-footer"
+                            aria-label="GitHub Profile" rel="noopener noreferrer">
+                            <i class="fab fa-github fa-lg"></i>
+                        </a>
+                        <a target="_blank" href="https://riccardo0731.github.io/" class="text-light social-icon-footer"
+                            aria-label="Personal Website" rel="noopener noreferrer">
+                            <i class="fas fa-globe fa-lg"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -716,7 +1077,9 @@
 
             <div class="row">
                 <div class="col-12 text-center text-white-50 small">
-                    <p class="mb-0">&copy; 2026 Giovanni Zanotti. All rights reserved. <a href="../privacy.html" class="text-white-50 text-decoration-underline" rel="noopener noreferrer">Privacy Policy</a></p>
+                    <p class="mb-0">&copy; 2026 Giovanni Zanotti. All rights reserved. <a href="../privacy.html"
+                            class="text-white-50 text-decoration-underline" rel="noopener noreferrer">Privacy Policy</a>
+                    </p>
                 </div>
             </div>
         </div>
@@ -726,10 +1089,13 @@
 
     <button class="lang-toggle" type="button" data-i18n-toggle aria-label="Switch language">EN</button>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"
+        defer></script>
     <script src="../Script/nav.js" defer></script>
     <script src="../Script/i18n/quakeguard.js" defer></script>
     <script src="../Script/i18n.js" defer></script>
     <script src="../Script/quakeguard-demo.js" defer></script>
 </body>
+
 </html>
