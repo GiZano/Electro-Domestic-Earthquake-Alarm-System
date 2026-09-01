@@ -55,7 +55,7 @@ jobs:
     - name: TypeScript Type Check
       run: |
         cd mobile
-        npx --no-install typescript tsc --noEmit
+        npx --no-install tsc --noEmit
 
     - name: Run Jest Unit Tests
       run: |
