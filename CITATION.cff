@@ -13,8 +13,11 @@ title: "QuakeGuard"
 version: 2.0.0
 identifiers:
   - type: doi
-    value: "10.5281/zenodo.22208913"
-    description: "Software archive (v2.0.0)"
+    value: "10.5281/zenodo.21710405"
+    description: "Concept DOI (Absolute - resolves to all versions)"
+  - type: doi
+    value: "10.5281/zenodo.22237760"
+    description: "Version DOI (Specific to v2.0.0 release)"
 date-released: 2026-09-01
 url: "https://giovanni-zanotti.is-a.dev/projects/quakeguard.html"
 repository-code: "https://github.com/GiZano/QuakeGuard"
