@@ -35,6 +35,9 @@
   #v(3cm)
 ]
 
+// --- EXECUTIVE SUMMARY ---
+#include "00-executive-summary.typ"
+
 #pagebreak()
 
 // --- TABLE OF CONTENTS ---
@@ -56,3 +59,10 @@
 #include "07-deployment.typ"
 #include "08-ai.typ"
 #include "09-devops.typ"
+#include "10-benchmarks.typ"
+#include "11-limitations.typ"
+#include "12-roadmap.typ"
+#include "13-threat-model.typ"
+#include "14-bibliography.typ"
+#include "15-glossary.typ"
+#include "16-appendix.typ"

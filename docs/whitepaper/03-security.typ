@@ -16,6 +16,22 @@ Before transmitting any seismic data, an unregistered sensor must complete an au
 + Using a geohash-based Redis fast-path index with an authoritative PostGIS fallback (`ST_Contains`), the backend spatially evaluates the provided GPS coordinates against the predefined zones and assigns the sensor to the smallest containing geographic polygon[cite: 1]. When a GNSS module is attached, the coordinates are the live fix (or the last-known fix persisted in NVS); otherwise the node reports a hardcoded placeholder until provisioned in place[cite: 1].
 + A unique `sensor_id` is returned to the device, which saves it to NVS for all future communications[cite: 1].
 
+#align(center)[
+  ```text
+  Edge Node (ESP32)                              FastAPI Backend
+         |                                              |
+         | --- POST /devices/register ----------------> |
+         |     { pubKey, mac, enrollment_token }        |
+         |                                              |
+         | <--- 201 Created --------------------------- |
+         |     { sensor_id: 42, zone: "Rome" }          |
+         |                                              |
+         | --- Store sensor_id in NVS                   |
+         |                                              |
+  ```
+  _Figure: Provisioning Handshake Sequence_
+]
+
 == Payload Authentication & Integrity
 
 When a seismic event triggers the DSP pipeline, the firmware constructs a string containing the measured magnitude and the current timestamp (format: `value:timestamp`)[cite: 1]. Under normal operation the timestamp is the NTP-synchronized wall time; when the serial fallback drains the retention ring it is the software wall clock `epochAtSync + millis()` at drain time, and the payload is *re-signed* with the current time so the backend's replay window accepts it[cite: 1]. This string is hashed via SHA-256 and signed with the device's private key[cite: 1]. 
