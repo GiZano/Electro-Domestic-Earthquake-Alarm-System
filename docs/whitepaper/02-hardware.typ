@@ -59,6 +59,7 @@ With the v2.0.0 milestone, the QuakeGuard hardware has matured from a breadboard
 - *Layout Integration:* The PCB provides dedicated footprints for the ESP32-C3 SuperMini (designed with footprint headroom to support a future ESP32-S3 variant for edge AI), the ADXL345 accelerometer (powered correctly at 3.3V), and the optional u-blox GNSS receiver.
 - *Signal Integrity:* The I2C lines (SDA on GPIO 7, SCL on GPIO 8) include proper hardware pull-up resistors on the PCB to guarantee stable communication at 100Hz without relying on the weak internal MCU pull-ups.
 - *External Interfacing:* A J4 header exposes the GNSS UART lines (RX GPIO 5, TX GPIO 4, PPS GPIO 2) and power rails, allowing modular connection of the GPS antenna for accurate time synchronization and epicentral triangulation.
+- *Bill of Materials (BOM):* The exact hardware components required to assemble the QuakeGuard PCB (including the ESP32-C3, ADXL345, optional GNSS, and THT passives) are exported from KiCad and documented in the official project Wiki under the `Bill of Materials` page.
 
 #figure(
   image("assets/pcb_assembled.jpg", width: 90%),
