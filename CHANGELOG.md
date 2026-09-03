@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] - 2026-09-03
+### Added
+- **Dependabot Configuration:** Automated dependency updates for pip (backend), npm (mobile), and GitHub Actions (`.github/dependabot.yml`).
+- **Gitleaks Secret Scanning:** CI workflow (`.github/workflows/gitleaks.yml`) to prevent accidental credential leaks in commits — critical for a project handling ECDSA keys and MQTT credentials.
+- **Architecture Decision Records (ADRs):** Created `docs/adr/` with 4 initial ADRs documenting key architectural decisions: Redis Streams (0001), HiveMQ Cloud (0002), Hybrid Edge AI (0003), CERN-OHL licensing (0004).
+- **C4 and Sequence Diagrams:** Created `docs/diagrams/` with Mermaid diagrams: C4 Context/Container, provisioning sequence, alert delivery sequence, and triangulation sequence — versionable independently from the Typst whitepaper.
+- **Firmware Versioning:** Added `#define FIRMWARE_VERSION "2.0.2"` printed at boot via serial for field identification and remote debugging.
+- **Pinout Reference:** Created `firmware/PINOUT.md` — unified GPIO mapping, LED behavior table, connector pinout, and passive component reference.
+- **Flashing Guide:** Created `firmware/FLASHING.md` — standalone step-by-step flashing instructions for users without VS Code/PlatformIO IDE.
+- **Privacy Policy:** Created `mobile/PRIVACY_POLICY.md` — documents data collection, storage, and third-party services for App Store/Play Store compliance.
+- **SUPPORT.md:** Routing guide for all help channels (bugs, features, hardware, security, discussions).
+- **Hardware Issue Template:** `.github/ISSUE_TEMPLATE/hardware_issue.md` for PCB, wiring, and component assembly reports.
+- **Docker Compose Override Example:** `backend/docker-compose.override.yml.example` for local development customization.
+
+### Changed
+- **Dockerfile Multi-Stage Build:** Refactored `backend/Dockerfile` to a two-stage build (builder + runtime), reducing final image size by excluding build toolchain (gcc, python3-dev).
+- **BOM Enrichment:** Expanded `hardware/QuakeGuard_PCB/output/BOM.csv` with manufacturer, part number, unit cost, distributor links (LCSC/DigiKey), and socketable modules (ESP32-C3, ADXL345, NEO-6M).
+- **README Enhancements:** Added "PRs welcome" badge, prominent landing page link, CERN-OHL license reference, hardware compliance disclaimer, and v2.0.2 roadmap entry.
+- **Version artifacts bumped to v2.0.2** (CITATION.cff, firmware header, README roadmap, SECURITY.md).
+
 ## [2.0.1] - 2026-09-01
 ### Changed
 - **Documentation Polish (Zenodo Sync):** Removed residual LLM tags (`[cite: 1]`) from the technical whitepaper.

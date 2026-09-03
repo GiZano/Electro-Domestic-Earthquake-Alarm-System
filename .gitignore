@@ -63,3 +63,8 @@ research/data/
 research/out/
 research/*.png
 firmware/tools/detect_cli
+
+# ------------------------------------------
+# KiCad local history
+# ------------------------------------------
+.history/

@@ -103,6 +103,24 @@ Documentation-only patch aligning the technical whitepaper, GitHub Wiki, and pro
 
 ---
 
+## v2.0.2 — Repository Health (Released)
+
+Comprehensive repository maturity improvements: CI hardening, architectural documentation, developer experience, and compliance foundations.
+
+- ✅ **Dependabot** for automated dependency updates (pip, npm, GitHub Actions)
+- ✅ **Gitleaks** secret scanning in CI (prevents credential leaks)
+- ✅ **Architecture Decision Records (ADRs):** 4 initial ADRs (Redis Streams, HiveMQ, Hybrid Edge AI, CERN-OHL)
+- ✅ **C4 and Sequence Diagrams** in Mermaid (versionable, GitHub-renderable)
+- ✅ **Multi-stage Dockerfile** (builder + runtime stages, reduced image size)
+- ✅ **Firmware versioning** (`FIRMWARE_VERSION` define, printed at boot)
+- ✅ **Pinout reference** (`firmware/PINOUT.md`) and **Flashing guide** (`firmware/FLASHING.md`)
+- ✅ **Privacy Policy** (`mobile/PRIVACY_POLICY.md`) for App Store/Play Store readiness
+- ✅ **SUPPORT.md**, **Hardware Issue Template**, **Docker Compose override example**
+- ✅ **BOM enrichment** (manufacturer, cost, distributor links, socketable modules)
+- ✅ **README enhancements** (landing page link, PRs welcome badge, hardware disclaimer)
+
+---
+
 ## v2.1.0 — Data Dashboards
 
 Grafana dashboards for real-time visualization of seismic telemetry.

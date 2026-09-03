@@ -1,6 +1,6 @@
 /**
  * Project: QuakeGuard - Professional Seismic Node
- * Version: 1.3.0-GNSS-PPS
+ * Version: 2.0.2
  * Target Hardware: ESP32-C3 SuperMini + ADXL345 + NEO-6M (JLCPCB)
  * Author: GiZano
  *
@@ -35,6 +35,11 @@
 #include <array>
 #include <chrono>
 #include <vector>
+
+// --------------------------------------------------------------------------
+// FIRMWARE VERSION (printed at boot for field identification)
+// --------------------------------------------------------------------------
+#define FIRMWARE_VERSION "2.0.2"
 
 // --------------------------------------------------------------------------
 // HARDWARE & SERVER CONFIGURATION
@@ -605,7 +610,7 @@ void setup() {
   digitalWrite(LED_RED_PIN, LOW);
   ledBootTest(); // verify wiring: 2x blink both LEDs
 
-  Serial.println("\n\n[BOOT] QuakeGuard v2.0.0 GNSS+PPS+LED");
+  Serial.printf("\n\n[BOOT] QuakeGuard v%s\n", FIRMWARE_VERSION);
 
   crypto().init();
 
