@@ -51,7 +51,7 @@ Intelligent edge sensors (ESP32-C3 + ADXL345) analyze vibrations locally using p
 
 <img align=center src="docs/whitepaper/assets/pcb_assembled.jpg" width="600" alt="QuakeGuard v2.0 Assembled PCB" />
 
-*The QuakeGuard v2.0 fully assembled PCB, featuring the ESP32-C3 SuperMini, the ADXL345 accelerometer, and the u-blox GNSS module.*
+*The QuakeGuard v2.0 fully assembled PCB, featuring the ESP32-C3 SuperMini, the ADXL345 accelerometer, and the u-blox GNSS module. For a complete list of required components, refer to the [Bill of Materials (BOM)](https://github.com/GiZano/QuakeGuard/wiki/Bill-of-Materials) in the Wiki.*
 
 ---
 
