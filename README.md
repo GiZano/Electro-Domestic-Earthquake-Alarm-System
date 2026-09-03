@@ -106,7 +106,7 @@ The project follows **Microservices** and **Event-Driven Design** principles acr
 | Feature | Detail |
 |---------|--------|
 | Framework | FastAPI (Python 3.11), fully async |
-| Security | API Key auth, ECDSA signature verification, Anti-Replay (60s window) |
+| Security | API Key auth, ECDSA signature verification, Anti-Replay (300s window) |
 | Message Broker | Redis — decouples ingestion from processing |
 | Rate Limiting | Fixed-window 50 req/s per IP via Redis |
 | Alert Engine | ML-like magnitude proxy (`M = log10(PGA_calib) + b`), threshold M ≥ 4.5 |
@@ -148,7 +148,7 @@ ESP32 signs payload with ECDSA NIST256p (SHA256)
          ↓
 Backend verifies signature against registered public key
          ↓
-Timestamp validated within 60-second window (Anti-Replay)
+Timestamp validated within 300-second window (Anti-Replay)
          ↓
 API Key checked on every request (X-API-Key header)
          ↓
@@ -158,7 +158,7 @@ Payload accepted → Redis Queue
 **Threat model coverage:**
 - ✅ Man-in-the-Middle (MitM) — ECDSA signature verification
 - ✅ Spoofing — public key registration + signature check
-- ✅ Replay attacks — 60-second timestamp window
+- ✅ Replay attacks — 300-second timestamp window
 - ✅ Brute force — rate limiting 50 req/s per IP
 - ✅ Unauthorized access — API Key + enrollment token fail-fast
 
